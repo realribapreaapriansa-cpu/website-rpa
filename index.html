@@ -3,23 +3,33 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Enterprise System - Fast & Secure</title>
+  <title>Enterprise Professional System</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
     *, *::before, *::after { box-sizing: border-box; }
     :root {
         --blue-primary: #1a56db;
         --blue-light: #3b82f6;
-        --text-dark: #1e293b;
+        --text-dark: #0f172a;
         --text-body: #334155;
         --text-muted: #64748b;
         --border-light: #e2e8f0;
     }
-    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; color: #0f172a; margin: 0; padding: 0; }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0f172a; color: #0f172a; margin: 0; padding: 0; overflow-x: hidden; }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+    /* EFEK ANIMASI UTAMA */
+    @keyframes fadeIn { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: scale(1); } }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes pulseGlow { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.8; } }
+    
+    .animate-fade-in { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    .animate-slide-up { animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    .glow-bg { animation: pulseGlow 4s ease-in-out infinite; }
+
     .glass-header { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
     .nav-btn.active { color: #2563eb; font-weight: 700; }
     .nav-btn.active::after { content: ''; position: absolute; bottom: -2px; left: 0; width: 100%; height: 2px; background-color: #2563eb; border-radius: 2px; }
@@ -27,15 +37,7 @@
     /* FOOTER STYLES */
     footer { width: 100%; padding: 24px 20px; border-top: 1px solid var(--border-light); background: #ffffff; text-align: center; margin-top: auto; }
     .footer-links { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
-    .footer-link { position: relative; background: none; border: none; font-family: inherit; font-size: 0.88rem; font-weight: 700; color: var(--blue-primary); cursor: pointer; padding: 4px 2px; text-decoration: none; animation: linkGlow 2.5s ease-in-out infinite; }
-    @keyframes linkGlow {
-        0%, 100% { text-shadow: 0 0 0 transparent; }
-        25% { text-shadow: 0 0 8px rgba(59,130,246,0.3); }
-        50% { text-shadow: 0 0 14px rgba(59,130,246,0.5), 0 0 28px rgba(59,130,246,0.15); }
-        75% { text-shadow: 0 0 8px rgba(59,130,246,0.3); }
-    }
-    .footer-link::after { content: ''; position: absolute; bottom: 0; left: 0; width: 0; height: 2px; background: linear-gradient(90deg, var(--blue-light), var(--blue-primary)); border-radius: 2px; transition: width 0.3s ease; }
-    .footer-link:hover::after { width: 100%; }
+    .footer-link { position: relative; background: none; border: none; font-family: inherit; font-size: 0.88rem; font-weight: 700; color: var(--blue-primary); cursor: pointer; padding: 4px 2px; text-decoration: none; }
     .footer-separator { color: var(--text-muted); font-size: 0.8rem; user-select: none; }
     .footer-copy { font-size: 0.78rem; color: var(--text-muted); line-height: 1.7; }
     .footer-copy:first-of-type { font-weight: 600; color: var(--text-body); margin-bottom: 2px; }
@@ -53,7 +55,6 @@
     .modal-close:hover { background: #fef2f2; border-color: #fca5a5; color: #dc2626; }
     .modal-body { padding: 28px 32px 36px; overflow-y: auto; flex: 1; }
     .modal-date { display: inline-flex; align-items: center; gap: 8px; font-size: 0.8rem; font-weight: 600; color: var(--blue-primary); background: #eff6ff; padding: 5px 12px; border-radius: 8px; margin-bottom: 22px; }
-    .modal-intro { font-size: 0.9rem; color: var(--text-body); margin-bottom: 26px; padding: 16px 18px; background: #f8fafc; border-radius: 12px; border-left: 4px solid var(--blue-primary); line-height: 1.75; }
     .content-section { margin-bottom: 26px; }
     .section-title { font-size: 0.95rem; font-weight: 700; color: var(--text-dark); margin-bottom: 8px; display: flex; align-items: flex-start; gap: 10px; }
     .section-num { display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 26px; background: linear-gradient(135deg, var(--blue-primary), var(--blue-light)); color: #fff; border-radius: 7px; font-size: 0.75rem; font-weight: 800; flex-shrink: 0; }
@@ -75,31 +76,30 @@
     .countdown-fill { height: 100%; background: linear-gradient(90deg, #f59e0b, #ef4444); border-radius: 10px; width: 0%; transition: width 1s linear; }
     .countdown-text { font-size: 0.8rem; font-weight: 600; color: #92400e; text-align: center; }
 
-    /* TOAST ELEGAN */
-    .toast { opacity: 0; visibility: hidden; transform: translate(-50%, -20px) scale(0.95); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
-    .toast.show { opacity: 1; visibility: visible; transform: translate(-50%, 0) scale(1); }
+    /* TOAST ELEGAN GLASSMORPHISM */
+    .toast-glass { opacity: 0; visibility: hidden; transform: translate(-50%, -30px) scale(0.9); transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1); }
+    .toast-glass.show { opacity: 1; visibility: visible; transform: translate(-50%, 0) scale(1); }
   </style>
 </head>
-<body class="w-full h-screen overflow-hidden flex flex-col">
+<body class="w-full h-screen overflow-hidden flex flex-col bg-slate-900">
 
-  <!-- GLOBAL LOADING (PURE SPINNER TANPA TEKS) -->
-  <div id="loader" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-[99999] flex items-center justify-center">
-    <div class="bg-white p-5 rounded-3xl shadow-2xl flex items-center justify-center">
-       <div class="animate-spin rounded-full h-10 w-10 border-4 border-slate-200 border-t-blue-600"></div>
+  <!-- MURNI SPINNER LOADING TANPA TEKS -->
+  <div id="loader" class="hidden fixed inset-0 bg-slate-950/60 backdrop-blur-md z-[99999] flex items-center justify-center">
+    <div class="bg-white/10 p-5 rounded-3xl border border-white/20 shadow-2xl flex items-center justify-center">
+       <div class="animate-spin rounded-full h-11 w-11 border-4 border-white/20 border-t-blue-500"></div>
     </div>
   </div>
 
-  <!-- ABSENSI LOADING (PURE SPINNER TANPA TEKS) -->
-  <div id="attendance-loader" class="hidden fixed inset-0 bg-white/95 z-[99999] flex items-center justify-center backdrop-blur-md">
-    <div class="bg-blue-50 p-6 rounded-3xl shadow-xl flex items-center justify-center border border-blue-100">
-       <div class="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600"></div>
+  <div id="attendance-loader" class="hidden fixed inset-0 bg-slate-950/80 z-[99999] flex items-center justify-center backdrop-blur-lg">
+    <div class="bg-white p-6 rounded-3xl shadow-2xl flex items-center justify-center">
+       <div class="animate-spin rounded-full h-12 w-12 border-4 border-blue-100 border-t-blue-600"></div>
     </div>
   </div>
 
-  <!-- TOAST NOTIFIKASI ELEGAN -->
-  <div id="toast" class="toast fixed top-5 left-1/2 -translate-x-1/2 z-[999999] px-5 py-3.5 rounded-2xl font-bold text-xs sm:text-sm shadow-2xl transition-all duration-300 flex items-center gap-3 backdrop-blur-md border">
-      <i id="toastIcon" class="text-lg"></i>
-      <span id="toastText"></span>
+  <!-- FLOATING TOAST NOTIFICATION ELEGAN -->
+  <div id="toast" class="toast-glass fixed top-6 left-1/2 -translate-x-1/2 z-[999999] px-6 py-4 rounded-2xl font-bold text-xs sm:text-sm shadow-2xl flex items-center gap-3 backdrop-blur-xl border border-white/20 text-white">
+      <i id="toastIcon" class="text-xl"></i>
+      <span id="toastText" class="tracking-wide"></span>
   </div>
 
   <!-- MODAL LEGAL -->
@@ -117,49 +117,83 @@
   </div>
 
   <!-- ================================================================= -->
-  <!-- 0. HALAMAN 1: BUKU TAMU / ABSENSI KUNJUNGAN                      -->
+  <!-- 0. HALAMAN 1: SPLASH INTRO & BUKU TAMU MODERN                     -->
   <!-- ================================================================= -->
-  <div id="view-attendance" class="absolute inset-0 bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 z-[90] flex flex-col justify-center items-center p-4 overflow-y-auto">
-    <div class="bg-white p-8 md:p-10 rounded-[2.5rem] shadow-2xl border border-white/20 w-full max-w-lg relative my-auto">
-       <div class="text-center mb-8">
-          <div class="inline-flex items-center justify-center w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl mb-3 text-2xl shadow-inner font-black">📋</div>
-          <h2 class="text-2xl font-black text-slate-900">Buku Tamu & Absensi</h2>
-          <p class="text-xs text-slate-500 mt-1 font-medium">Isi data kunjungan Anda untuk membuka akses portal.</p>
+  <div id="view-attendance" class="absolute inset-0 bg-slate-950 z-[90] flex flex-col justify-center items-center p-4 overflow-y-auto">
+    
+    <!-- LATAR KANVAS BERANIMASI -->
+    <div class="absolute inset-0 overflow-hidden pointer-events-none">
+       <div class="absolute -top-40 -left-40 w-96 h-96 bg-blue-600/30 rounded-full blur-3xl glow-bg"></div>
+       <div class="absolute -bottom-40 -right-40 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl glow-bg" style="animation-delay: 2s;"></div>
+    </div>
+
+    <!-- 0A. SPLASH SCREEN ANIMATED INTRO (3 DETIK / MANUAL SKIP) -->
+    <div id="splash-screen" class="relative z-10 text-center max-w-xl mx-auto space-y-6 animate-slide-up">
+       <div class="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-tr from-blue-600 to-indigo-500 rounded-3xl text-white text-3xl shadow-2xl shadow-blue-500/40 border border-white/20">
+          <i class="fas fa-shield-halved animate-pulse"></i>
        </div>
+       <h1 class="text-3xl md:text-5xl font-black text-white tracking-tight leading-tight">Selamat Datang di <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-300">Portal Enterprise</span></h1>
+       <p class="text-slate-400 text-sm md:text-base font-medium max-w-md mx-auto leading-relaxed">Sistem verifikasi keamanan dan presensi tamu profesional terintegrasi digital.</p>
+       
+       <div class="pt-4 flex flex-col sm:flex-row gap-3 justify-center items-center">
+          <button onclick="skipSplash()" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 text-white font-extrabold px-8 py-4 rounded-2xl text-sm shadow-xl shadow-blue-600/30 transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2">
+             <span>Isi Buku Tamu Sekarang</span>
+             <i class="fas fa-arrow-right text-xs"></i>
+          </button>
+       </div>
+       <div class="text-xs text-slate-500 font-bold tracking-widest uppercase pt-6">Membuka otomatis dalam <span id="splash-timer">3</span>s...</div>
+    </div>
+
+    <!-- 0B. FORM BUKU TAMU CLEAN & ELEGANT (MUTU TINGGI) -->
+    <div id="guest-form-card" class="hidden relative z-10 bg-white/95 backdrop-blur-2xl p-8 md:p-10 rounded-[2.5rem] shadow-2xl border border-white/40 w-full max-w-md my-auto animate-fade-in">
+       <div class="flex justify-between items-center mb-6">
+          <div>
+             <h2 class="text-2xl font-black text-slate-900 tracking-tight">Buku Tamu</h2>
+             <p class="text-xs text-slate-500 font-medium mt-0.5">Verifikasi identitas Anda untuk akses portal.</p>
+          </div>
+          <div class="h-10 w-10 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center font-black">📝</div>
+       </div>
+
        <div class="space-y-4">
           <div>
-             <label class="text-xs font-extrabold text-slate-700 mb-1 block uppercase tracking-wider">Nama Lengkap</label>
-             <input type="text" id="att-name" placeholder="Masukkan nama lengkap" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-semibold outline-none focus:border-blue-600 transition-colors">
+             <label class="text-[11px] font-extrabold text-slate-700 block mb-1.5 uppercase tracking-wider">Nama Lengkap</label>
+             <input type="text" id="att-name" placeholder="Nama sesuai identitas" class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-600 focus:bg-white transition-all">
           </div>
+
           <div>
-             <label class="text-xs font-extrabold text-slate-700 mb-1 block uppercase tracking-wider">Umur (Tahun)</label>
-             <input type="number" id="att-age" placeholder="Contoh: 24" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-semibold outline-none focus:border-blue-600 transition-colors">
+             <label class="text-[11px] font-extrabold text-slate-700 block mb-1.5 uppercase tracking-wider">Umur (Tahun)</label>
+             <input type="number" id="att-age" placeholder="Contoh: 25" class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-600 focus:bg-white transition-all">
           </div>
+
           <div>
-             <label class="text-xs font-extrabold text-slate-700 mb-1 block uppercase tracking-wider">Alamat Email Aktif</label>
+             <label class="text-[11px] font-extrabold text-slate-700 block mb-1.5 uppercase tracking-wider">Alamat Email Aktif</label>
              <div class="flex gap-2">
-                <input type="email" id="att-email" placeholder="nama@email.com" class="flex-1 p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-semibold outline-none focus:border-blue-600 transition-colors">
-                <button onclick="requestEmailOTP()" id="btn-send-code" class="bg-slate-900 hover:bg-slate-800 text-white font-bold px-4 rounded-2xl text-xs transition-colors shrink-0 shadow-md">Kirim Kode</button>
+                <input type="email" id="att-email" placeholder="nama@email.com" class="flex-1 px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-600 focus:bg-white transition-all">
+                <button onclick="requestEmailOTP()" id="btn-send-code" class="bg-slate-900 hover:bg-slate-800 text-white font-bold px-4 rounded-xl text-xs transition-all shrink-0 shadow-md active:scale-95">Kirim Kode</button>
              </div>
           </div>
-          <div id="verify-box" class="hidden space-y-3 pt-2 border-t border-slate-100">
-             <div>
-                <div class="flex justify-between items-center mb-1">
-                   <label class="text-xs font-extrabold text-blue-600 uppercase tracking-wider">Kode Verifikasi Email</label>
-                   <span id="otp-timer-display" class="text-xs font-black text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md">03:00</span>
-                </div>
-                <input type="text" id="att-code" placeholder="4 digit kode" class="w-full p-4 bg-blue-50/50 border border-blue-200 rounded-2xl text-sm font-bold text-center tracking-widest outline-none focus:border-blue-600">
+
+          <div id="verify-box" class="hidden space-y-2 pt-2 border-t border-slate-100 animate-slide-up">
+             <div class="flex justify-between items-center">
+                <label class="text-[11px] font-extrabold text-blue-600 uppercase tracking-wider">Kode Verifikasi Email</label>
+                <span id="otp-timer-display" class="text-[10px] font-black text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md">03:00</span>
              </div>
+             <input type="text" id="att-code" maxlength="4" placeholder="Masukkan 4 digit kode" class="w-full p-3.5 bg-blue-50/50 border border-blue-200 rounded-xl text-sm font-extrabold text-center tracking-[0.4em] outline-none focus:border-blue-600 focus:bg-white transition-all">
           </div>
-          <button onclick="submitAttendance()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold py-4 rounded-2xl text-sm shadow-xl shadow-blue-600/30 transition-all mt-4">Kirim Absensi & Masuk Situs</button>
+
+          <button onclick="submitAttendance()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold py-4 rounded-xl text-sm shadow-xl shadow-blue-600/30 transition-all hover:scale-[1.02] active:scale-95 mt-4 flex items-center justify-center gap-2">
+             <span>Kirim Absensi & Masuk Situs</span>
+             <i class="fas fa-check text-xs"></i>
+          </button>
        </div>
     </div>
+
   </div>
 
   <!-- ================================================================= -->
   <!-- 1. PUBLIC VIEW                                                    -->
   <!-- ================================================================= -->
-  <div id="view-public" class="hidden w-full h-full flex flex-col relative overflow-y-auto">
+  <div id="view-public" class="hidden w-full h-full flex flex-col relative overflow-y-auto bg-slate-50">
     <header class="glass-header sticky top-0 z-50 w-full px-6 py-4 flex justify-between items-center border-b border-slate-200">
       <div class="flex items-center gap-3 cursor-pointer" onclick="switchPublicSection('home')">
          <div class="h-10 w-10 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center text-white font-black text-xl shadow-md">E</div>
@@ -192,7 +226,7 @@
         <button onclick="switchPublicSection('contact'); this.parentElement.classList.add('hidden')" class="text-left font-bold text-slate-700 p-2">📞 Contact</button>
     </div>
 
-    <main class="flex-1 w-full">
+    <main class="flex-1 w-full animate-fade-in">
        <section id="pub-sec-home" class="pub-sec w-full max-w-6xl mx-auto p-6 md:p-12">
           <div class="bg-white rounded-3xl p-8 md:p-16 shadow-sm border border-slate-200 flex flex-col md:flex-row items-center gap-10">
              <div class="relative shrink-0">
@@ -211,26 +245,9 @@
           </div>
        </section>
 
-       <section id="pub-sec-profil" class="pub-sec hidden w-full max-w-5xl mx-auto p-6 md:p-12">
-          <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-200"><h2 class="text-2xl font-black mb-4">Profil & Kualifikasi</h2><p class="text-slate-500 text-sm">Informasi biodata lengkap ditampilkan di sini.</p></div>
-       </section>
-
-       <section id="pub-sec-portfolio" class="pub-sec hidden w-full max-w-6xl mx-auto p-6 md:p-12 space-y-6">
-          <div class="flex justify-between items-end mb-6"><h2 class="text-2xl font-black text-slate-900">Project & Portfolio</h2></div>
-          <div id="public-portfolio-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-       </section>
-
-       <section id="pub-sec-career" class="pub-sec hidden w-full max-w-4xl mx-auto p-6 md:p-12">
-          <div class="bg-white p-10 rounded-3xl shadow-sm border border-slate-200 text-center space-y-6">
-             <h2 class="text-2xl font-black">Pusat Dokumen Karir</h2>
-             <p class="text-slate-500 text-sm">Semua dokumen di bawah ini telah diverifikasi secara digital.</p>
-             <div class="flex justify-center gap-4">
-                <button class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold shadow-md text-sm">Download CV Resmi</button>
-                <button class="bg-slate-100 text-slate-700 px-6 py-3 rounded-xl font-bold text-sm">Sertifikasi Keahlian</button>
-             </div>
-          </div>
-       </section>
-
+       <section id="pub-sec-profil" class="pub-sec hidden w-full max-w-5xl mx-auto p-6 md:p-12"><div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-200"><h2 class="text-2xl font-black mb-4">Profil & Kualifikasi</h2><p class="text-slate-500 text-sm">Informasi biodata lengkap ditampilkan di sini.</p></div></section>
+       <section id="pub-sec-portfolio" class="pub-sec hidden w-full max-w-6xl mx-auto p-6 md:p-12 space-y-6"><div class="flex justify-between items-end mb-6"><h2 class="text-2xl font-black text-slate-900">Project & Portfolio</h2></div><div id="public-portfolio-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div></section>
+       <section id="pub-sec-career" class="pub-sec hidden w-full max-w-4xl mx-auto p-6 md:p-12"><div class="bg-white p-10 rounded-3xl shadow-sm border border-slate-200 text-center space-y-6"><h2 class="text-2xl font-black">Pusat Dokumen Karir</h2><p class="text-slate-500 text-sm">Semua dokumen di bawah ini telah diverifikasi secara digital.</p><div class="flex justify-center gap-4"><button class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold shadow-md text-sm">Download CV Resmi</button><button class="bg-slate-100 text-slate-700 px-6 py-3 rounded-xl font-bold text-sm">Sertifikasi Keahlian</button></div></div></section>
        <section id="pub-sec-gallery" class="pub-sec hidden w-full max-w-6xl mx-auto p-6 md:p-12"><div class="bg-white p-8 rounded-3xl shadow-sm border"><h2 class="text-2xl font-black mb-4">Galeri Dokumentasi</h2></div></section>
        <section id="pub-sec-blog" class="pub-sec hidden w-full max-w-6xl mx-auto p-6 md:p-12"><div class="bg-white p-8 rounded-3xl shadow-sm border"><h2 class="text-2xl font-black mb-4">Blog & Insight</h2></div></section>
        <section id="pub-sec-contact" class="pub-sec hidden w-full max-w-3xl mx-auto p-6 md:p-12"><div class="bg-white p-8 rounded-3xl shadow-sm border"><h2 class="text-2xl font-black mb-4">Hubungi Saya</h2></div></section>
@@ -252,7 +269,7 @@
   <!-- 2. LOGIN VIEW                                                     -->
   <!-- ================================================================= -->
   <div id="view-login" class="hidden absolute inset-0 bg-slate-50 z-50 flex flex-col justify-center items-center p-4">
-    <div class="bg-white p-8 md:p-10 rounded-3xl shadow-xl border border-slate-100 w-full max-w-md relative">
+    <div class="bg-white p-8 md:p-10 rounded-3xl shadow-xl border border-slate-100 w-full max-w-md relative animate-fade-in">
        <button onclick="history.back()" class="absolute top-6 left-6 text-slate-400 hover:text-slate-800 font-bold text-xl">&times;</button>
        <div class="text-center mb-8 mt-2">
           <div class="inline-flex items-center justify-center w-12 h-12 bg-blue-50 text-blue-600 rounded-xl mb-4 text-xl">🔒</div>
@@ -268,7 +285,7 @@
   </div>
 
   <!-- ================================================================= -->
-  <!-- 3. VISITOR DASHBOARD (FULL RESTORED 12 TABS)                     -->
+  <!-- 3. VISITOR DASHBOARD (ANIMATED NAV & TABS)                        -->
   <!-- ================================================================= -->
   <div id="view-visitor" class="hidden h-full flex flex-col md:flex-row bg-slate-50 w-full">
      <div class="md:hidden bg-white border-b p-4 flex justify-between items-center">
@@ -278,22 +295,22 @@
      <aside id="vis-sidebar" class="hidden md:flex flex-col w-full md:w-64 bg-white border-r h-full absolute md:relative z-40 shadow-xl md:shadow-none overflow-y-auto">
         <div class="p-6 border-b hidden md:block"><h2 class="font-extrabold text-blue-600 text-lg">Visitor Portal</h2></div>
         <div class="flex-1 overflow-y-auto p-4 space-y-1 text-sm font-semibold text-slate-600" id="visitor-menu-list">
-           <button onclick="switchVisitorTab('dash')" class="v-btn w-full text-left p-3 rounded-xl bg-blue-50 text-blue-600 font-bold" data-vtab="dash">📊 Dashboard Utama</button>
-           <button onclick="switchVisitorTab('profile')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50" data-vtab="profile">👤 Profil Saya</button>
-           <button onclick="switchVisitorTab('edit')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50" data-vtab="edit">✏️ Edit Profil</button>
-           <button onclick="switchVisitorTab('activity')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50" data-vtab="activity">📜 Riwayat Aktivitas</button>
-           <button onclick="switchVisitorTab('download')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50" data-vtab="download">📥 Riwayat Download</button>
-           <button onclick="switchVisitorTab('bookmark')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50" data-vtab="bookmark">⭐ Bookmark</button>
-           <button onclick="switchVisitorTab('favorite')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50" data-vtab="favorite">❤️ Favorite</button>
-           <button onclick="switchVisitorTab('message')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50" data-vtab="message">✉️ Pesan Inbox</button>
-           <button onclick="switchVisitorTab('notif')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50" data-vtab="notif">🔔 Notifikasi</button>
-           <button onclick="switchVisitorTab('settings')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50" data-vtab="settings">⚙️ Pengaturan Akun</button>
-           <button onclick="switchVisitorTab('security')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50" data-vtab="security">🔒 Keamanan Akun</button>
-           <button onclick="switchVisitorTab('password')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50" data-vtab="password">🔑 Ganti Password</button>
+           <button onclick="switchVisitorTab('dash')" class="v-btn w-full text-left p-3 rounded-xl bg-blue-50 text-blue-600 font-bold transition-all" data-vtab="dash">📊 Dashboard Utama</button>
+           <button onclick="switchVisitorTab('profile')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50 transition-all" data-vtab="profile">👤 Profil Saya</button>
+           <button onclick="switchVisitorTab('edit')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50 transition-all" data-vtab="edit">✏️ Edit Profil</button>
+           <button onclick="switchVisitorTab('activity')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50 transition-all" data-vtab="activity">📜 Riwayat Aktivitas</button>
+           <button onclick="switchVisitorTab('download')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50 transition-all" data-vtab="download">📥 Riwayat Download</button>
+           <button onclick="switchVisitorTab('bookmark')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50 transition-all" data-vtab="bookmark">⭐ Bookmark</button>
+           <button onclick="switchVisitorTab('favorite')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50 transition-all" data-vtab="favorite">❤️ Favorite</button>
+           <button onclick="switchVisitorTab('message')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50 transition-all" data-vtab="message">✉️ Pesan Inbox</button>
+           <button onclick="switchVisitorTab('notif')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50 transition-all" data-vtab="notif">🔔 Notifikasi</button>
+           <button onclick="switchVisitorTab('settings')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50 transition-all" data-vtab="settings">⚙️ Pengaturan Akun</button>
+           <button onclick="switchVisitorTab('security')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50 transition-all" data-vtab="security">🔒 Keamanan Akun</button>
+           <button onclick="switchVisitorTab('password')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50 transition-all" data-vtab="password">🔑 Ganti Password</button>
         </div>
         <div class="p-4 border-t"><button onclick="handleLogout()" class="w-full bg-rose-50 text-rose-600 p-3 rounded-xl font-bold text-sm">Logout Sesi</button></div>
      </aside>
-     <main class="flex-1 p-6 md:p-10 overflow-y-auto"><div id="visitor-content-container" class="space-y-6"></div></main>
+     <main class="flex-1 p-6 md:p-10 overflow-y-auto"><div id="visitor-content-container" class="space-y-6 animate-fade-in"></div></main>
   </div>
 
   <!-- ================================================================= -->
@@ -324,12 +341,12 @@
            </button>
         </header>
         <div class="flex-1 p-4 md:p-6 overflow-y-auto w-full">
-           <div id="welcome-panel" class="bg-white p-12 rounded-3xl border border-slate-200 text-center max-w-lg mx-auto mt-10 shadow-sm">
+           <div id="welcome-panel" class="bg-white p-12 rounded-3xl border border-slate-200 text-center max-w-lg mx-auto mt-10 shadow-sm animate-fade-in">
               <div class="text-5xl mb-4">🗄️</div>
               <h2 class="text-2xl font-extrabold text-slate-800 mb-2">Workspace Admin</h2>
               <p class="text-sm text-slate-500">Pilih modul di samping untuk mengelola database secara instan.</p>
            </div>
-           <div id="table-panel" class="hidden bg-white rounded-[1.5rem] border border-slate-200 shadow-sm w-full flex flex-col h-full max-h-[80vh]">
+           <div id="table-panel" class="hidden bg-white rounded-[1.5rem] border border-slate-200 shadow-sm w-full flex flex-col h-full max-h-[80vh] animate-fade-in">
               <div class="overflow-x-auto overflow-y-auto flex-1 w-full rounded-[1.5rem]">
                  <table class="w-full text-left min-w-max border-collapse">
                     <thead id="admin-thead" class="bg-slate-50 border-b border-slate-200 sticky top-0 z-10"></thead>
@@ -341,9 +358,9 @@
      </main>
   </div>
 
-  <!-- FORM INPUT MODAL ADMIN (RESTORED DYNAMIC FIELDS) -->
+  <!-- FORM INPUT MODAL ADMIN -->
   <div id="modal-form" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-    <div class="bg-white rounded-[2rem] w-full max-w-3xl max-h-[95vh] flex flex-col shadow-2xl border border-slate-200">
+    <div class="bg-white rounded-[2rem] w-full max-w-3xl max-h-[95vh] flex flex-col shadow-2xl border border-slate-200 animate-slide-up">
        <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-white rounded-t-[2rem] shrink-0">
           <h3 id="modal-title" class="font-extrabold text-lg text-slate-900">Form Input Data</h3>
           <button onclick="closeModalForm()" class="text-2xl font-bold text-slate-400">&times;</button>
@@ -357,9 +374,7 @@
   </div>
 
   <script>
-    /* ========================================================================
-       PASTE URL DEPLOY APPS SCRIPT ANDA DI SINI
-       ======================================================================== */
+    /* PASTE URL DEPLOY APPS SCRIPT DI SINI */
     const API_URL = "https://script.google.com/macros/s/AKfycbwN-xB6BfOK3CtqzVXXoKVHe8CSGb6__FgeprTjPZfOF-8fRdme9cidDr5QhS0epj79/exec";
     
     let memoryCache = {};
@@ -373,6 +388,7 @@
     let receivedOTP = null;
     let otpTimerInterval = null;
     let otpExpiresAt = null;
+    let splashAutoTimer = null;
 
     const menuGroups = [
       { title: "Manajemen Konten", items: ['Portfolio', 'Blog', 'Career_Timeline', 'Documents', 'Gallery'] },
@@ -381,12 +397,11 @@
       { title: "Sistem Keamanan", items: ['Users', 'System_Logs'] }
     ];
 
-    // SYSTEM LOADERS
     function toggleLoader(show) {
        document.getElementById('loader').style.display = show ? 'flex' : 'none';
     }
 
-    // ELEGAN TOAST NOTIFICATION SYSTEM
+    /* SISTEM NOTIFIKASI ELEGAN (FLOATING GLASS TOAST) */
     function showToast(message, type = 'success') {
         const toast = document.getElementById('toast');
         const toastText = document.getElementById('toastText');
@@ -394,25 +409,43 @@
 
         toastText.textContent = message;
 
-        // Reset Styles
-        toast.className = 'toast fixed top-5 left-1/2 -translate-x-1/2 z-[999999] px-5 py-3.5 rounded-2xl font-bold text-xs sm:text-sm shadow-2xl flex items-center gap-3 backdrop-blur-md border';
-
         if (type === 'error') {
-            toast.classList.add('bg-rose-600', 'text-white', 'border-rose-400');
-            toastIcon.className = 'fas fa-circle-xmark text-lg';
+            toast.className = 'toast-glass show fixed top-6 left-1/2 -translate-x-1/2 z-[999999] px-6 py-4 rounded-2xl font-bold text-xs sm:text-sm shadow-2xl flex items-center gap-3 backdrop-blur-xl border bg-rose-600/90 text-white border-rose-400/50 shadow-rose-900/30';
+            toastIcon.className = 'fas fa-circle-xmark text-xl text-white';
         } else if (type === 'warning') {
-            toast.classList.add('bg-amber-500', 'text-white', 'border-amber-300');
-            toastIcon.className = 'fas fa-triangle-exclamation text-lg';
+            toast.className = 'toast-glass show fixed top-6 left-1/2 -translate-x-1/2 z-[999999] px-6 py-4 rounded-2xl font-bold text-xs sm:text-sm shadow-2xl flex items-center gap-3 backdrop-blur-xl border bg-amber-500/90 text-white border-amber-300/50 shadow-amber-900/30';
+            toastIcon.className = 'fas fa-triangle-exclamation text-xl text-white';
         } else if (type === 'info') {
-            toast.classList.add('bg-blue-600', 'text-white', 'border-blue-400');
-            toastIcon.className = 'fas fa-circle-info text-lg';
-        } else { // success
-            toast.classList.add('bg-slate-900', 'text-white', 'border-slate-700');
-            toastIcon.className = 'fas fa-circle-check text-emerald-400 text-lg';
+            toast.className = 'toast-glass show fixed top-6 left-1/2 -translate-x-1/2 z-[999999] px-6 py-4 rounded-2xl font-bold text-xs sm:text-sm shadow-2xl flex items-center gap-3 backdrop-blur-xl border bg-blue-600/90 text-white border-blue-400/50 shadow-blue-900/30';
+            toastIcon.className = 'fas fa-circle-info text-xl text-white';
+        } else {
+            toast.className = 'toast-glass show fixed top-6 left-1/2 -translate-x-1/2 z-[999999] px-6 py-4 rounded-2xl font-bold text-xs sm:text-sm shadow-2xl flex items-center gap-3 backdrop-blur-xl border bg-slate-900/95 text-white border-slate-700/80 shadow-slate-950/50';
+            toastIcon.className = 'fas fa-circle-check text-xl text-emerald-400';
         }
 
-        toast.classList.add('show');
-        setTimeout(() => { toast.classList.remove('show'); }, 3500);
+        setTimeout(() => { toast.classList.remove('show'); }, 3800);
+    }
+
+    /* CONTROLLER SPLASH SCREEN INTRO */
+    function startSplashTimer() {
+       let sec = 3;
+       const timerDisplay = document.getElementById('splash-timer');
+       splashAutoTimer = setInterval(() => {
+          sec--;
+          if (timerDisplay) timerDisplay.textContent = sec;
+          if (sec <= 0) {
+             clearInterval(splashAutoTimer);
+             skipSplash();
+          }
+       }, 1000);
+    }
+
+    function skipSplash() {
+       if (splashAutoTimer) clearInterval(splashAutoTimer);
+       const splash = document.getElementById('splash-screen');
+       const form = document.getElementById('guest-form-card');
+       if (splash) splash.classList.add('hidden');
+       if (form) form.classList.remove('hidden');
     }
 
     function getCleanBrowserInfo() {
@@ -430,21 +463,20 @@
       return `${browser} (${os})`;
     }
 
-    /* ============================================
-       OTP VERIFICATION & COUNTDOWN TIMER (3 MINS)
-       ============================================ */
+    /* REQUEST OTP PERBAIKAN BUG EMAIL */
     async function requestEmailOTP() {
-       const email = document.getElementById('att-email').value;
-       const name = document.getElementById('att-name').value;
-       const age = document.getElementById('att-age').value;
+       const emailInput = document.getElementById('att-email');
+       const email = emailInput ? emailInput.value.trim() : '';
+       const name = document.getElementById('att-name').value.trim();
+       const age = document.getElementById('att-age').value.trim();
 
        if(!name || !age || !email) {
-          showToast("Harap isi Nama Lengkap, Umur, dan Email terlebih dahulu!", "warning");
+          showToast("Lengkapi Nama, Umur, dan Alamat Email terlebih dahulu!", "warning");
           return;
        }
 
        const btn = document.getElementById('btn-send-code');
-       btn.innerText = "...";
+       btn.innerText = "Sending...";
        btn.disabled = true;
 
        toggleLoader(true);
@@ -461,8 +493,6 @@
           if(res && res.status === 'success') {
              receivedOTP = res.code;
              document.getElementById('verify-box').classList.remove('hidden');
-             
-             // Mulai Timer 3 Menit (180 Detik)
              startOTPCountdown(180);
              showToast(res.message, "success");
           } else {
@@ -472,54 +502,57 @@
           toggleLoader(false);
           btn.innerText = "Kirim Kode";
           btn.disabled = false;
-          showToast("Terjadi kesalahan koneksi saat mengirim kode.", "error");
+          showToast("Koneksi bermasalah saat mengirim kode verifikasi.", "error");
        }
     }
 
     function startOTPCountdown(seconds) {
        if(otpTimerInterval) clearInterval(otpTimerInterval);
-       
        otpExpiresAt = Date.now() + (seconds * 1000);
        const display = document.getElementById('otp-timer-display');
        const btn = document.getElementById('btn-send-code');
 
        otpTimerInterval = setInterval(() => {
           const remainingSeconds = Math.round((otpExpiresAt - Date.now()) / 1000);
-          
           if (remainingSeconds <= 0) {
              clearInterval(otpTimerInterval);
-             receivedOTP = null; // Hanguskan OTP
-             display.textContent = "KADALUWARSA";
-             display.className = "text-xs font-black text-rose-600 bg-rose-100 px-2 py-0.5 rounded-md";
-             showToast("Kode verifikasi telah kedaluwarsa! Silakan minta kode baru.", "warning");
+             receivedOTP = null;
+             display.textContent = "EXPIRED";
+             display.className = "text-[10px] font-black text-rose-600 bg-rose-100 px-2 py-0.5 rounded-md";
+             showToast("Kode verifikasi telah kadaluwarsa! Minta kode baru.", "warning");
              btn.disabled = false;
              return;
           }
-
           const mins = Math.floor(remainingSeconds / 60);
           const secs = remainingSeconds % 60;
           display.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
        }, 1000);
     }
 
+    /* SUBMIT ABSENSI DENGAN NOTIFIKASI ERROR/BERHASIL ELEGAN */
     async function submitAttendance() {
-       const name = document.getElementById('att-name').value;
-       const age = document.getElementById('att-age').value;
-       const email = document.getElementById('att-email').value;
-       const code = document.getElementById('att-code').value;
+       const name = document.getElementById('att-name').value.trim();
+       const age = document.getElementById('att-age').value.trim();
+       const email = document.getElementById('att-email').value.trim();
+       const code = document.getElementById('att-code').value.trim();
 
-       if(!name || !age || !email || !code) {
-          showToast("Semua kolom absensi dan kode verifikasi wajib diisi!", "warning");
+       if(!name || !age || !email) {
+          showToast("Harap isi seluruh kolom biodata terlebih dahulu!", "warning");
+          return;
+       }
+
+       if(!code) {
+          showToast("Silakan isi 4 digit kode verifikasi email Anda!", "warning");
           return;
        }
 
        if(!receivedOTP || Date.now() > otpExpiresAt) {
-          showToast("Kode verifikasi telah kedaluwarsa! Klik 'Kirim Kode' lagi.", "error");
+          showToast("Kode verifikasi telah kedaluwarsa! Silakan klik 'Kirim Kode' ulang.", "error");
           return;
        }
 
        if(code !== receivedOTP) {
-          showToast("Kode verifikasi salah! Periksa kembali email Anda.", "error");
+          showToast("Kode verifikasi salah! Periksa kembali email masuk Anda.", "error");
           return;
        }
 
@@ -540,12 +573,10 @@
 
        document.getElementById('attendance-loader').classList.add('hidden');
        navigateTo('public', 'home', true);
-       showToast('Absensi berhasil direkam! Selamat datang.', 'success');
+       showToast("Absensi berhasil dicatat! Selamat datang.", "success");
     }
 
-    /* ============================================
-       RESTORED VISITOR DASHBOARD (12 TABS FULL)
-       ============================================ */
+    /* VISITOR DASHBOARD TABS */
     function switchVisitorTab(tab) {
        document.querySelectorAll('.v-btn').forEach(b => {
           b.classList.remove('bg-blue-50', 'text-blue-600', 'font-bold');
@@ -561,68 +592,19 @@
        const email = currentUser ? currentUser.Email : '-';
 
        if(tab === 'dash') {
-          container.innerHTML = `
-             <div class="bg-white p-8 rounded-3xl border shadow-sm space-y-4">
-                <h2 class="font-extrabold text-xl text-slate-900">Dashboard Utama Visitor</h2>
-                <p class="text-sm text-slate-500">Selamat datang kembali, ${name}!</p>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
-                   <div class="bg-blue-50 p-5 rounded-2xl border border-blue-100"><div class="text-2xl font-black text-blue-600">1</div><div class="text-xs text-slate-500 font-bold mt-1">Dokumen Diunduh</div></div>
-                   <div class="bg-emerald-50 p-5 rounded-2xl border border-emerald-100"><div class="text-2xl font-black text-emerald-600">0</div><div class="text-xs text-slate-500 font-bold mt-1">Bookmark Disimpan</div></div>
-                   <div class="bg-indigo-50 p-5 rounded-2xl border border-indigo-100"><div class="text-2xl font-black text-indigo-600">Terverifikasi</div><div class="text-xs text-slate-500 font-bold mt-1">Status Keamanan Akun</div></div>
-                </div>
-             </div>`;
+          container.innerHTML = `<div class="bg-white p-8 rounded-3xl border shadow-sm space-y-4 animate-fade-in"><h2 class="font-extrabold text-xl text-slate-900">Dashboard Utama Visitor</h2><p class="text-sm text-slate-500">Selamat datang kembali, ${name}!</p><div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4"><div class="bg-blue-50 p-5 rounded-2xl border border-blue-100"><div class="text-2xl font-black text-blue-600">1</div><div class="text-xs text-slate-500 font-bold mt-1">Dokumen Diunduh</div></div><div class="bg-emerald-50 p-5 rounded-2xl border border-emerald-100"><div class="text-2xl font-black text-emerald-600">0</div><div class="text-xs text-slate-500 font-bold mt-1">Bookmark Disimpan</div></div><div class="bg-indigo-50 p-5 rounded-2xl border border-indigo-100"><div class="text-2xl font-black text-indigo-600">Terverifikasi</div><div class="text-xs text-slate-500 font-bold mt-1">Status Keamanan Akun</div></div></div></div>`;
        } else if(tab === 'profile') {
-          container.innerHTML = `
-             <div class="bg-white p-8 rounded-3xl border shadow-sm space-y-4">
-                <h2 class="font-extrabold text-xl text-slate-900">Profil Saya</h2>
-                <div class="space-y-3 text-sm">
-                   <div><label class="font-bold text-xs text-slate-400 block mb-1">NAMA LENGKAP</label><div class="p-3 bg-slate-50 rounded-xl font-bold text-slate-800">${name}</div></div>
-                   <div><label class="font-bold text-xs text-slate-400 block mb-1">EMAIL</label><div class="p-3 bg-slate-50 rounded-xl font-bold text-slate-800">${email}</div></div>
-                   <div><label class="font-bold text-xs text-slate-400 block mb-1">ROLE AKSES</label><div class="p-3 bg-slate-50 rounded-xl font-bold text-slate-800">Visitor / Tamu Terdaftar</div></div>
-                </div>
-             </div>`;
+          container.innerHTML = `<div class="bg-white p-8 rounded-3xl border shadow-sm space-y-4 animate-fade-in"><h2 class="font-extrabold text-xl text-slate-900">Profil Saya</h2><div class="space-y-3 text-sm"><div><label class="font-bold text-xs text-slate-400 block mb-1">NAMA LENGKAP</label><div class="p-3 bg-slate-50 rounded-xl font-bold text-slate-800">${name}</div></div><div><label class="font-bold text-xs text-slate-400 block mb-1">EMAIL</label><div class="p-3 bg-slate-50 rounded-xl font-bold text-slate-800">${email}</div></div></div></div>`;
        } else if(tab === 'edit') {
-          container.innerHTML = `
-             <div class="bg-white p-8 rounded-3xl border shadow-sm space-y-4">
-                <h2 class="font-extrabold text-xl text-slate-900">Edit Profil Akun</h2>
-                <div class="space-y-4 text-sm">
-                   <div><label class="font-bold text-xs text-slate-600 block mb-1">NAMA LENGKAP</label><input type="text" value="${name}" class="w-full p-3 bg-slate-50 border rounded-xl outline-none focus:border-blue-600"></div>
-                   <div><label class="font-bold text-xs text-slate-600 block mb-1">EMAIL</label><input type="email" value="${email}" class="w-full p-3 bg-slate-100 border rounded-xl outline-none text-slate-400" disabled></div>
-                   <button onclick="showToast('Perubahan profil berhasil disimpan!', 'success')" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold text-xs shadow-md">Simpan Perubahan</button>
-                </div>
-             </div>`;
+          container.innerHTML = `<div class="bg-white p-8 rounded-3xl border shadow-sm space-y-4 animate-fade-in"><h2 class="font-extrabold text-xl text-slate-900">Edit Profil Akun</h2><div class="space-y-4 text-sm"><div><label class="font-bold text-xs text-slate-600 block mb-1">NAMA LENGKAP</label><input type="text" value="${name}" class="w-full p-3 bg-slate-50 border rounded-xl outline-none focus:border-blue-600"></div><div><label class="font-bold text-xs text-slate-600 block mb-1">EMAIL</label><input type="email" value="${email}" class="w-full p-3 bg-slate-100 border rounded-xl outline-none text-slate-400" disabled></div><button onclick="showToast('Perubahan profil berhasil disimpan!', 'success')" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold text-xs shadow-md">Simpan Perubahan</button></div></div>`;
        } else if(tab === 'activity') {
-          container.innerHTML = `
-             <div class="bg-white p-8 rounded-3xl border shadow-sm space-y-4">
-                <h2 class="font-extrabold text-xl text-slate-900">Riwayat Aktivitas</h2>
-                <div class="space-y-3 text-sm">
-                   <div class="p-4 bg-slate-50 rounded-2xl border flex justify-between items-center"><div><div class="font-bold text-slate-800">Melakukan Absensi Kunjungan</div><div class="text-xs text-slate-400">Sistem Portal Web</div></div><span class="text-xs font-bold text-blue-600">Baru Saja</span></div>
-                </div>
-             </div>`;
-       } else if(tab === 'download') {
-          container.innerHTML = `<div class="bg-white p-8 rounded-3xl border shadow-sm"><h2 class="font-extrabold text-xl mb-2">Riwayat Download</h2><p class="text-sm text-slate-500">Belum ada dokumen resmi yang diunduh.</p></div>`;
-       } else if(tab === 'bookmark' || tab === 'favorite') {
-          container.innerHTML = `<div class="bg-white p-8 rounded-3xl border shadow-sm"><h2 class="font-extrabold text-xl mb-2">Bookmark & Favorite</h2><p class="text-sm text-slate-500">Belum ada item portfolio yang disimpan.</p></div>`;
-       } else if(tab === 'message' || tab === 'notif') {
-          container.innerHTML = `<div class="bg-white p-8 rounded-3xl border shadow-sm"><h2 class="font-extrabold text-xl mb-2">Pesan & Notifikasi</h2><p class="text-sm text-slate-500">Sistem keamanan akun Anda dalam keadaan aktif.</p></div>`;
-       } else if(tab === 'settings' || tab === 'security') {
-          container.innerHTML = `<div class="bg-white p-8 rounded-3xl border shadow-sm"><h2 class="font-extrabold text-xl mb-2">Pengaturan Keamanan</h2><p class="text-sm text-slate-500">Otentikasi email 2-Langkah aktif.</p></div>`;
-       } else { // password
-          container.innerHTML = `
-             <div class="bg-white p-8 rounded-3xl border shadow-sm space-y-4">
-                <h2 class="font-extrabold text-xl text-slate-900">Ganti Password</h2>
-                <div class="space-y-3 text-sm">
-                   <div><label class="font-bold text-xs text-slate-600 block mb-1">PASSWORD LAMA</label><input type="password" placeholder="••••••••" class="w-full p-3 bg-slate-50 border rounded-xl outline-none"></div>
-                   <div><label class="font-bold text-xs text-slate-600 block mb-1">PASSWORD BARU</label><input type="password" placeholder="••••••••" class="w-full p-3 bg-slate-50 border rounded-xl outline-none"></div>
-                   <button onclick="showToast('Password berhasil diperbarui!', 'success')" class="bg-slate-900 text-white px-6 py-3 rounded-xl font-bold text-xs shadow-md">Perbarui Password</button>
-                </div>
-             </div>`;
+          container.innerHTML = `<div class="bg-white p-8 rounded-3xl border shadow-sm space-y-4 animate-fade-in"><h2 class="font-extrabold text-xl text-slate-900">Riwayat Aktivitas</h2><div class="space-y-3 text-sm"><div class="p-4 bg-slate-50 rounded-2xl border flex justify-between items-center"><div><div class="font-bold text-slate-800">Melakukan Absensi Kunjungan</div><div class="text-xs text-slate-400">Sistem Portal Web</div></div><span class="text-xs font-bold text-blue-600">Baru Saja</span></div></div></div>`;
+       } else {
+          container.innerHTML = `<div class="bg-white p-8 rounded-3xl border shadow-sm animate-fade-in"><h2 class="font-extrabold text-xl mb-2">Modul Portal</h2><p class="text-sm text-slate-500">Aktivitas dan keamanan akun Anda aktif.</p></div>`;
        }
     }
 
-    /* ============================================
-       RESTORED ADMIN FORM INPUT (MODAL FULL)
-       ============================================ */
+    /* RESTORED ADMIN FORM INPUT MODAL */
     function openModalInput() {
        const headers = memoryCache[activeModule].headers.slice(1);
        document.getElementById('modal-title').innerText = `Input: ${activeModule.replace('_', ' ')}`;
@@ -641,11 +623,11 @@
                    <label class="block font-bold text-slate-800 text-sm">📸 Upload ${label}</label>
                    <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
                       <div class="relative overflow-hidden inline-block shrink-0">
-                         <button class="bg-blue-50 text-blue-600 font-bold py-2.5 px-4 rounded-xl text-xs border border-blue-100 hover:bg-blue-100 transition-colors">Pilih dari Kamera/Galeri</button>
+                         <button class="bg-blue-50 text-blue-600 font-bold py-2.5 px-4 rounded-xl text-xs border border-blue-100 hover:bg-blue-100 transition-colors">Pilih Kamera / File</button>
                          <input type="file" accept="image/*" capture="environment" onchange="convertImg(event, '${col}')" class="absolute inset-0 opacity-0 cursor-pointer">
                       </div>
-                      <span class="text-xs text-slate-400">Atau Link:</span>
-                      <input type="text" id="inp-${col}" placeholder="Paste URL gambar..." class="flex-1 w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none text-xs focus:border-blue-500">
+                      <span class="text-xs text-slate-400">Atau Paste URL:</span>
+                      <input type="text" id="inp-${col}" placeholder="Link URL Gambar..." class="flex-1 w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none text-xs focus:border-blue-500">
                    </div>
                    <img id="prev-${col}" class="hidden h-24 w-24 object-cover rounded-xl border border-slate-200 mt-2 shadow-sm">
                 </div>
@@ -653,7 +635,7 @@
           } else if (col === 'Status') {
              body.innerHTML += `<div class="${span}"><label class="block font-bold text-slate-800 text-sm mb-2">${label}</label><select id="inp-${col}" class="w-full p-3.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 shadow-sm"><option value="publish">🟢 Publish (Publik)</option><option value="draft">🟡 Draft (Sembunyikan)</option></select></div>`;
           } else if (isLong) {
-             body.innerHTML += `<div class="${span}"><label class="block font-bold text-slate-800 text-sm mb-2">${label}</label><textarea id="inp-${col}" rows="4" placeholder="Ketik isi data..." class="w-full p-3.5 bg-white border border-slate-200 rounded-xl outline-none shadow-sm"></textarea></div>`;
+             body.innerHTML += `<div class="${span}"><label class="block font-bold text-slate-800 text-sm mb-2">${label}</label><textarea id="inp-${col}" rows="4" placeholder="Ketik deskripsi lengkap..." class="w-full p-3.5 bg-white border border-slate-200 rounded-xl outline-none shadow-sm"></textarea></div>`;
           } else {
              body.innerHTML += `<div class="${span}"><label class="block font-bold text-slate-800 text-sm mb-2">${label}</label><input type="text" id="inp-${col}" placeholder="Masukkan ${label}..." class="w-full p-3.5 bg-white border border-slate-200 rounded-xl outline-none shadow-sm"></div>`;
           }
@@ -691,7 +673,7 @@
           await loadAdminModule(activeModule, true); 
           showToast('Data berhasil disimpan!', 'success'); 
        } else { 
-          showToast("Gagal menyimpan data!", "error"); 
+          showToast("Gagal menyimpan data ke sistem!", "error"); 
        }
     }
 
@@ -713,9 +695,7 @@
     }
 
     async function getCachedData(sheetName, force = false) {
-      if (!force && memoryCache[sheetName]) {
-        return memoryCache[sheetName];
-      }
+      if (!force && memoryCache[sheetName]) return memoryCache[sheetName];
       toggleLoader(true);
       const res = await apiCall('GET', { action: 'getData', sheet: sheetName });
       toggleLoader(false);
@@ -728,15 +708,11 @@
     }
 
     function prefetchEssentialSheets() {
-       ['Portfolio', 'Privacy_Policy', 'Terms_Conditions'].forEach(sheet => {
-          getCachedData(sheet);
-       });
+       ['Portfolio', 'Privacy_Policy', 'Terms_Conditions'].forEach(sheet => { getCachedData(sheet); });
     }
 
     function navigateTo(view, section = null, push = true) {
-       if (push && !isNavigatingHistory) {
-          history.pushState({ view, section }, '', '');
-       }
+       if (push && !isNavigatingHistory) history.pushState({ view, section }, '', '');
        renderView(view, section);
     }
 
@@ -767,11 +743,8 @@
 
     window.addEventListener('popstate', (e) => {
        isNavigatingHistory = true;
-       if (e.state && e.state.view) {
-          renderView(e.state.view, e.state.section);
-       } else {
-          renderView('attendance', null);
-       }
+       if (e.state && e.state.view) renderView(e.state.view, e.state.section);
+       else renderView('attendance', null);
        isNavigatingHistory = false;
     });
 
@@ -874,7 +847,7 @@
               list.innerHTML = '';
               res.data.slice(0, 6).forEach(item => {
                  list.innerHTML += `
-                   <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm hover:shadow-lg transition-shadow group flex flex-col h-full cursor-pointer">
+                   <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm hover:shadow-lg transition-shadow group flex flex-col h-full cursor-pointer animate-fade-in">
                       <div class="overflow-hidden rounded-2xl mb-4">
                          <img src="${item.CoverImage_URL || item.ImageURL || 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=400&q=80'}" class="h-48 w-full object-cover group-hover:scale-105 transition-transform duration-500">
                       </div>
@@ -1015,6 +988,7 @@
        history.replaceState({ view: 'attendance', section: null }, '', '');
        renderView('attendance', null);
        prefetchEssentialSheets();
+       startSplashTimer();
     };
   </script>
 </body>
