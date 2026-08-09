@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Enterprise Professional System - Lightning Fast</title>
+  <title>Enterprise Professional System - Fast Attendance</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -82,8 +82,12 @@
 </head>
 <body class="w-full h-screen overflow-hidden flex flex-col">
 
-  <!-- LOADER DISENGAHKAN HIDDEN -->
-  <div id="loader" class="hidden"></div>
+  <!-- ANIMASI LOADING PEMROSESAN ABSENSI (SAAT MEMPROSES INPUT DATA) -->
+  <div id="attendance-loader" class="hidden fixed inset-0 bg-white/95 z-[99999] flex flex-col items-center justify-center backdrop-blur-md">
+    <div class="animate-spin rounded-full h-14 w-14 border-t-4 border-b-4 border-blue-600 mb-4 shadow-xl"></div>
+    <p class="font-black text-slate-800 text-base tracking-wide">Merekam Data Kunjungan Secara Diam...</p>
+    <p class="text-xs text-blue-600 font-bold mt-1 uppercase tracking-widest animate-pulse">Menyinkronkan ke Spreadsheet</p>
+  </div>
 
   <!-- TOAST NOTIFICATION -->
   <div class="toast" id="toast">
@@ -106,9 +110,46 @@
   </div>
 
   <!-- ================================================================= -->
+  <!-- 0. HALAMAN 1: FORM ABSENSI KUNJUNGAN & VERIFIKASI EMAIL           -->
+  <!-- ================================================================= -->
+  <div id="view-attendance" class="absolute inset-0 bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 z-[90] flex flex-col justify-center items-center p-4 overflow-y-auto">
+    <div class="bg-white p-8 md:p-10 rounded-[2.5rem] shadow-2xl border border-white/20 w-full max-w-lg relative my-auto">
+       <div class="text-center mb-8">
+          <div class="inline-flex items-center justify-center w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl mb-3 text-2xl shadow-inner font-black">📋</div>
+          <h2 class="text-2xl font-black text-slate-900">Buku Tamu & Absensi</h2>
+          <p class="text-xs text-slate-500 mt-1 font-medium">Isi data kunjungan Anda untuk membuka akses portal.</p>
+       </div>
+       <div class="space-y-4">
+          <div>
+             <label class="text-xs font-extrabold text-slate-700 mb-1 block uppercase tracking-wider">Nama Lengkap</label>
+             <input type="text" id="att-name" placeholder="Masukkan nama lengkap" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-semibold outline-none focus:border-blue-600 transition-colors">
+          </div>
+          <div>
+             <label class="text-xs font-extrabold text-slate-700 mb-1 block uppercase tracking-wider">Umur (Tahun)</label>
+             <input type="number" id="att-age" placeholder="Contoh: 24" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-semibold outline-none focus:border-blue-600 transition-colors">
+          </div>
+          <div>
+             <label class="text-xs font-extrabold text-slate-700 mb-1 block uppercase tracking-wider">Alamat Email Aktif</label>
+             <div class="flex gap-2">
+                <input type="email" id="att-email" placeholder="nama@email.com" class="flex-1 p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-semibold outline-none focus:border-blue-600 transition-colors">
+                <button onclick="requestEmailOTP()" id="btn-send-code" class="bg-slate-900 hover:bg-slate-800 text-white font-bold px-4 rounded-2xl text-xs transition-colors shrink-0 shadow-md">Kirim Kode</button>
+             </div>
+          </div>
+          <div id="verify-box" class="hidden space-y-4 pt-2 border-t border-slate-100">
+             <div>
+                <label class="text-xs font-extrabold text-blue-600 mb-1 block uppercase tracking-wider">Kode Verifikasi Email</label>
+                <input type="text" id="att-code" placeholder="4 digit kode dari email" class="w-full p-4 bg-blue-50/50 border border-blue-200 rounded-2xl text-sm font-bold text-center tracking-widest outline-none">
+             </div>
+          </div>
+          <button onclick="submitAttendance()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold py-4 rounded-2xl text-sm shadow-xl shadow-blue-600/30 transition-all mt-4">Kirim Absensi & Masuk Situs</button>
+       </div>
+    </div>
+  </div>
+
+  <!-- ================================================================= -->
   <!-- 1. PUBLIC VIEW                                                    -->
   <!-- ================================================================= -->
-  <div id="view-public" class="w-full h-full flex flex-col relative overflow-y-auto">
+  <div id="view-public" class="hidden w-full h-full flex flex-col relative overflow-y-auto">
     <header class="glass-header sticky top-0 z-50 w-full px-6 py-4 flex justify-between items-center border-b border-slate-200">
       <div class="flex items-center gap-3 cursor-pointer" onclick="switchPublicSection('home')">
          <div class="h-10 w-10 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center text-white font-black text-xl shadow-md">E</div>
@@ -151,7 +192,7 @@
              <div class="text-center md:text-left">
                 <span class="inline-block bg-blue-50 text-blue-700 text-xs font-extrabold px-3 py-1 rounded-full uppercase tracking-wider mb-3">Senior Software Architect</span>
                 <h1 class="text-3xl md:text-5xl font-black text-slate-900 leading-tight">Membangun Ekosistem Digital Skala Enterprise.</h1>
-                <p class="text-slate-500 mt-4 max-w-2xl text-sm md:text-base leading-relaxed">Selamat datang di portal profesional saya. Platform ini terintegrasi penuh secara real-time untuk menyajikan karya, artikel, dan riwayat karir terbaik.</p>
+                <p class="text-slate-500 mt-4 max-w-2xl text-sm md:text-base leading-relaxed">Selamat datang di portal profesional saya. Absensi Anda telah diverifikasi dan terekam secara aman.</p>
                 <div class="mt-8 flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
                    <button onclick="switchPublicSection('portfolio')" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-blue-600/30 transition-all text-sm">Lihat Portfolio</button>
                    <button onclick="switchPublicSection('career')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-6 py-3 rounded-xl font-bold transition-all text-sm">Unduh Resume (PDF)</button>
@@ -179,7 +220,7 @@
              </div>
           </div>
        </section>
-       
+
        <section id="pub-sec-gallery" class="pub-sec hidden w-full max-w-6xl mx-auto p-6 md:p-12"><div class="bg-white p-8 rounded-3xl shadow-sm border"><h2 class="text-2xl font-black mb-4">Galeri Dokumentasi</h2></div></section>
        <section id="pub-sec-blog" class="pub-sec hidden w-full max-w-6xl mx-auto p-6 md:p-12"><div class="bg-white p-8 rounded-3xl shadow-sm border"><h2 class="text-2xl font-black mb-4">Blog & Insight</h2></div></section>
        <section id="pub-sec-contact" class="pub-sec hidden w-full max-w-3xl mx-auto p-6 md:p-12"><div class="bg-white p-8 rounded-3xl shadow-sm border"><h2 class="text-2xl font-black mb-4">Hubungi Saya</h2></div></section>
@@ -213,28 +254,11 @@
           <div><label class="text-xs font-bold text-slate-700 mb-1 block">Kata Sandi</label><input type="password" id="login-password" placeholder="••••••••" class="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none"></div>
           <button onclick="handleLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl text-sm shadow-md mt-2">Masuk ke Sistem</button>
        </div>
-       <p class="text-center text-xs text-slate-500 mt-6">Visitor baru? <button onclick="navigateToView('register')" class="text-blue-600 font-bold hover:underline">Buat Akun Tamu</button></p>
-    </div>
-  </div>
-
-  <div id="view-register" class="hidden absolute inset-0 bg-slate-50 z-50 flex flex-col justify-center items-center p-4">
-    <div class="bg-white p-8 md:p-10 rounded-3xl shadow-xl border border-slate-100 w-full max-w-md relative">
-       <button onclick="history.back()" class="absolute top-6 left-6 text-slate-400 hover:text-slate-800 font-bold text-xl">←</button>
-       <div class="text-center mb-8 mt-2">
-          <h2 class="text-2xl font-black text-slate-900">Registrasi Tamu</h2>
-          <p class="text-sm text-slate-500 mt-1">Dapatkan akses untuk unduh dokumen.</p>
-       </div>
-       <div class="space-y-4">
-          <input type="text" id="reg-name" placeholder="Nama Lengkap" class="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none">
-          <input type="email" id="reg-email" placeholder="Alamat Email" class="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none">
-          <input type="password" id="reg-password" placeholder="Buat Kata Sandi" class="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none">
-          <button onclick="handleRegister()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 rounded-xl text-sm shadow-md mt-2">Daftar Sekarang</button>
-       </div>
     </div>
   </div>
 
   <!-- ================================================================= -->
-  <!-- 3. VISITOR DASHBOARD                                              -->
+  <!-- 3. VISITOR & ADMIN DASHBOARD                                      -->
   <!-- ================================================================= -->
   <div id="view-visitor" class="hidden h-full flex flex-col md:flex-row bg-slate-50 w-full">
      <div class="md:hidden bg-white border-b p-4 flex justify-between items-center">
@@ -245,44 +269,34 @@
         <div class="p-6 border-b hidden md:block"><h2 class="font-extrabold text-blue-600 text-lg">Visitor Portal</h2></div>
         <div class="flex-1 overflow-y-auto p-4 space-y-1 text-sm font-semibold text-slate-600" id="visitor-menu-list">
            <button onclick="switchVisitorTab('dash')" class="v-btn w-full text-left p-3 rounded-xl bg-blue-50 text-blue-600 font-bold" data-vtab="dash">📊 Dashboard Utama</button>
-           <button onclick="switchVisitorTab('profile')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50" data-vtab="profile">👤 Profil Saya</button>
-           <button onclick="switchVisitorTab('edit')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50" data-vtab="edit">✏️ Edit Profil</button>
-           <button onclick="switchVisitorTab('activity')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50" data-vtab="activity">📜 Riwayat Aktivitas</button>
-           <button onclick="switchVisitorTab('download')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50" data-vtab="download">📥 Riwayat Download</button>
-           <button onclick="switchVisitorTab('bookmark')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50" data-vtab="bookmark">⭐ Bookmark</button>
-           <button onclick="switchVisitorTab('favorite')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50" data-vtab="favorite">❤️ Favorite</button>
-           <button onclick="switchVisitorTab('message')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50" data-vtab="message">✉️ Pesan Inbox</button>
-           <button onclick="switchVisitorTab('notif')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50" data-vtab="notif">🔔 Notifikasi</button>
-           <button onclick="switchVisitorTab('settings')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50" data-vtab="settings">⚙️ Pengaturan Akun</button>
-           <button onclick="switchVisitorTab('security')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50" data-vtab="security">🔒 Keamanan Akun</button>
-           <button onclick="switchVisitorTab('password')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50" data-vtab="password">🔑 Ganti Password</button>
         </div>
         <div class="p-4 border-t"><button onclick="handleLogout()" class="w-full bg-rose-50 text-rose-600 p-3 rounded-xl font-bold text-sm">Logout Sesi</button></div>
      </aside>
-     <main class="flex-1 p-6 md:p-10 overflow-y-auto">
-        <div id="visitor-content-container" class="space-y-6"></div>
-     </main>
+     <main class="flex-1 p-6 md:p-10 overflow-y-auto"><div id="visitor-content-container" class="space-y-6"></div></main>
   </div>
 
-  <!-- ================================================================= -->
-  <!-- 4. SUPER ADMIN DASHBOARD                                          -->
-  <!-- ================================================================= -->
+  <!-- SUPER ADMIN DASHBOARD (PENGATURAN SCROLL MOBILE DISESUAIKAN PADDING NYA) -->
   <div id="view-admin" class="hidden h-full flex flex-col md:flex-row bg-[#f0f2f5] w-full">
      <div class="md:hidden bg-[#1e293b] text-white p-4 flex justify-between items-center shadow-md z-40 shrink-0">
         <h2 class="font-black tracking-widest text-sm">ADMIN PANEL</h2>
         <button onclick="document.getElementById('adm-sidebar').classList.toggle('hidden')" class="bg-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold">Menu</button>
      </div>
-     <!-- SIDEBAR ADMIN FIXED & SCROLLABLE ON MOBILE -->
-     <aside id="adm-sidebar" class="hidden md:flex flex-col w-72 md:w-64 lg:w-72 bg-[#1e293b] text-slate-300 fixed md:relative inset-y-0 left-0 z-50 shadow-2xl md:shadow-none h-full overflow-y-auto">
+     
+     <!-- SIDEBAR DENGAN PADDING BAWAH PB-36 AGAR MENU PALING BAWAH TERCAPAI -->
+     <aside id="adm-sidebar" class="hidden md:flex flex-col w-72 md:w-64 lg:w-72 bg-[#1e293b] text-slate-300 fixed md:relative inset-y-0 left-0 z-50 shadow-2xl md:shadow-none h-full">
         <div class="p-6 border-b border-slate-700/50 flex justify-between items-center bg-[#0f172a] shrink-0">
            <h2 class="font-black text-white tracking-widest">ENTERPRISE<span class="text-blue-500">.</span></h2>
            <button onclick="document.getElementById('adm-sidebar').classList.add('hidden')" class="md:hidden text-2xl font-bold text-slate-400">&times;</button>
         </div>
-        <div class="flex-1 overflow-y-auto p-4" id="sidebar-menus"></div>
-        <div class="p-4 bg-[#0f172a] border-t border-slate-700/50 shrink-0">
+        
+        <!-- CONTAINER MENU DENGAN SCROLL & PB-36 -->
+        <div class="flex-1 overflow-y-auto p-4 pb-36" id="sidebar-menus"></div>
+        
+        <div class="p-4 bg-[#0f172a] border-t border-slate-700/50 shrink-0 sticky bottom-0">
            <button onclick="handleLogout()" class="w-full bg-rose-500/10 text-rose-400 p-2.5 rounded-xl font-bold text-xs">Keluar Sistem</button>
         </div>
      </aside>
+
      <main class="flex-1 flex flex-col h-full w-full bg-[#f0f2f5] min-w-0 overflow-hidden">
         <header class="bg-white px-6 py-4 border-b border-slate-200 flex justify-between items-center shadow-sm shrink-0">
            <h1 id="admin-module-title" class="font-extrabold text-lg text-slate-800 tracking-tight">Pusat Database</h1>
@@ -294,7 +308,7 @@
            <div id="welcome-panel" class="bg-white p-12 rounded-3xl border border-slate-200 text-center max-w-lg mx-auto mt-10 shadow-sm">
               <div class="text-5xl mb-4">🗄️</div>
               <h2 class="text-2xl font-extrabold text-slate-800 mb-2">Workspace Admin</h2>
-              <p class="text-sm text-slate-500">Pilih salah satu modul database di menu samping untuk mengelola konten secara instan.</p>
+              <p class="text-sm text-slate-500">Pilih modul di samping untuk mengelola database secara instan.</p>
            </div>
            <div id="table-panel" class="hidden bg-white rounded-[1.5rem] border border-slate-200 shadow-sm w-full flex flex-col h-full max-h-[80vh]">
               <div class="overflow-x-auto overflow-y-auto flex-1 w-full rounded-[1.5rem]">
@@ -308,9 +322,6 @@
      </main>
   </div>
 
-  <!-- ================================================================= -->
-  <!-- 5. MODERN INPUT MODAL                                             -->
-  <!-- ================================================================= -->
   <div id="modal-form" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
     <div class="bg-white rounded-[2rem] w-full max-w-3xl max-h-[95vh] flex flex-col shadow-2xl border border-slate-200">
        <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-white rounded-t-[2rem] shrink-0">
@@ -337,17 +348,116 @@
     let currentType = null;
     let countdownTimer = null;
     let isNavigatingHistory = false;
+    let receivedOTP = null;
 
     const menuGroups = [
       { title: "Manajemen Konten", items: ['Portfolio', 'Blog', 'Career_Timeline', 'Documents', 'Gallery'] },
       { title: "Pengaturan Hukum & Web", items: ['Privacy_Policy', 'Terms_Conditions', 'System_Settings', 'Dynamic_Menu', 'Banners_Popups'] },
-      { title: "Interaksi Visitor", items: ['Inbox_Newsletter', 'Notifications', 'User_Bookmarks', 'Analytics_Heatmap'] },
+      { title: "Interaksi Visitor", items: ['Visitor_Attendance', 'Inbox_Newsletter', 'Notifications', 'User_Bookmarks', 'Analytics_Heatmap'] },
       { title: "Sistem Keamanan", items: ['Users', 'System_Logs'] }
     ];
 
     /* ============================================
-       API & CACHE LOKAL KILAT
+       DETEKSI BROWSER OTOMATIS & AKURAT
        ============================================ */
+    function getCleanBrowserInfo() {
+      const ua = navigator.userAgent;
+      let browser = "Browser Lainnya";
+      if (ua.includes("Instagram")) browser = "Instagram InApp Browser";
+      else if (ua.includes("FBAN") || ua.includes("FBAV")) browser = "Facebook InApp Browser";
+      else if (ua.includes("TikTok")) browser = "TikTok InApp Browser";
+      else if (ua.includes("Edg/")) browser = "Microsoft Edge";
+      else if (ua.includes("Chrome") && !ua.includes("Edg/")) browser = "Google Chrome";
+      else if (ua.includes("Safari") && !ua.includes("Chrome")) browser = "Apple Safari";
+      else if (ua.includes("Firefox")) browser = "Mozilla Firefox";
+
+      const os = ua.includes("Android") ? "Android" : ua.includes("iPhone") || ua.includes("iPad") ? "iOS" : ua.includes("Windows") ? "Windows PC" : ua.includes("Mac") ? "Mac OS" : "Mobile Device";
+      return `${browser} (${os})`;
+    }
+
+    /* ============================================
+       ABSENSI & PROSES KIRIM OTP EMAIL
+       ============================================ */
+    async function requestEmailOTP() {
+       const email = document.getElementById('att-email').value;
+       const name = document.getElementById('att-name').value;
+       const age = document.getElementById('att-age').value;
+
+       if(!name || !age || !email) {
+          alert("Harap isi Nama Lengkap, Umur, dan Email terlebih dahulu!");
+          return;
+       }
+
+       showToast('Mengirim kode verifikasi ke email...');
+       
+       try {
+          const res = await apiCall('POST', {
+             action: 'sendOTP',
+             data: { email: email, fullName: name }
+          });
+
+          if(res.status === 'success') {
+             receivedOTP = res.code;
+             document.getElementById('verify-box').classList.remove('hidden');
+             showToast('Kode verifikasi telah terkirim ke email Anda!');
+          } else {
+             alert(res.message || "Gagal mengirim email verifikasi.");
+          }
+       } catch(e) {
+          alert("Terjadi kesalahan jaringan saat mengirim email.");
+       }
+    }
+
+    async function submitAttendance() {
+       const name = document.getElementById('att-name').value;
+       const age = document.getElementById('att-age').value;
+       const email = document.getElementById('att-email').value;
+       const code = document.getElementById('att-code').value;
+
+       if(!name || !age || !email || !code) {
+          alert("Semua kolom absensi dan kode verifikasi wajib diisi!");
+          return;
+       }
+
+       if(receivedOTP && code !== receivedOTP) {
+          alert("Kode verifikasi salah! Periksa kembali kode di email Anda.");
+          return;
+       }
+
+       // 1. Tampilkan Animasi Pemrosesan Loading
+       document.getElementById('attendance-loader').classList.remove('hidden');
+
+       // 2. Rekam Data Diam Otomatis (Browser, IP, Waktu)
+       const browserInfo = getCleanBrowserInfo();
+       let locationIP = "Jaringan Lokal/Indonesia";
+       try {
+          const ipRes = await fetch('https://api.ipify.org?format=json');
+          const ipData = await ipRes.json();
+          locationIP = ipData.ip;
+       } catch(e) {}
+
+       // 3. Kirim Data Ke Spreadsheet
+       try {
+          await apiCall('POST', {
+             action: 'attendance',
+             data: {
+                fullName: name,
+                age: age,
+                email: email,
+                browserInfo: browserInfo,
+                locationIP: locationIP
+             }
+          });
+       } catch(e) {}
+
+       // 4. Tutup Loader & Masuk Ke Halaman Home Publik
+       setTimeout(() => {
+          document.getElementById('attendance-loader').classList.add('hidden');
+          navigateTo('public', 'home', true);
+          showToast('Absensi berhasil direkam!');
+       }, 800);
+    }
+
     async function apiCall(method, payload) {
       try {
         let url = API_URL;
@@ -388,7 +498,7 @@
     }
 
     function renderView(view, section) {
-       ['public', 'login', 'register', 'admin', 'visitor'].forEach(v => {
+       ['attendance', 'public', 'login', 'visitor', 'admin'].forEach(v => {
           document.getElementById(`view-${v}`).classList.add('hidden');
        });
        document.getElementById(`view-${view}`).classList.remove('hidden');
@@ -407,31 +517,24 @@
              }
           });
           fetchPublicPortfolio();
-       } else if(view === 'visitor') {
-          switchVisitorTab('dash');
        }
     }
 
     window.addEventListener('popstate', (e) => {
        isNavigatingHistory = true;
        if (e.state && e.state.view) {
-          navigateTo(e.state.view, e.state.section, false);
+          renderView(e.state.view, e.state.section);
        } else {
-          navigateTo('public', 'home', false);
+          renderView('attendance', null);
        }
        isNavigatingHistory = false;
     });
 
-    function switchView(view) {
-       navigateTo(view, view === 'public' ? 'home' : null, true);
-    }
-
-    function switchPublicSection(sec) {
-       navigateTo('public', sec, true);
-    }
+    function switchView(view) { navigateTo(view, null, true); }
+    function switchPublicSection(sec) { navigateTo('public', sec, true); }
 
     /* ============================================
-       DINAMIK LEGAL MODAL (PRIVACY & TERMS)
+       MODAL LEGAL (PRIVACY & TERMS)
        ============================================ */
     async function openModal(type) {
         currentType = type;
@@ -442,11 +545,9 @@
 
         title.textContent = type === 'privacy' ? 'Kebijakan Privasi' : 'Syarat dan Ketentuan';
         var sheetName = type === 'privacy' ? 'Privacy_Policy' : 'Terms_Conditions';
-
         var res = await getCachedData(sheetName);
 
         var html = '<div class="modal-date"><i class="fas fa-calendar-day"></i> Terakhir diperbarui: ' + getFormattedDate() + '</div>';
-        
         if (res.data && res.data.length > 0) {
             res.data.forEach((item, index) => {
                 html += '<div class="content-section">';
@@ -457,7 +558,6 @@
         } else {
             html += '<p class="text-sm text-slate-500">Belum ada data hukum yang dimasukkan melalui Dashboard Admin.</p>';
         }
-
         html += buildCheckboxSection(type);
         body.innerHTML = html;
         document.getElementById('modalContainer').scrollTop = 0;
@@ -498,34 +598,21 @@
     }
 
     function handleCheckbox(type, checked) {
-        if (!checked) {
-            clearCountdown();
-            var bar = document.getElementById('countdown-' + type);
-            if (bar) bar.classList.remove('show');
-            return;
-        }
+        if (!checked) { clearCountdown(); var bar = document.getElementById('countdown-' + type); if (bar) bar.classList.remove('show'); return; }
         var bar = document.getElementById('countdown-' + type);
         if (bar) bar.classList.add('show');
-
         var detik = 5;
         var fill = document.getElementById('countdown-fill-' + type);
         var text = document.getElementById('countdown-text-' + type);
         if (fill) fill.style.width = '0%';
         if (text) text.textContent = 'Modal akan tertutup dalam ' + detik + ' detik...';
-
         clearCountdown();
         countdownTimer = setInterval(function() {
             detik--;
             var progress = ((5 - detik) / 5) * 100;
             if (fill) fill.style.width = progress + '%';
-            if (text) {
-                text.textContent = detik > 0 ? 'Modal akan tertutup dalam ' + detik + ' detik...' : 'Menutup...';
-            }
-            if (detik <= 0) {
-                clearCountdown();
-                closeModal();
-                showToast('Persetujuan berhasil dicatat');
-            }
+            if (text) { text.textContent = detik > 0 ? 'Modal akan tertutup dalam ' + detik + ' detik...' : 'Menutup...'; }
+            if (detik <= 0) { clearCountdown(); closeModal(); showToast('Persetujuan berhasil dicatat'); }
         }, 1000);
     }
 
@@ -541,59 +628,6 @@
         document.getElementById('toastText').textContent = message;
         toast.classList.add('show');
         setTimeout(function() { toast.classList.remove('show'); }, 2000);
-    }
-
-    /* ============================================
-       VISITOR DASHBOARD 12 MENU LOGIC
-       ============================================ */
-    function switchVisitorTab(tab) {
-       document.querySelectorAll('.v-btn').forEach(b => {
-          b.classList.remove('bg-blue-50', 'text-blue-600', 'font-bold');
-          if(b.getAttribute('data-vtab') === tab) {
-             b.classList.add('bg-blue-50', 'text-blue-600', 'font-bold');
-          }
-       });
-
-       const container = document.getElementById('visitor-content-container');
-       if(!container) return;
-
-       if(tab === 'dash') {
-          container.innerHTML = `
-             <div class="bg-white p-8 rounded-3xl border shadow-sm space-y-4">
-                <h2 class="font-extrabold text-xl text-slate-900">Dashboard Utama Visitor</h2>
-                <p class="text-sm text-slate-500">Selamat datang kembali, ${currentUser ? currentUser.FullName : 'Tamu'}!</p>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
-                   <div class="bg-blue-50 p-5 rounded-2xl border border-blue-100"><div class="text-2xl font-black text-blue-600">0</div><div class="text-xs text-slate-500 font-bold mt-1">Dokumen Diunduh</div></div>
-                   <div class="bg-emerald-50 p-5 rounded-2xl border border-emerald-100"><div class="text-2xl font-black text-emerald-600">0</div><div class="text-xs text-slate-500 font-bold mt-1">Bookmark Disimpan</div></div>
-                   <div class="bg-indigo-50 p-5 rounded-2xl border border-indigo-100"><div class="text-2xl font-black text-indigo-600">Active</div><div class="text-xs text-slate-500 font-bold mt-1">Status Keamanan Akun</div></div>
-                </div>
-             </div>`;
-       } else if(tab === 'profile' || tab === 'edit') {
-          container.innerHTML = `
-             <div class="bg-white p-8 rounded-3xl border shadow-sm space-y-4">
-                <h2 class="font-extrabold text-xl text-slate-900">Profil & Edit Akun</h2>
-                <div class="space-y-3 text-sm">
-                   <div><label class="font-bold text-xs text-slate-500 block mb-1">NAMA LENGKAP</label><input type="text" value="${currentUser ? currentUser.FullName : ''}" class="w-full p-3 bg-slate-50 border rounded-xl"></div>
-                   <div><label class="font-bold text-xs text-slate-500 block mb-1">EMAIL</label><input type="email" value="${currentUser ? currentUser.Email : ''}" class="w-full p-3 bg-slate-50 border rounded-xl" disabled></div>
-                   <button onclick="showToast('Perubahan profil berhasil disimpan!')" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold text-xs">Simpan Perubahan</button>
-                </div>
-             </div>`;
-       } else if(tab === 'activity' || tab === 'download') {
-          container.innerHTML = `<div class="bg-white p-8 rounded-3xl border shadow-sm"><h2 class="font-extrabold text-xl mb-2">Riwayat Aktivitas & Unduhan</h2><p class="text-sm text-slate-500">Belum ada riwayat aktivitas tercatat.</p></div>`;
-       } else if(tab === 'bookmark' || tab === 'favorite') {
-          container.innerHTML = `<div class="bg-white p-8 rounded-3xl border shadow-sm"><h2 class="font-extrabold text-xl mb-2">Bookmark & Favorite</h2><p class="text-sm text-slate-500">Belum ada item yang disimpan ke bookmark.</p></div>`;
-       } else if(tab === 'message' || tab === 'notif') {
-          container.innerHTML = `<div class="bg-white p-8 rounded-3xl border shadow-sm"><h2 class="font-extrabold text-xl mb-2">Pesan & Notifikasi</h2><p class="text-sm text-slate-500">Tidak ada pesan baru saat ini.</p></div>`;
-       } else {
-          container.innerHTML = `
-             <div class="bg-white p-8 rounded-3xl border shadow-sm space-y-4">
-                <h2 class="font-extrabold text-xl text-slate-900">Pengaturan & Keamanan Akun</h2>
-                <div class="space-y-3 text-sm">
-                   <div><label class="font-bold text-xs text-slate-500 block mb-1">PASSWORD BARU</label><input type="password" placeholder="••••••••" class="w-full p-3 bg-slate-50 border rounded-xl"></div>
-                   <button onclick="showToast('Password berhasil diperbarui!')" class="bg-slate-900 text-white px-6 py-3 rounded-xl font-bold text-xs">Perbarui Password</button>
-                </div>
-             </div>`;
-       }
     }
 
     async function fetchPublicPortfolio() {
@@ -621,29 +655,15 @@
       const email = document.getElementById('login-email').value;
       const pass = document.getElementById('login-password').value;
       if (!email || !pass) return alert("Email dan Password wajib diisi!");
-      
       const res = await apiCall('POST', { action: 'login', data: { email: email, password: pass } });
-
       if (res.status === 'success') {
         currentUser = res.user;
-        if (currentUser.Role === 'SuperAdmin') {
-           initAdminSidebar(); switchView('admin');
-        } else {
-           switchView('visitor');
-        }
+        if (currentUser.Role === 'SuperAdmin') { initAdminSidebar(); switchView('admin'); } 
+        else { switchView('visitor'); }
       } else { alert(res.message); }
     }
 
-    async function handleRegister() {
-      const name = document.getElementById('reg-name').value;
-      const email = document.getElementById('reg-email').value;
-      const pass = document.getElementById('reg-password').value;
-      if (!name || !email || !pass) return alert("Semua kolom wajib diisi!");
-      const res = await apiCall('POST', { action: 'register', data: { fullName: name, email: email, password: pass } });
-      if (res.status === 'success') { alert(res.message); switchView('login'); } else { alert(res.message); }
-    }
-
-    function handleLogout() { currentUser = null; memoryCache = {}; switchView('public'); }
+    function handleLogout() { currentUser = null; memoryCache = {}; switchView('attendance'); }
 
     function initAdminSidebar() {
        const sbHTML = document.getElementById('sidebar-menus');
@@ -674,8 +694,7 @@
       });
 
       if(window.innerWidth < 768) document.getElementById('adm-sidebar').classList.add('hidden');
-
-      const isReadOnly = ['System_Logs', 'Analytics_Heatmap'].includes(sheetName);
+      const isReadOnly = ['System_Logs', 'Analytics_Heatmap', 'Visitor_Attendance'].includes(sheetName);
       document.getElementById('btn-add').style.display = isReadOnly ? 'none' : 'flex';
 
       if (!force && memoryCache[sheetName]) {
@@ -684,9 +703,7 @@
       }
 
       const res = await getCachedData(sheetName, force);
-      if (res.status === 'success') {
-         renderAdminTable(res.headers, res.data);
-      }
+      if (res.status === 'success') { renderAdminTable(res.headers, res.data); }
     }
 
     function renderAdminTable(headers, rows) {
@@ -721,7 +738,7 @@
           const idVal = row[headers[0]];
           const isTrash = row.Status === 'trash';
           
-          if(['System_Logs', 'Analytics_Heatmap'].includes(activeModule)) {
+          if(['System_Logs', 'Analytics_Heatmap', 'Visitor_Attendance'].includes(activeModule)) {
              trHTML += `<td class="px-5 py-4 text-right text-xs font-bold text-slate-300 border-b border-slate-100 sticky right-0 bg-white">Read Only</td>`;
           } else {
              trHTML += `<td class="px-5 py-4 text-right border-b border-slate-100 sticky right-0 bg-white shadow-[-5px_0_10px_-5px_rgba(0,0,0,0.05)]">
@@ -737,49 +754,11 @@
        const headers = memoryCache[activeModule].headers.slice(1);
        document.getElementById('modal-title').innerText = `Input: ${activeModule.replace('_', ' ')}`;
        const body = document.getElementById('modal-body'); body.innerHTML = '';
-
        headers.forEach(col => {
           let label = col.replace('_', ' ');
-          let isImage = col.toLowerCase().includes('url') || col.toLowerCase().includes('image') || col.toLowerCase().includes('cover') || col.toLowerCase().includes('pic');
-          let isLong = col.includes('Description') || col.includes('Content') || col.includes('JSON');
-          let span = (isImage || isLong) ? 'md:col-span-2' : 'col-span-1';
-
-          if(isImage) {
-             body.innerHTML += `
-                <div class="${span} bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
-                   <label class="block font-bold text-slate-800 text-sm">📸 Upload ${label}</label>
-                   <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-                      <div class="relative overflow-hidden inline-block">
-                         <button class="bg-blue-50 text-blue-600 font-bold py-2 px-4 rounded-xl text-sm border border-blue-100 hover:bg-blue-100 transition-colors">Pilih dari Galeri / Kamera</button>
-                         <input type="file" accept="image/*" capture="environment" onchange="convertImg(event, '${col}')" class="absolute inset-0 opacity-0 cursor-pointer">
-                      </div>
-                      <span class="text-xs text-slate-400">Atau</span>
-                      <input type="text" id="inp-${col}" placeholder="Paste link URL gambar..." class="flex-1 w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm focus:border-blue-500">
-                   </div>
-                   <img id="prev-${col}" class="hidden h-24 w-24 object-cover rounded-xl border border-slate-200 mt-2 shadow-sm">
-                </div>
-             `;
-          } else if (col === 'Status') {
-             body.innerHTML += `<div class="${span}"><label class="block font-bold text-slate-800 text-sm mb-2">${label}</label><select id="inp-${col}" class="w-full p-3.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 shadow-sm"><option value="publish">🟢 Publish (Publik)</option><option value="draft">🟡 Draft (Sembunyikan)</option></select></div>`;
-          } else if (isLong) {
-             body.innerHTML += `<div class="${span}"><label class="block font-bold text-slate-800 text-sm mb-2">${label}</label><textarea id="inp-${col}" rows="4" placeholder="Ketik isi data..." class="w-full p-3.5 bg-white border border-slate-200 rounded-xl outline-none shadow-sm"></textarea></div>`;
-          } else {
-             body.innerHTML += `<div class="${span}"><label class="block font-bold text-slate-800 text-sm mb-2">${label}</label><input type="text" id="inp-${col}" placeholder="Masukkan ${label}..." class="w-full p-3.5 bg-white border border-slate-200 rounded-xl outline-none shadow-sm"></div>`;
-          }
+          body.innerHTML += `<div class="col-span-1"><label class="block font-bold text-slate-800 text-sm mb-2">${label}</label><input type="text" id="inp-${col}" placeholder="Masukkan ${label}..." class="w-full p-3.5 bg-white border border-slate-200 rounded-xl outline-none shadow-sm"></div>`;
        });
        document.getElementById('modal-form').classList.remove('hidden');
-    }
-
-    function convertImg(e, col) {
-       const file = e.target.files[0];
-       if (!file) return;
-       const reader = new FileReader();
-       reader.onload = function(evt) {
-          document.getElementById(`inp-${col}`).value = evt.target.result;
-          const img = document.getElementById(`prev-${col}`);
-          img.src = evt.target.result; img.classList.remove('hidden');
-       };
-       reader.readAsDataURL(file);
     }
 
     function closeModalForm() { document.getElementById('modal-form').classList.add('hidden'); }
@@ -788,31 +767,16 @@
        const headers = memoryCache[activeModule].headers.slice(1);
        let values = [];
        for(let col of headers) { values.push(document.getElementById(`inp-${col}`).value || ''); }
-
        closeModalForm();
-       showToast('Menyimpan data secara instan...');
+       showToast('Menyimpan data...');
        const res = await apiCall('POST', { action: 'insert', sheet: activeModule, user: currentUser.UserID, data: { values: values } });
-       if(res.status === 'success') { 
-          delete memoryCache[activeModule]; 
-          await loadAdminModule(activeModule, true); 
-          showToast('Data berhasil disimpan!');
-       } else { alert("Gagal menyimpan data!"); }
-    }
-
-    async function actionData(id, actionType) {
-       if(!confirm(actionType === 'softDelete' ? "Hapus data ini ke tempat sampah?" : "Pulihkan data ini?")) return;
-       showToast('Memproses...');
-       const res = await apiCall('POST', { action: actionType, sheet: activeModule, user: currentUser.UserID, data: { id: id } });
-       if(res.status === 'success') { 
-          delete memoryCache[activeModule]; 
-          await loadAdminModule(activeModule, true); 
-          showToast('Berhasil diperbarui!');
-       } else { alert("Gagal memproses data."); }
+       if(res.status === 'success') { delete memoryCache[activeModule]; await loadAdminModule(activeModule, true); showToast('Berhasil!'); } 
+       else { alert("Gagal menyimpan data!"); }
     }
 
     window.onload = () => {
-       history.replaceState({ view: 'public', section: 'home' }, '', '');
-       switchView('public');
+       history.replaceState({ view: 'attendance', section: null }, '', '');
+       renderView('attendance', null);
     };
   </script>
 </body>
