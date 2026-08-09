@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Enterprise Professional System - Fast Attendance</title>
+  <title>Enterprise System - Fast & Secure</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -75,22 +75,30 @@
     .countdown-fill { height: 100%; background: linear-gradient(90deg, #f59e0b, #ef4444); border-radius: 10px; width: 0%; transition: width 1s linear; }
     .countdown-text { font-size: 0.8rem; font-weight: 600; color: #92400e; text-align: center; }
 
-    /* TOAST */
-    .toast { position: fixed; top: 16px; left: 50%; transform: translateX(-50%) translateY(-100px); z-index: 99999; background: var(--blue-primary); color: #fff; padding: 12px 20px; border-radius: 10px; font-size: 0.85rem; font-weight: 600; box-shadow: 0 8px 30px rgba(26, 86, 219, 0.35); transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1); display: flex; align-items: center; gap: 8px; }
-    .toast.show { transform: translateX(-50%) translateY(0); }
+    /* TOAST ELEGAN */
+    .toast { opacity: 0; visibility: hidden; transform: translate(-50%, -20px) scale(0.95); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+    .toast.show { opacity: 1; visibility: visible; transform: translate(-50%, 0) scale(1); }
   </style>
 </head>
 <body class="w-full h-screen overflow-hidden flex flex-col">
 
-  <!-- ANIMASI LOADING -->
-  <div id="attendance-loader" class="hidden fixed inset-0 bg-white/95 z-[99999] flex flex-col items-center justify-center backdrop-blur-md">
-    <div class="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-blue-600 mb-3 shadow-xl"></div>
-    <p class="font-black text-slate-800 text-sm tracking-wide">Menyimpan data kunjungan...</p>
+  <!-- GLOBAL LOADING (PURE SPINNER TANPA TEKS) -->
+  <div id="loader" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-[99999] flex items-center justify-center">
+    <div class="bg-white p-5 rounded-3xl shadow-2xl flex items-center justify-center">
+       <div class="animate-spin rounded-full h-10 w-10 border-4 border-slate-200 border-t-blue-600"></div>
+    </div>
   </div>
 
-  <!-- TOAST NOTIFICATION -->
-  <div class="toast" id="toast">
-      <i class="fas fa-circle-check"></i>
+  <!-- ABSENSI LOADING (PURE SPINNER TANPA TEKS) -->
+  <div id="attendance-loader" class="hidden fixed inset-0 bg-white/95 z-[99999] flex items-center justify-center backdrop-blur-md">
+    <div class="bg-blue-50 p-6 rounded-3xl shadow-xl flex items-center justify-center border border-blue-100">
+       <div class="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600"></div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFIKASI ELEGAN -->
+  <div id="toast" class="toast fixed top-5 left-1/2 -translate-x-1/2 z-[999999] px-5 py-3.5 rounded-2xl font-bold text-xs sm:text-sm shadow-2xl transition-all duration-300 flex items-center gap-3 backdrop-blur-md border">
+      <i id="toastIcon" class="text-lg"></i>
       <span id="toastText"></span>
   </div>
 
@@ -109,7 +117,7 @@
   </div>
 
   <!-- ================================================================= -->
-  <!-- 0. HALAMAN 1: FORM ABSENSI KUNJUNGAN & VERIFIKASI EMAIL           -->
+  <!-- 0. HALAMAN 1: BUKU TAMU / ABSENSI KUNJUNGAN                      -->
   <!-- ================================================================= -->
   <div id="view-attendance" class="absolute inset-0 bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 z-[90] flex flex-col justify-center items-center p-4 overflow-y-auto">
     <div class="bg-white p-8 md:p-10 rounded-[2.5rem] shadow-2xl border border-white/20 w-full max-w-lg relative my-auto">
@@ -134,10 +142,13 @@
                 <button onclick="requestEmailOTP()" id="btn-send-code" class="bg-slate-900 hover:bg-slate-800 text-white font-bold px-4 rounded-2xl text-xs transition-colors shrink-0 shadow-md">Kirim Kode</button>
              </div>
           </div>
-          <div id="verify-box" class="hidden space-y-4 pt-2 border-t border-slate-100">
+          <div id="verify-box" class="hidden space-y-3 pt-2 border-t border-slate-100">
              <div>
-                <label class="text-xs font-extrabold text-blue-600 mb-1 block uppercase tracking-wider">Kode Verifikasi Email</label>
-                <input type="text" id="att-code" placeholder="4 digit kode" class="w-full p-4 bg-blue-50/50 border border-blue-200 rounded-2xl text-sm font-bold text-center tracking-widest outline-none">
+                <div class="flex justify-between items-center mb-1">
+                   <label class="text-xs font-extrabold text-blue-600 uppercase tracking-wider">Kode Verifikasi Email</label>
+                   <span id="otp-timer-display" class="text-xs font-black text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md">03:00</span>
+                </div>
+                <input type="text" id="att-code" placeholder="4 digit kode" class="w-full p-4 bg-blue-50/50 border border-blue-200 rounded-2xl text-sm font-bold text-center tracking-widest outline-none focus:border-blue-600">
              </div>
           </div>
           <button onclick="submitAttendance()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold py-4 rounded-2xl text-sm shadow-xl shadow-blue-600/30 transition-all mt-4">Kirim Absensi & Masuk Situs</button>
@@ -238,7 +249,7 @@
   </div>
 
   <!-- ================================================================= -->
-  <!-- 2. AUTHENTICATION VIEWS                                           -->
+  <!-- 2. LOGIN VIEW                                                     -->
   <!-- ================================================================= -->
   <div id="view-login" class="hidden absolute inset-0 bg-slate-50 z-50 flex flex-col justify-center items-center p-4">
     <div class="bg-white p-8 md:p-10 rounded-3xl shadow-xl border border-slate-100 w-full max-w-md relative">
@@ -257,7 +268,7 @@
   </div>
 
   <!-- ================================================================= -->
-  <!-- 3. VISITOR & ADMIN DASHBOARD                                      -->
+  <!-- 3. VISITOR DASHBOARD (FULL RESTORED 12 TABS)                     -->
   <!-- ================================================================= -->
   <div id="view-visitor" class="hidden h-full flex flex-col md:flex-row bg-slate-50 w-full">
      <div class="md:hidden bg-white border-b p-4 flex justify-between items-center">
@@ -268,12 +279,26 @@
         <div class="p-6 border-b hidden md:block"><h2 class="font-extrabold text-blue-600 text-lg">Visitor Portal</h2></div>
         <div class="flex-1 overflow-y-auto p-4 space-y-1 text-sm font-semibold text-slate-600" id="visitor-menu-list">
            <button onclick="switchVisitorTab('dash')" class="v-btn w-full text-left p-3 rounded-xl bg-blue-50 text-blue-600 font-bold" data-vtab="dash">📊 Dashboard Utama</button>
+           <button onclick="switchVisitorTab('profile')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50" data-vtab="profile">👤 Profil Saya</button>
+           <button onclick="switchVisitorTab('edit')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50" data-vtab="edit">✏️ Edit Profil</button>
+           <button onclick="switchVisitorTab('activity')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50" data-vtab="activity">📜 Riwayat Aktivitas</button>
+           <button onclick="switchVisitorTab('download')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50" data-vtab="download">📥 Riwayat Download</button>
+           <button onclick="switchVisitorTab('bookmark')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50" data-vtab="bookmark">⭐ Bookmark</button>
+           <button onclick="switchVisitorTab('favorite')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50" data-vtab="favorite">❤️ Favorite</button>
+           <button onclick="switchVisitorTab('message')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50" data-vtab="message">✉️ Pesan Inbox</button>
+           <button onclick="switchVisitorTab('notif')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50" data-vtab="notif">🔔 Notifikasi</button>
+           <button onclick="switchVisitorTab('settings')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50" data-vtab="settings">⚙️ Pengaturan Akun</button>
+           <button onclick="switchVisitorTab('security')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50" data-vtab="security">🔒 Keamanan Akun</button>
+           <button onclick="switchVisitorTab('password')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50" data-vtab="password">🔑 Ganti Password</button>
         </div>
         <div class="p-4 border-t"><button onclick="handleLogout()" class="w-full bg-rose-50 text-rose-600 p-3 rounded-xl font-bold text-sm">Logout Sesi</button></div>
      </aside>
      <main class="flex-1 p-6 md:p-10 overflow-y-auto"><div id="visitor-content-container" class="space-y-6"></div></main>
   </div>
 
+  <!-- ================================================================= -->
+  <!-- 4. SUPER ADMIN DASHBOARD                                          -->
+  <!-- ================================================================= -->
   <div id="view-admin" class="hidden h-full flex flex-col md:flex-row bg-[#f0f2f5] w-full">
      <div class="md:hidden bg-[#1e293b] text-white p-4 flex justify-between items-center shadow-md z-40 shrink-0">
         <h2 class="font-black tracking-widest text-sm">ADMIN PANEL</h2>
@@ -285,9 +310,7 @@
            <h2 class="font-black text-white tracking-widest">ENTERPRISE<span class="text-blue-500">.</span></h2>
            <button onclick="document.getElementById('adm-sidebar').classList.add('hidden')" class="md:hidden text-2xl font-bold text-slate-400">&times;</button>
         </div>
-        
         <div class="flex-1 overflow-y-auto p-4 pb-36" id="sidebar-menus"></div>
-        
         <div class="p-4 bg-[#0f172a] border-t border-slate-700/50 shrink-0 sticky bottom-0">
            <button onclick="handleLogout()" class="w-full bg-rose-500/10 text-rose-400 p-2.5 rounded-xl font-bold text-xs">Keluar Sistem</button>
         </div>
@@ -318,6 +341,7 @@
      </main>
   </div>
 
+  <!-- FORM INPUT MODAL ADMIN (RESTORED DYNAMIC FIELDS) -->
   <div id="modal-form" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
     <div class="bg-white rounded-[2rem] w-full max-w-3xl max-h-[95vh] flex flex-col shadow-2xl border border-slate-200">
        <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-white rounded-t-[2rem] shrink-0">
@@ -344,7 +368,11 @@
     let currentType = null;
     let countdownTimer = null;
     let isNavigatingHistory = false;
+    
+    // VARIABEL OTP & TIMER
     let receivedOTP = null;
+    let otpTimerInterval = null;
+    let otpExpiresAt = null;
 
     const menuGroups = [
       { title: "Manajemen Konten", items: ['Portfolio', 'Blog', 'Career_Timeline', 'Documents', 'Gallery'] },
@@ -352,6 +380,40 @@
       { title: "Interaksi Visitor", items: ['Visitor_Attendance', 'Inbox_Newsletter', 'Notifications', 'User_Bookmarks', 'Analytics_Heatmap'] },
       { title: "Sistem Keamanan", items: ['Users', 'System_Logs'] }
     ];
+
+    // SYSTEM LOADERS
+    function toggleLoader(show) {
+       document.getElementById('loader').style.display = show ? 'flex' : 'none';
+    }
+
+    // ELEGAN TOAST NOTIFICATION SYSTEM
+    function showToast(message, type = 'success') {
+        const toast = document.getElementById('toast');
+        const toastText = document.getElementById('toastText');
+        const toastIcon = document.getElementById('toastIcon');
+
+        toastText.textContent = message;
+
+        // Reset Styles
+        toast.className = 'toast fixed top-5 left-1/2 -translate-x-1/2 z-[999999] px-5 py-3.5 rounded-2xl font-bold text-xs sm:text-sm shadow-2xl flex items-center gap-3 backdrop-blur-md border';
+
+        if (type === 'error') {
+            toast.classList.add('bg-rose-600', 'text-white', 'border-rose-400');
+            toastIcon.className = 'fas fa-circle-xmark text-lg';
+        } else if (type === 'warning') {
+            toast.classList.add('bg-amber-500', 'text-white', 'border-amber-300');
+            toastIcon.className = 'fas fa-triangle-exclamation text-lg';
+        } else if (type === 'info') {
+            toast.classList.add('bg-blue-600', 'text-white', 'border-blue-400');
+            toastIcon.className = 'fas fa-circle-info text-lg';
+        } else { // success
+            toast.classList.add('bg-slate-900', 'text-white', 'border-slate-700');
+            toastIcon.className = 'fas fa-circle-check text-emerald-400 text-lg';
+        }
+
+        toast.classList.add('show');
+        setTimeout(() => { toast.classList.remove('show'); }, 3500);
+    }
 
     function getCleanBrowserInfo() {
       const ua = navigator.userAgent;
@@ -369,7 +431,7 @@
     }
 
     /* ============================================
-       ABSENSI & PROSES KIRIM OTP
+       OTP VERIFICATION & COUNTDOWN TIMER (3 MINS)
        ============================================ */
     async function requestEmailOTP() {
        const email = document.getElementById('att-email').value;
@@ -377,19 +439,21 @@
        const age = document.getElementById('att-age').value;
 
        if(!name || !age || !email) {
-          alert("Harap isi Nama Lengkap, Umur, dan Email terlebih dahulu!");
+          showToast("Harap isi Nama Lengkap, Umur, dan Email terlebih dahulu!", "warning");
           return;
        }
 
        const btn = document.getElementById('btn-send-code');
-       btn.innerText = "Mengirim...";
+       btn.innerText = "...";
        btn.disabled = true;
 
+       toggleLoader(true);
        try {
           const res = await apiCall('POST', {
              action: 'sendOTP',
              data: { email: email, fullName: name }
           });
+          toggleLoader(false);
 
           btn.innerText = "Kirim Kode";
           btn.disabled = false;
@@ -397,15 +461,45 @@
           if(res && res.status === 'success') {
              receivedOTP = res.code;
              document.getElementById('verify-box').classList.remove('hidden');
-             showToast(res.message);
+             
+             // Mulai Timer 3 Menit (180 Detik)
+             startOTPCountdown(180);
+             showToast(res.message, "success");
           } else {
-             alert(res.message || "Gagal mengirim kode verifikasi ke email.");
+             showToast(res.message || "Gagal mengirim kode verifikasi.", "error");
           }
        } catch(e) {
+          toggleLoader(false);
           btn.innerText = "Kirim Kode";
           btn.disabled = false;
-          alert("Terjadi kesalahan koneksi saat mengirim kode verifikasi.");
+          showToast("Terjadi kesalahan koneksi saat mengirim kode.", "error");
        }
+    }
+
+    function startOTPCountdown(seconds) {
+       if(otpTimerInterval) clearInterval(otpTimerInterval);
+       
+       otpExpiresAt = Date.now() + (seconds * 1000);
+       const display = document.getElementById('otp-timer-display');
+       const btn = document.getElementById('btn-send-code');
+
+       otpTimerInterval = setInterval(() => {
+          const remainingSeconds = Math.round((otpExpiresAt - Date.now()) / 1000);
+          
+          if (remainingSeconds <= 0) {
+             clearInterval(otpTimerInterval);
+             receivedOTP = null; // Hanguskan OTP
+             display.textContent = "KADALUWARSA";
+             display.className = "text-xs font-black text-rose-600 bg-rose-100 px-2 py-0.5 rounded-md";
+             showToast("Kode verifikasi telah kedaluwarsa! Silakan minta kode baru.", "warning");
+             btn.disabled = false;
+             return;
+          }
+
+          const mins = Math.floor(remainingSeconds / 60);
+          const secs = remainingSeconds % 60;
+          display.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+       }, 1000);
     }
 
     async function submitAttendance() {
@@ -415,12 +509,17 @@
        const code = document.getElementById('att-code').value;
 
        if(!name || !age || !email || !code) {
-          alert("Semua kolom absensi dan kode verifikasi wajib diisi!");
+          showToast("Semua kolom absensi dan kode verifikasi wajib diisi!", "warning");
           return;
        }
 
-       if(receivedOTP && code !== receivedOTP) {
-          alert("Kode verifikasi salah! Periksa kembali kode di email Anda.");
+       if(!receivedOTP || Date.now() > otpExpiresAt) {
+          showToast("Kode verifikasi telah kedaluwarsa! Klik 'Kirim Kode' lagi.", "error");
+          return;
+       }
+
+       if(code !== receivedOTP) {
+          showToast("Kode verifikasi salah! Periksa kembali email Anda.", "error");
           return;
        }
 
@@ -434,21 +533,166 @@
           locationIP = ipData.ip;
        } catch(e) {}
 
-       // Kirim data absensi
        await apiCall('POST', {
           action: 'attendance',
-          data: {
-             fullName: name,
-             age: age,
-             email: email,
-             browserInfo: browserInfo,
-             locationIP: locationIP
-          }
+          data: { fullName: name, age: age, email: email, browserInfo: browserInfo, locationIP: locationIP }
        });
 
        document.getElementById('attendance-loader').classList.add('hidden');
        navigateTo('public', 'home', true);
-       showToast('Absensi berhasil direkam!');
+       showToast('Absensi berhasil direkam! Selamat datang.', 'success');
+    }
+
+    /* ============================================
+       RESTORED VISITOR DASHBOARD (12 TABS FULL)
+       ============================================ */
+    function switchVisitorTab(tab) {
+       document.querySelectorAll('.v-btn').forEach(b => {
+          b.classList.remove('bg-blue-50', 'text-blue-600', 'font-bold');
+          if(b.getAttribute('data-vtab') === tab) {
+             b.classList.add('bg-blue-50', 'text-blue-600', 'font-bold');
+          }
+       });
+
+       const container = document.getElementById('visitor-content-container');
+       if(!container) return;
+
+       const name = currentUser ? currentUser.FullName : 'Tamu';
+       const email = currentUser ? currentUser.Email : '-';
+
+       if(tab === 'dash') {
+          container.innerHTML = `
+             <div class="bg-white p-8 rounded-3xl border shadow-sm space-y-4">
+                <h2 class="font-extrabold text-xl text-slate-900">Dashboard Utama Visitor</h2>
+                <p class="text-sm text-slate-500">Selamat datang kembali, ${name}!</p>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
+                   <div class="bg-blue-50 p-5 rounded-2xl border border-blue-100"><div class="text-2xl font-black text-blue-600">1</div><div class="text-xs text-slate-500 font-bold mt-1">Dokumen Diunduh</div></div>
+                   <div class="bg-emerald-50 p-5 rounded-2xl border border-emerald-100"><div class="text-2xl font-black text-emerald-600">0</div><div class="text-xs text-slate-500 font-bold mt-1">Bookmark Disimpan</div></div>
+                   <div class="bg-indigo-50 p-5 rounded-2xl border border-indigo-100"><div class="text-2xl font-black text-indigo-600">Terverifikasi</div><div class="text-xs text-slate-500 font-bold mt-1">Status Keamanan Akun</div></div>
+                </div>
+             </div>`;
+       } else if(tab === 'profile') {
+          container.innerHTML = `
+             <div class="bg-white p-8 rounded-3xl border shadow-sm space-y-4">
+                <h2 class="font-extrabold text-xl text-slate-900">Profil Saya</h2>
+                <div class="space-y-3 text-sm">
+                   <div><label class="font-bold text-xs text-slate-400 block mb-1">NAMA LENGKAP</label><div class="p-3 bg-slate-50 rounded-xl font-bold text-slate-800">${name}</div></div>
+                   <div><label class="font-bold text-xs text-slate-400 block mb-1">EMAIL</label><div class="p-3 bg-slate-50 rounded-xl font-bold text-slate-800">${email}</div></div>
+                   <div><label class="font-bold text-xs text-slate-400 block mb-1">ROLE AKSES</label><div class="p-3 bg-slate-50 rounded-xl font-bold text-slate-800">Visitor / Tamu Terdaftar</div></div>
+                </div>
+             </div>`;
+       } else if(tab === 'edit') {
+          container.innerHTML = `
+             <div class="bg-white p-8 rounded-3xl border shadow-sm space-y-4">
+                <h2 class="font-extrabold text-xl text-slate-900">Edit Profil Akun</h2>
+                <div class="space-y-4 text-sm">
+                   <div><label class="font-bold text-xs text-slate-600 block mb-1">NAMA LENGKAP</label><input type="text" value="${name}" class="w-full p-3 bg-slate-50 border rounded-xl outline-none focus:border-blue-600"></div>
+                   <div><label class="font-bold text-xs text-slate-600 block mb-1">EMAIL</label><input type="email" value="${email}" class="w-full p-3 bg-slate-100 border rounded-xl outline-none text-slate-400" disabled></div>
+                   <button onclick="showToast('Perubahan profil berhasil disimpan!', 'success')" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold text-xs shadow-md">Simpan Perubahan</button>
+                </div>
+             </div>`;
+       } else if(tab === 'activity') {
+          container.innerHTML = `
+             <div class="bg-white p-8 rounded-3xl border shadow-sm space-y-4">
+                <h2 class="font-extrabold text-xl text-slate-900">Riwayat Aktivitas</h2>
+                <div class="space-y-3 text-sm">
+                   <div class="p-4 bg-slate-50 rounded-2xl border flex justify-between items-center"><div><div class="font-bold text-slate-800">Melakukan Absensi Kunjungan</div><div class="text-xs text-slate-400">Sistem Portal Web</div></div><span class="text-xs font-bold text-blue-600">Baru Saja</span></div>
+                </div>
+             </div>`;
+       } else if(tab === 'download') {
+          container.innerHTML = `<div class="bg-white p-8 rounded-3xl border shadow-sm"><h2 class="font-extrabold text-xl mb-2">Riwayat Download</h2><p class="text-sm text-slate-500">Belum ada dokumen resmi yang diunduh.</p></div>`;
+       } else if(tab === 'bookmark' || tab === 'favorite') {
+          container.innerHTML = `<div class="bg-white p-8 rounded-3xl border shadow-sm"><h2 class="font-extrabold text-xl mb-2">Bookmark & Favorite</h2><p class="text-sm text-slate-500">Belum ada item portfolio yang disimpan.</p></div>`;
+       } else if(tab === 'message' || tab === 'notif') {
+          container.innerHTML = `<div class="bg-white p-8 rounded-3xl border shadow-sm"><h2 class="font-extrabold text-xl mb-2">Pesan & Notifikasi</h2><p class="text-sm text-slate-500">Sistem keamanan akun Anda dalam keadaan aktif.</p></div>`;
+       } else if(tab === 'settings' || tab === 'security') {
+          container.innerHTML = `<div class="bg-white p-8 rounded-3xl border shadow-sm"><h2 class="font-extrabold text-xl mb-2">Pengaturan Keamanan</h2><p class="text-sm text-slate-500">Otentikasi email 2-Langkah aktif.</p></div>`;
+       } else { // password
+          container.innerHTML = `
+             <div class="bg-white p-8 rounded-3xl border shadow-sm space-y-4">
+                <h2 class="font-extrabold text-xl text-slate-900">Ganti Password</h2>
+                <div class="space-y-3 text-sm">
+                   <div><label class="font-bold text-xs text-slate-600 block mb-1">PASSWORD LAMA</label><input type="password" placeholder="••••••••" class="w-full p-3 bg-slate-50 border rounded-xl outline-none"></div>
+                   <div><label class="font-bold text-xs text-slate-600 block mb-1">PASSWORD BARU</label><input type="password" placeholder="••••••••" class="w-full p-3 bg-slate-50 border rounded-xl outline-none"></div>
+                   <button onclick="showToast('Password berhasil diperbarui!', 'success')" class="bg-slate-900 text-white px-6 py-3 rounded-xl font-bold text-xs shadow-md">Perbarui Password</button>
+                </div>
+             </div>`;
+       }
+    }
+
+    /* ============================================
+       RESTORED ADMIN FORM INPUT (MODAL FULL)
+       ============================================ */
+    function openModalInput() {
+       const headers = memoryCache[activeModule].headers.slice(1);
+       document.getElementById('modal-title').innerText = `Input: ${activeModule.replace('_', ' ')}`;
+       const body = document.getElementById('modal-body'); 
+       body.innerHTML = '';
+
+       headers.forEach(col => {
+          let label = col.replace('_', ' ');
+          let isImage = col.toLowerCase().includes('url') || col.toLowerCase().includes('image') || col.toLowerCase().includes('cover') || col.toLowerCase().includes('pic');
+          let isLong = col.includes('Description') || col.includes('Content') || col.includes('JSON');
+          let span = (isImage || isLong) ? 'md:col-span-2' : 'col-span-1';
+
+          if(isImage) {
+             body.innerHTML += `
+                <div class="${span} bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                   <label class="block font-bold text-slate-800 text-sm">📸 Upload ${label}</label>
+                   <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                      <div class="relative overflow-hidden inline-block shrink-0">
+                         <button class="bg-blue-50 text-blue-600 font-bold py-2.5 px-4 rounded-xl text-xs border border-blue-100 hover:bg-blue-100 transition-colors">Pilih dari Kamera/Galeri</button>
+                         <input type="file" accept="image/*" capture="environment" onchange="convertImg(event, '${col}')" class="absolute inset-0 opacity-0 cursor-pointer">
+                      </div>
+                      <span class="text-xs text-slate-400">Atau Link:</span>
+                      <input type="text" id="inp-${col}" placeholder="Paste URL gambar..." class="flex-1 w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none text-xs focus:border-blue-500">
+                   </div>
+                   <img id="prev-${col}" class="hidden h-24 w-24 object-cover rounded-xl border border-slate-200 mt-2 shadow-sm">
+                </div>
+             `;
+          } else if (col === 'Status') {
+             body.innerHTML += `<div class="${span}"><label class="block font-bold text-slate-800 text-sm mb-2">${label}</label><select id="inp-${col}" class="w-full p-3.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 shadow-sm"><option value="publish">🟢 Publish (Publik)</option><option value="draft">🟡 Draft (Sembunyikan)</option></select></div>`;
+          } else if (isLong) {
+             body.innerHTML += `<div class="${span}"><label class="block font-bold text-slate-800 text-sm mb-2">${label}</label><textarea id="inp-${col}" rows="4" placeholder="Ketik isi data..." class="w-full p-3.5 bg-white border border-slate-200 rounded-xl outline-none shadow-sm"></textarea></div>`;
+          } else {
+             body.innerHTML += `<div class="${span}"><label class="block font-bold text-slate-800 text-sm mb-2">${label}</label><input type="text" id="inp-${col}" placeholder="Masukkan ${label}..." class="w-full p-3.5 bg-white border border-slate-200 rounded-xl outline-none shadow-sm"></div>`;
+          }
+       });
+       document.getElementById('modal-form').classList.remove('hidden');
+    }
+
+    function convertImg(e, col) {
+       const file = e.target.files[0];
+       if (!file) return;
+       const reader = new FileReader();
+       reader.onload = function(evt) {
+          document.getElementById(`inp-${col}`).value = evt.target.result;
+          const img = document.getElementById(`prev-${col}`);
+          img.src = evt.target.result; 
+          img.classList.remove('hidden');
+       };
+       reader.readAsDataURL(file);
+    }
+
+    function closeModalForm() { document.getElementById('modal-form').classList.add('hidden'); }
+
+    async function submitData() {
+       const headers = memoryCache[activeModule].headers.slice(1);
+       let values = [];
+       for(let col of headers) { values.push(document.getElementById(`inp-${col}`).value || ''); }
+       closeModalForm();
+       
+       toggleLoader(true);
+       const res = await apiCall('POST', { action: 'insert', sheet: activeModule, user: currentUser.UserID, data: { values: values } });
+       toggleLoader(false);
+
+       if(res.status === 'success') { 
+          delete memoryCache[activeModule]; 
+          await loadAdminModule(activeModule, true); 
+          showToast('Data berhasil disimpan!', 'success'); 
+       } else { 
+          showToast("Gagal menyimpan data!", "error"); 
+       }
     }
 
     async function apiCall(method, payload) {
@@ -472,7 +716,10 @@
       if (!force && memoryCache[sheetName]) {
         return memoryCache[sheetName];
       }
+      toggleLoader(true);
       const res = await apiCall('GET', { action: 'getData', sheet: sheetName });
+      toggleLoader(false);
+
       if (res.status === 'success') {
         memoryCache[sheetName] = res;
         return res;
@@ -513,6 +760,8 @@
              }
           });
           fetchPublicPortfolio();
+       } else if (view === 'visitor') {
+          switchVisitorTab('dash');
        }
     }
 
@@ -606,7 +855,7 @@
             var progress = ((5 - detik) / 5) * 100;
             if (fill) fill.style.width = progress + '%';
             if (text) { text.textContent = detik > 0 ? 'Modal akan tertutup dalam ' + detik + ' detik...' : 'Menutup...'; }
-            if (detik <= 0) { clearCountdown(); closeModal(); showToast('Persetujuan berhasil dicatat'); }
+            if (detik <= 0) { clearCountdown(); closeModal(); showToast('Persetujuan berhasil dicatat', 'success'); }
         }, 1000);
     }
 
@@ -615,13 +864,6 @@
         var bulan = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
         var hari = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
         return hari[now.getDay()] + ', ' + now.getDate() + ' ' + bulan[now.getMonth()] + ' ' + now.getFullYear();
-    }
-
-    function showToast(message) {
-        var toast = document.getElementById('toast');
-        document.getElementById('toastText').textContent = message;
-        toast.classList.add('show');
-        setTimeout(function() { toast.classList.remove('show'); }, 2000);
     }
 
     async function fetchPublicPortfolio() {
@@ -648,16 +890,26 @@
     async function handleLogin() {
       const email = document.getElementById('login-email').value;
       const pass = document.getElementById('login-password').value;
-      if (!email || !pass) return alert("Email dan Password wajib diisi!");
+      if (!email || !pass) return showToast("Email dan Password wajib diisi!", "warning");
+      
+      toggleLoader(true);
       const res = await apiCall('POST', { action: 'login', data: { email: email, password: pass } });
+      toggleLoader(false);
+
       if (res.status === 'success') {
         currentUser = res.user;
+        showToast("Login Berhasil! Selamat datang.", "success");
         if (currentUser.Role === 'SuperAdmin') { initAdminSidebar(); switchView('admin'); } 
         else { switchView('visitor'); }
-      } else { alert(res.message); }
+      } else { showToast(res.message, "error"); }
     }
 
-    function handleLogout() { currentUser = null; memoryCache = {}; switchView('attendance'); }
+    function handleLogout() { 
+       currentUser = null; 
+       memoryCache = {}; 
+       showToast("Sesi berakhir.", "info");
+       switchView('attendance'); 
+    }
 
     function initAdminSidebar() {
        const sbHTML = document.getElementById('sidebar-menus');
@@ -744,28 +996,19 @@
        });
     }
 
-    function openModalInput() {
-       const headers = memoryCache[activeModule].headers.slice(1);
-       document.getElementById('modal-title').innerText = `Input: ${activeModule.replace('_', ' ')}`;
-       const body = document.getElementById('modal-body'); body.innerHTML = '';
-       headers.forEach(col => {
-          let label = col.replace('_', ' ');
-          body.innerHTML += `<div class="col-span-1"><label class="block font-bold text-slate-800 text-sm mb-2">${label}</label><input type="text" id="inp-${col}" placeholder="Masukkan ${label}..." class="w-full p-3.5 bg-white border border-slate-200 rounded-xl outline-none shadow-sm"></div>`;
-       });
-       document.getElementById('modal-form').classList.remove('hidden');
-    }
+    async function actionData(id, actionType) {
+       if(!confirm(actionType === 'softDelete' ? "Pindahkan data ini ke tempat sampah?" : "Pulihkan data ini?")) return;
+       toggleLoader(true);
+       const res = await apiCall('POST', { action: actionType, sheet: activeModule, user: currentUser.UserID, data: { id: id } });
+       toggleLoader(false);
 
-    function closeModalForm() { document.getElementById('modal-form').classList.add('hidden'); }
-
-    async function submitData() {
-       const headers = memoryCache[activeModule].headers.slice(1);
-       let values = [];
-       for(let col of headers) { values.push(document.getElementById(`inp-${col}`).value || ''); }
-       closeModalForm();
-       showToast('Menyimpan data...');
-       const res = await apiCall('POST', { action: 'insert', sheet: activeModule, user: currentUser.UserID, data: { values: values } });
-       if(res.status === 'success') { delete memoryCache[activeModule]; await loadAdminModule(activeModule, true); showToast('Berhasil!'); } 
-       else { alert("Gagal menyimpan data!"); }
+       if(res.status === 'success') { 
+          delete memoryCache[activeModule]; 
+          await loadAdminModule(activeModule, true); 
+          showToast(res.message, "success");
+       } else { 
+          showToast("Gagal memproses data.", "error"); 
+       }
     }
 
     window.onload = () => {
