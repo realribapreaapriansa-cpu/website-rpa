@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Enterprise Professional System - Ultra Fast Execution</title>
+  <title>Enterprise Professional System - Lightning Fast</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -41,9 +41,9 @@
     .footer-copy:first-of-type { font-weight: 600; color: var(--text-body); margin-bottom: 2px; }
 
     /* MODAL & CHECKBOX */
-    .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55); backdrop-filter: blur(6px); z-index: 9998; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55); backdrop-filter: blur(6px); z-index: 9998; opacity: 0; visibility: hidden; transition: opacity 0.25s ease, visibility 0.25s ease; }
     .modal-overlay.active { opacity: 1; visibility: visible; }
-    .modal { position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; pointer-events: none; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; }
+    .modal { position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; pointer-events: none; opacity: 0; visibility: hidden; transition: opacity 0.25s ease, visibility 0.25s ease; }
     .modal.active { pointer-events: auto; opacity: 1; visibility: visible; }
     .modal-container { background: #ffffff; width: 100%; height: 100%; max-width: 780px; max-height: 90vh; overflow-y: auto; border-radius: 20px; box-shadow: 0 25px 60px rgba(0,0,0,0.18); transform: translateY(20px); transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1); display: flex; flex-direction: column; }
     .modal.active .modal-container { transform: translateY(0); }
@@ -64,7 +64,7 @@
     .checkbox-title { font-size: 0.95rem; font-weight: 800; color: #92400e; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
     .checkbox-label { display: flex; align-items: flex-start; gap: 12px; cursor: pointer; user-select: none; }
     .checkbox-label input[type="checkbox"] { display: none; }
-    .custom-check { width: 22px; height: 22px; min-width: 22px; border: 2.5px solid #d97706; border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; margin-top: 2px; background: #fff; }
+    .custom-check { width: 22px; height: 22px; min-width: 22px; border: 2.5px solid #d97706; border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: all 0.25s ease; margin-top: 2px; background: #fff; }
     .custom-check i { font-size: 12px; color: #fff; opacity: 0; transform: scale(0.5); transition: all 0.2s ease; }
     .checkbox-label input:checked + .custom-check { background: #f59e0b; border-color: #f59e0b; }
     .checkbox-label input:checked + .custom-check i { opacity: 1; transform: scale(1); }
@@ -82,11 +82,8 @@
 </head>
 <body class="w-full h-screen overflow-hidden flex flex-col">
 
-  <!-- LIGHTNING LOADER -->
-  <div id="loader" class="hidden absolute inset-0 bg-white/80 z-[9999] flex flex-col items-center justify-center backdrop-blur-[2px]">
-    <div class="animate-spin rounded-full h-10 w-10 border-t-3 border-b-3 border-blue-600 mb-2"></div>
-    <p class="font-extrabold text-blue-600 text-[11px] uppercase tracking-widest">Sinkronisasi Kilat...</p>
-  </div>
+  <!-- LOADER DISENGAHKAN HIDDEN -->
+  <div id="loader" class="hidden"></div>
 
   <!-- TOAST NOTIFICATION -->
   <div class="toast" id="toast">
@@ -154,7 +151,7 @@
              <div class="text-center md:text-left">
                 <span class="inline-block bg-blue-50 text-blue-700 text-xs font-extrabold px-3 py-1 rounded-full uppercase tracking-wider mb-3">Senior Software Architect</span>
                 <h1 class="text-3xl md:text-5xl font-black text-slate-900 leading-tight">Membangun Ekosistem Digital Skala Enterprise.</h1>
-                <p class="text-slate-500 mt-4 max-w-2xl text-sm md:text-base leading-relaxed">Selamat datang di portal profesional saya. Seluruh data disajikan secara instan dengan teknologi caching performa tinggi.</p>
+                <p class="text-slate-500 mt-4 max-w-2xl text-sm md:text-base leading-relaxed">Selamat datang di portal profesional saya. Platform ini terintegrasi penuh secara real-time untuk menyajikan karya, artikel, dan riwayat karir terbaik.</p>
                 <div class="mt-8 flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
                    <button onclick="switchPublicSection('portfolio')" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-blue-600/30 transition-all text-sm">Lihat Portfolio</button>
                    <button onclick="switchPublicSection('career')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-6 py-3 rounded-xl font-bold transition-all text-sm">Unduh Resume (PDF)</button>
@@ -164,7 +161,7 @@
        </section>
 
        <section id="pub-sec-profil" class="pub-sec hidden w-full max-w-5xl mx-auto p-6 md:p-12">
-          <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-200"><h2 class="text-2xl font-black mb-4">Profil & Kualifikasi</h2><p class="text-slate-500 text-sm">Informasi biodata lengkap di-load secara kilat.</p></div>
+          <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-200"><h2 class="text-2xl font-black mb-4">Profil & Kualifikasi</h2><p class="text-slate-500 text-sm">Informasi biodata lengkap ditampilkan di sini.</p></div>
        </section>
 
        <section id="pub-sec-portfolio" class="pub-sec hidden w-full max-w-6xl mx-auto p-6 md:p-12 space-y-6">
@@ -175,7 +172,7 @@
        <section id="pub-sec-career" class="pub-sec hidden w-full max-w-4xl mx-auto p-6 md:p-12">
           <div class="bg-white p-10 rounded-3xl shadow-sm border border-slate-200 text-center space-y-6">
              <h2 class="text-2xl font-black">Pusat Dokumen Karir</h2>
-             <p class="text-slate-500 text-sm">Dokumen terverifikasi digital.</p>
+             <p class="text-slate-500 text-sm">Semua dokumen di bawah ini telah diverifikasi secara digital.</p>
              <div class="flex justify-center gap-4">
                 <button class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold shadow-md text-sm">Download CV Resmi</button>
                 <button class="bg-slate-100 text-slate-700 px-6 py-3 rounded-xl font-bold text-sm">Sertifikasi Keahlian</button>
@@ -205,7 +202,7 @@
   <!-- ================================================================= -->
   <div id="view-login" class="hidden absolute inset-0 bg-slate-50 z-50 flex flex-col justify-center items-center p-4">
     <div class="bg-white p-8 md:p-10 rounded-3xl shadow-xl border border-slate-100 w-full max-w-md relative">
-       <button onclick="switchView('public')" class="absolute top-6 left-6 text-slate-400 hover:text-slate-800 font-bold text-xl">&times;</button>
+       <button onclick="history.back()" class="absolute top-6 left-6 text-slate-400 hover:text-slate-800 font-bold text-xl">&times;</button>
        <div class="text-center mb-8 mt-2">
           <div class="inline-flex items-center justify-center w-12 h-12 bg-blue-50 text-blue-600 rounded-xl mb-4 text-xl">🔒</div>
           <h2 class="text-2xl font-black text-slate-900">Secure Access</h2>
@@ -216,13 +213,13 @@
           <div><label class="text-xs font-bold text-slate-700 mb-1 block">Kata Sandi</label><input type="password" id="login-password" placeholder="••••••••" class="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none"></div>
           <button onclick="handleLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl text-sm shadow-md mt-2">Masuk ke Sistem</button>
        </div>
-       <p class="text-center text-xs text-slate-500 mt-6">Visitor baru? <button onclick="switchView('register')" class="text-blue-600 font-bold hover:underline">Buat Akun Tamu</button></p>
+       <p class="text-center text-xs text-slate-500 mt-6">Visitor baru? <button onclick="navigateToView('register')" class="text-blue-600 font-bold hover:underline">Buat Akun Tamu</button></p>
     </div>
   </div>
 
   <div id="view-register" class="hidden absolute inset-0 bg-slate-50 z-50 flex flex-col justify-center items-center p-4">
     <div class="bg-white p-8 md:p-10 rounded-3xl shadow-xl border border-slate-100 w-full max-w-md relative">
-       <button onclick="switchView('login')" class="absolute top-6 left-6 text-slate-400 hover:text-slate-800 font-bold text-xl">←</button>
+       <button onclick="history.back()" class="absolute top-6 left-6 text-slate-400 hover:text-slate-800 font-bold text-xl">←</button>
        <div class="text-center mb-8 mt-2">
           <h2 class="text-2xl font-black text-slate-900">Registrasi Tamu</h2>
           <p class="text-sm text-slate-500 mt-1">Dapatkan akses untuk unduh dokumen.</p>
@@ -237,16 +234,16 @@
   </div>
 
   <!-- ================================================================= -->
-  <!-- 3. VISITOR DASHBOARD (12 MENU INSTANT SWITCHING)                  -->
+  <!-- 3. VISITOR DASHBOARD                                              -->
   <!-- ================================================================= -->
   <div id="view-visitor" class="hidden h-full flex flex-col md:flex-row bg-slate-50 w-full">
      <div class="md:hidden bg-white border-b p-4 flex justify-between items-center">
         <h2 class="font-black text-blue-600">Visitor Portal</h2>
         <button onclick="document.getElementById('vis-sidebar').classList.toggle('hidden')" class="bg-slate-100 p-2 rounded-lg text-sm font-bold">☰ Menu</button>
      </div>
-     <aside id="vis-sidebar" class="hidden md:flex flex-col w-full md:w-64 bg-white border-r h-full absolute md:relative z-40 shadow-xl md:shadow-none">
+     <aside id="vis-sidebar" class="hidden md:flex flex-col w-full md:w-64 bg-white border-r h-full absolute md:relative z-40 shadow-xl md:shadow-none overflow-y-auto">
         <div class="p-6 border-b hidden md:block"><h2 class="font-extrabold text-blue-600 text-lg">Visitor Portal</h2></div>
-        <div class="flex-1 overflow-y-auto p-4 space-y-1 text-sm font-semibold text-slate-600">
+        <div class="flex-1 overflow-y-auto p-4 space-y-1 text-sm font-semibold text-slate-600" id="visitor-menu-list">
            <button onclick="switchVisitorTab('dash')" class="v-btn w-full text-left p-3 rounded-xl bg-blue-50 text-blue-600 font-bold" data-vtab="dash">📊 Dashboard Utama</button>
            <button onclick="switchVisitorTab('profile')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50" data-vtab="profile">👤 Profil Saya</button>
            <button onclick="switchVisitorTab('edit')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50" data-vtab="edit">✏️ Edit Profil</button>
@@ -271,17 +268,18 @@
   <!-- 4. SUPER ADMIN DASHBOARD                                          -->
   <!-- ================================================================= -->
   <div id="view-admin" class="hidden h-full flex flex-col md:flex-row bg-[#f0f2f5] w-full">
-     <div class="md:hidden bg-[#1e293b] text-white p-4 flex justify-between items-center shadow-md z-40">
+     <div class="md:hidden bg-[#1e293b] text-white p-4 flex justify-between items-center shadow-md z-40 shrink-0">
         <h2 class="font-black tracking-widest text-sm">ADMIN PANEL</h2>
         <button onclick="document.getElementById('adm-sidebar').classList.toggle('hidden')" class="bg-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold">Menu</button>
      </div>
-     <aside id="adm-sidebar" class="hidden md:flex flex-col w-full md:w-64 lg:w-72 bg-[#1e293b] text-slate-300 h-full absolute md:relative z-50 shadow-2xl md:shadow-none">
-        <div class="p-6 border-b border-slate-700/50 flex justify-between items-center bg-[#0f172a]">
+     <!-- SIDEBAR ADMIN FIXED & SCROLLABLE ON MOBILE -->
+     <aside id="adm-sidebar" class="hidden md:flex flex-col w-72 md:w-64 lg:w-72 bg-[#1e293b] text-slate-300 fixed md:relative inset-y-0 left-0 z-50 shadow-2xl md:shadow-none h-full overflow-y-auto">
+        <div class="p-6 border-b border-slate-700/50 flex justify-between items-center bg-[#0f172a] shrink-0">
            <h2 class="font-black text-white tracking-widest">ENTERPRISE<span class="text-blue-500">.</span></h2>
            <button onclick="document.getElementById('adm-sidebar').classList.add('hidden')" class="md:hidden text-2xl font-bold text-slate-400">&times;</button>
         </div>
         <div class="flex-1 overflow-y-auto p-4" id="sidebar-menus"></div>
-        <div class="p-4 bg-[#0f172a] border-t border-slate-700/50">
+        <div class="p-4 bg-[#0f172a] border-t border-slate-700/50 shrink-0">
            <button onclick="handleLogout()" class="w-full bg-rose-500/10 text-rose-400 p-2.5 rounded-xl font-bold text-xs">Keluar Sistem</button>
         </div>
      </aside>
@@ -296,7 +294,7 @@
            <div id="welcome-panel" class="bg-white p-12 rounded-3xl border border-slate-200 text-center max-w-lg mx-auto mt-10 shadow-sm">
               <div class="text-5xl mb-4">🗄️</div>
               <h2 class="text-2xl font-extrabold text-slate-800 mb-2">Workspace Admin</h2>
-              <p class="text-sm text-slate-500">Pilih salah satu modul database di menu samping untuk mengelola konten secara instan (&lt;1 detik).</p>
+              <p class="text-sm text-slate-500">Pilih salah satu modul database di menu samping untuk mengelola konten secara instan.</p>
            </div>
            <div id="table-panel" class="hidden bg-white rounded-[1.5rem] border border-slate-200 shadow-sm w-full flex flex-col h-full max-h-[80vh]">
               <div class="overflow-x-auto overflow-y-auto flex-1 w-full rounded-[1.5rem]">
@@ -333,11 +331,12 @@
        ======================================================================== */
     const API_URL = "https://script.google.com/macros/s/AKfycbwN-xB6BfOK3CtqzVXXoKVHe8CSGb6__FgeprTjPZfOF-8fRdme9cidDr5QhS0epj79/exec";
     
-    let memoryCache = {}; // In-Memory Cache untuk eksekusi < 1 detik
+    let memoryCache = {};
     let currentUser = null;
     let activeModule = 'Portfolio';
     let currentType = null;
     let countdownTimer = null;
+    let isNavigatingHistory = false;
 
     const menuGroups = [
       { title: "Manajemen Konten", items: ['Portfolio', 'Blog', 'Career_Timeline', 'Documents', 'Gallery'] },
@@ -347,15 +346,10 @@
     ];
 
     /* ============================================
-       HIGH-SPEED API CALLER DENGAN CACHING ENGINE
+       API & CACHE LOKAL KILAT
        ============================================ */
-    async function apiCall(method, payload, useCache = true) {
+    async function apiCall(method, payload) {
       try {
-        let cacheKey = `${payload.action}_${payload.sheet || 'global'}`;
-        if (method === 'GET' && useCache && memoryCache[cacheKey]) {
-          return memoryCache[cacheKey]; // Ambil instan dari memori browser (< 0.01 detik)
-        }
-
         let url = API_URL;
         let options = { method: method };
         if (method === 'GET') {
@@ -365,16 +359,75 @@
           options.headers = { 'Content-Type': 'text/plain' };
         }
         const res = await fetch(url, options);
-        const json = await res.json();
-
-        if (method === 'GET' && json.status === 'success') {
-          memoryCache[cacheKey] = json; // Simpan ke cache
-        }
-        return json;
+        return await res.json();
       } catch (e) {
-        alert("Koneksi gagal. Periksa URL Apps Script Anda.");
         return { status: 'error' };
       }
+    }
+
+    async function getCachedData(sheetName, force = false) {
+      if (!force && memoryCache[sheetName]) {
+        return memoryCache[sheetName];
+      }
+      const res = await apiCall('GET', { action: 'getData', sheet: sheetName });
+      if (res.status === 'success') {
+        memoryCache[sheetName] = res;
+        return res;
+      }
+      return { headers: [], data: [] };
+    }
+
+    /* ============================================
+       BROWSER HISTORY & BACK BUTTON MANAGEMENT
+       ============================================ */
+    function navigateTo(view, section = null, push = true) {
+       if (push && !isNavigatingHistory) {
+          history.pushState({ view, section }, '', '');
+       }
+       renderView(view, section);
+    }
+
+    function renderView(view, section) {
+       ['public', 'login', 'register', 'admin', 'visitor'].forEach(v => {
+          document.getElementById(`view-${v}`).classList.add('hidden');
+       });
+       document.getElementById(`view-${view}`).classList.remove('hidden');
+
+       if(view === 'public') {
+          let sec = section || 'home';
+          document.querySelectorAll('.pub-sec').forEach(el => el.classList.add('hidden'));
+          const target = document.getElementById(`pub-sec-${sec}`);
+          if(target) target.classList.remove('hidden');
+          document.querySelectorAll('.nav-btn').forEach(btn => {
+             btn.classList.remove('active', 'text-blue-600');
+             btn.classList.add('text-slate-600');
+             if(btn.getAttribute('data-sec') === sec) {
+                btn.classList.add('active', 'text-blue-600');
+                btn.classList.remove('text-slate-600');
+             }
+          });
+          fetchPublicPortfolio();
+       } else if(view === 'visitor') {
+          switchVisitorTab('dash');
+       }
+    }
+
+    window.addEventListener('popstate', (e) => {
+       isNavigatingHistory = true;
+       if (e.state && e.state.view) {
+          navigateTo(e.state.view, e.state.section, false);
+       } else {
+          navigateTo('public', 'home', false);
+       }
+       isNavigatingHistory = false;
+    });
+
+    function switchView(view) {
+       navigateTo(view, view === 'public' ? 'home' : null, true);
+    }
+
+    function switchPublicSection(sec) {
+       navigateTo('public', sec, true);
     }
 
     /* ============================================
@@ -390,13 +443,11 @@
         title.textContent = type === 'privacy' ? 'Kebijakan Privasi' : 'Syarat dan Ketentuan';
         var sheetName = type === 'privacy' ? 'Privacy_Policy' : 'Terms_Conditions';
 
-        toggleLoader(true);
-        var res = await apiCall('GET', { action: 'getData', sheet: sheetName });
-        toggleLoader(false);
+        var res = await getCachedData(sheetName);
 
         var html = '<div class="modal-date"><i class="fas fa-calendar-day"></i> Terakhir diperbarui: ' + getFormattedDate() + '</div>';
         
-        if (res.status === 'success' && res.data.length > 0) {
+        if (res.data && res.data.length > 0) {
             res.data.forEach((item, index) => {
                 html += '<div class="content-section">';
                 html += '<div class="section-title"><span class="section-num">' + (index + 1) + '</span>' + (item.Title || item.Title_ID || 'Pasal') + '</div>';
@@ -413,7 +464,6 @@
         modal.classList.add('active');
         overlay.classList.add('active');
         document.body.style.overflow = 'hidden';
-        showToast(type === 'privacy' ? 'Kebijakan Privasi dibuka' : 'Syarat dan Ketentuan dibuka');
     }
 
     function closeModal() {
@@ -494,7 +544,7 @@
     }
 
     /* ============================================
-       VISITOR DASHBOARD INSTANT SWITCHING
+       VISITOR DASHBOARD 12 MENU LOGIC
        ============================================ */
     function switchVisitorTab(tab) {
        document.querySelectorAll('.v-btn').forEach(b => {
@@ -546,33 +596,8 @@
        }
     }
 
-    // SYSTEM UTILITIES
-    function toggleLoader(show) { document.getElementById('loader').style.display = show ? 'flex' : 'none'; }
-
-    function switchView(view) {
-      ['public', 'login', 'register', 'admin', 'visitor'].forEach(v => {
-         document.getElementById(`view-${v}`).classList.add('hidden');
-      });
-      document.getElementById(`view-${view}`).classList.remove('hidden');
-      if(view === 'public') fetchPublicPortfolio();
-      if(view === 'visitor') switchVisitorTab('dash');
-    }
-
-    function switchPublicSection(sec) {
-      document.querySelectorAll('.pub-sec').forEach(el => el.classList.add('hidden'));
-      document.getElementById(`pub-sec-${sec}`).classList.remove('hidden');
-      document.querySelectorAll('.nav-btn').forEach(btn => {
-         btn.classList.remove('active', 'text-blue-600');
-         btn.classList.add('text-slate-600');
-         if(btn.getAttribute('data-sec') === sec) {
-            btn.classList.add('active', 'text-blue-600');
-            btn.classList.remove('text-slate-600');
-         }
-      });
-    }
-
     async function fetchPublicPortfolio() {
-       const res = await apiCall('GET', { action: 'getData', sheet: 'Portfolio' });
+       const res = await getCachedData('Portfolio');
        if(res.status === 'success' && res.data.length > 0) {
           const list = document.getElementById('public-portfolio-list');
           if(list) {
@@ -597,9 +622,7 @@
       const pass = document.getElementById('login-password').value;
       if (!email || !pass) return alert("Email dan Password wajib diisi!");
       
-      toggleLoader(true);
-      const res = await apiCall('POST', { action: 'login', data: { email: email, password: pass } }, false);
-      toggleLoader(false);
+      const res = await apiCall('POST', { action: 'login', data: { email: email, password: pass } });
 
       if (res.status === 'success') {
         currentUser = res.user;
@@ -616,9 +639,7 @@
       const email = document.getElementById('reg-email').value;
       const pass = document.getElementById('reg-password').value;
       if (!name || !email || !pass) return alert("Semua kolom wajib diisi!");
-      toggleLoader(true);
-      const res = await apiCall('POST', { action: 'register', data: { fullName: name, email: email, password: pass } }, false);
-      toggleLoader(false);
+      const res = await apiCall('POST', { action: 'register', data: { fullName: name, email: email, password: pass } });
       if (res.status === 'success') { alert(res.message); switchView('login'); } else { alert(res.message); }
     }
 
@@ -638,9 +659,6 @@
        });
     }
 
-    /* ============================================
-       INSTANT MODULE LOADER (< 0.1 DETIK DENGAN CACHE)
-       ============================================ */
     async function loadAdminModule(sheetName, force = false) {
       activeModule = sheetName;
       document.getElementById('welcome-panel').classList.add('hidden');
@@ -660,17 +678,12 @@
       const isReadOnly = ['System_Logs', 'Analytics_Heatmap'].includes(sheetName);
       document.getElementById('btn-add').style.display = isReadOnly ? 'none' : 'flex';
 
-      // Cek apakah data sudah ada di cache browser (Instan tanpa loading server)
-      let cacheKey = `getData_${sheetName}`;
-      if (!force && memoryCache[cacheKey]) {
-         renderAdminTable(memoryCache[cacheKey].headers, memoryCache[cacheKey].data);
+      if (!force && memoryCache[sheetName]) {
+         renderAdminTable(memoryCache[sheetName].headers, memoryCache[sheetName].data);
          return;
       }
 
-      toggleLoader(true);
-      const res = await apiCall('GET', { action: 'getData', sheet: sheetName });
-      toggleLoader(false);
-
+      const res = await getCachedData(sheetName, force);
       if (res.status === 'success') {
          renderAdminTable(res.headers, res.data);
       }
@@ -686,7 +699,7 @@
        thHTML += `<th class="px-5 py-4 text-xs font-black text-slate-500 uppercase tracking-wider text-right whitespace-nowrap sticky right-0 bg-slate-50 shadow-[-5px_0_10px_-5px_rgba(0,0,0,0.05)]">Aksi</th></tr>`;
        thead.innerHTML = thHTML;
 
-       if (!rows || rows.length === 0) {
+       if (rows.length === 0) {
           tbody.innerHTML = `<tr><td colspan="${headers.length + 1}" class="p-10 text-center text-sm text-slate-400 font-medium bg-white">Belum ada data di tabel ini.</td></tr>`; return;
        }
 
@@ -721,10 +734,7 @@
     }
 
     function openModalInput() {
-       let cacheKey = `getData_${activeModule}`;
-       if (!memoryCache[cacheKey]) return alert("Harap tunggu sebentar, cache modul sedang dimuat.");
-       const headers = memoryCache[cacheKey].headers.slice(1);
-       
+       const headers = memoryCache[activeModule].headers.slice(1);
        document.getElementById('modal-title').innerText = `Input: ${activeModule.replace('_', ' ')}`;
        const body = document.getElementById('modal-body'); body.innerHTML = '';
 
@@ -752,7 +762,7 @@
           } else if (col === 'Status') {
              body.innerHTML += `<div class="${span}"><label class="block font-bold text-slate-800 text-sm mb-2">${label}</label><select id="inp-${col}" class="w-full p-3.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 shadow-sm"><option value="publish">🟢 Publish (Publik)</option><option value="draft">🟡 Draft (Sembunyikan)</option></select></div>`;
           } else if (isLong) {
-             body.innerHTML += `<div class="${span}"><label class="block font-bold text-slate-800 text-sm mb-2">${label}</label><textarea id="inp-${col}" rows="4" placeholder="Ketik isi pasal / teks hukum..." class="w-full p-3.5 bg-white border border-slate-200 rounded-xl outline-none shadow-sm"></textarea></div>`;
+             body.innerHTML += `<div class="${span}"><label class="block font-bold text-slate-800 text-sm mb-2">${label}</label><textarea id="inp-${col}" rows="4" placeholder="Ketik isi data..." class="w-full p-3.5 bg-white border border-slate-200 rounded-xl outline-none shadow-sm"></textarea></div>`;
           } else {
              body.innerHTML += `<div class="${span}"><label class="block font-bold text-slate-800 text-sm mb-2">${label}</label><input type="text" id="inp-${col}" placeholder="Masukkan ${label}..." class="w-full p-3.5 bg-white border border-slate-200 rounded-xl outline-none shadow-sm"></div>`;
           }
@@ -775,36 +785,35 @@
     function closeModalForm() { document.getElementById('modal-form').classList.add('hidden'); }
 
     async function submitData() {
-       let cacheKey = `getData_${activeModule}`;
-       const headers = memoryCache[cacheKey].headers.slice(1);
+       const headers = memoryCache[activeModule].headers.slice(1);
        let values = [];
        for(let col of headers) { values.push(document.getElementById(`inp-${col}`).value || ''); }
 
-       closeModalForm(); toggleLoader(true);
-       const res = await apiCall('POST', { action: 'insert', sheet: activeModule, user: currentUser.UserID, data: { values: values } }, false);
-       toggleLoader(false);
-
+       closeModalForm();
+       showToast('Menyimpan data secara instan...');
+       const res = await apiCall('POST', { action: 'insert', sheet: activeModule, user: currentUser.UserID, data: { values: values } });
        if(res.status === 'success') { 
-          delete memoryCache[cacheKey]; // Reset cache modul agar mengambil data terbaru
-          await loadAdminModule(activeModule, true);
-          showToast('Data berhasil disimpan');
+          delete memoryCache[activeModule]; 
+          await loadAdminModule(activeModule, true); 
+          showToast('Data berhasil disimpan!');
        } else { alert("Gagal menyimpan data!"); }
     }
 
     async function actionData(id, actionType) {
        if(!confirm(actionType === 'softDelete' ? "Hapus data ini ke tempat sampah?" : "Pulihkan data ini?")) return;
-       toggleLoader(true);
-       const res = await apiCall('POST', { action: actionType, sheet: activeModule, user: currentUser.UserID, data: { id: id } }, false);
-       toggleLoader(false);
-
+       showToast('Memproses...');
+       const res = await apiCall('POST', { action: actionType, sheet: activeModule, user: currentUser.UserID, data: { id: id } });
        if(res.status === 'success') { 
-          delete memoryCache[`getData_${activeModule}`]; 
-          await loadAdminModule(activeModule, true);
-          showToast('Perubahan berhasil diterapkan');
+          delete memoryCache[activeModule]; 
+          await loadAdminModule(activeModule, true); 
+          showToast('Berhasil diperbarui!');
        } else { alert("Gagal memproses data."); }
     }
 
-    window.onload = () => switchView('public');
+    window.onload = () => {
+       history.replaceState({ view: 'public', section: 'home' }, '', '');
+       switchView('public');
+    };
   </script>
 </body>
 </html>
