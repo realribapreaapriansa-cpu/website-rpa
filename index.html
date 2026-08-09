@@ -82,10 +82,10 @@
 </head>
 <body class="w-full h-screen overflow-hidden flex flex-col">
 
-  <!-- ANIMASI LOADING MEMBACA/INPUT DATA (INSTAN KILAT) -->
+  <!-- ANIMASI LOADING -->
   <div id="attendance-loader" class="hidden fixed inset-0 bg-white/95 z-[99999] flex flex-col items-center justify-center backdrop-blur-md">
     <div class="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-blue-600 mb-3 shadow-xl"></div>
-    <p class="font-black text-slate-800 text-sm tracking-wide">Merekam Absensi & Menyinkronkan Data...</p>
+    <p class="font-black text-slate-800 text-sm tracking-wide">Menyimpan data kunjungan...</p>
   </div>
 
   <!-- TOAST NOTIFICATION -->
@@ -274,7 +274,6 @@
      <main class="flex-1 p-6 md:p-10 overflow-y-auto"><div id="visitor-content-container" class="space-y-6"></div></main>
   </div>
 
-  <!-- SUPER ADMIN DASHBOARD -->
   <div id="view-admin" class="hidden h-full flex flex-col md:flex-row bg-[#f0f2f5] w-full">
      <div class="md:hidden bg-[#1e293b] text-white p-4 flex justify-between items-center shadow-md z-40 shrink-0">
         <h2 class="font-black tracking-widest text-sm">ADMIN PANEL</h2>
@@ -354,9 +353,6 @@
       { title: "Sistem Keamanan", items: ['Users', 'System_Logs'] }
     ];
 
-    /* ============================================
-       DETEKSI BROWSER OTOMATIS & AKURAT
-       ============================================ */
     function getCleanBrowserInfo() {
       const ua = navigator.userAgent;
       let browser = "Browser Lainnya";
@@ -373,7 +369,7 @@
     }
 
     /* ============================================
-       ABSENSI & KODE VERIFIKASI (FAIL-SAFE FAST)
+       ABSENSI & PROSES KIRIM OTP
        ============================================ */
     async function requestEmailOTP() {
        const email = document.getElementById('att-email').value;
@@ -385,27 +381,30 @@
           return;
        }
 
-       // Buat Kode OTP Instan
-       const fallbackOTP = Math.floor(1000 + Math.random() * 9000).toString();
-       receivedOTP = fallbackOTP;
+       const btn = document.getElementById('btn-send-code');
+       btn.innerText = "Mengirim...";
+       btn.disabled = true;
 
-       document.getElementById('verify-box').classList.remove('hidden');
-       showToast('Mengirim kode verifikasi...');
-       
        try {
           const res = await apiCall('POST', {
              action: 'sendOTP',
-             data: { email: email, fullName: name, code: fallbackOTP }
+             data: { email: email, fullName: name }
           });
 
+          btn.innerText = "Kirim Kode";
+          btn.disabled = false;
+
           if(res && res.status === 'success') {
-             if(res.code) receivedOTP = res.code;
-             showToast(res.emailSent ? 'Kode verifikasi telah dikirim ke email Anda!' : `Kode verifikasi: ${receivedOTP}`);
+             receivedOTP = res.code;
+             document.getElementById('verify-box').classList.remove('hidden');
+             showToast(res.message);
           } else {
-             showToast(`Kode verifikasi: ${receivedOTP}`);
+             alert(res.message || "Gagal mengirim kode verifikasi ke email.");
           }
        } catch(e) {
-          showToast(`Kode verifikasi: ${receivedOTP}`);
+          btn.innerText = "Kirim Kode";
+          btn.disabled = false;
+          alert("Terjadi kesalahan koneksi saat mengirim kode verifikasi.");
        }
     }
 
@@ -421,14 +420,12 @@
        }
 
        if(receivedOTP && code !== receivedOTP) {
-          alert("Kode verifikasi salah! Periksa kembali kode Anda.");
+          alert("Kode verifikasi salah! Periksa kembali kode di email Anda.");
           return;
        }
 
-       // 1. Tampilkan Animasi Singkat
        document.getElementById('attendance-loader').classList.remove('hidden');
 
-       // 2. Rekam Data Diam Otomatis (Browser, IP, Waktu)
        const browserInfo = getCleanBrowserInfo();
        let locationIP = "Jaringan Lokal/Indonesia";
        try {
@@ -437,8 +434,8 @@
           locationIP = ipData.ip;
        } catch(e) {}
 
-       // 3. Kirim Data Ke Spreadsheet Di Latar Belakang
-       apiCall('POST', {
+       // Kirim data absensi
+       await apiCall('POST', {
           action: 'attendance',
           data: {
              fullName: name,
@@ -449,15 +446,11 @@
           }
        });
 
-       // 4. Langsung Masuk Ke Home Tanpa Jeda
        document.getElementById('attendance-loader').classList.add('hidden');
        navigateTo('public', 'home', true);
        showToast('Absensi berhasil direkam!');
     }
 
-    /* ============================================
-       API & BACKGROUND PRE-FETCHING (0-DELAY)
-       ============================================ */
     async function apiCall(method, payload) {
       try {
         let url = API_URL;
@@ -487,16 +480,12 @@
       return { headers: [], data: [] };
     }
 
-    // Pre-load data sheet di awal secara diam-diam agar 0 delay
     function prefetchEssentialSheets() {
        ['Portfolio', 'Privacy_Policy', 'Terms_Conditions'].forEach(sheet => {
           getCachedData(sheet);
        });
     }
 
-    /* ============================================
-       BROWSER HISTORY & NAVIGATION
-       ============================================ */
     function navigateTo(view, section = null, push = true) {
        if (push && !isNavigatingHistory) {
           history.pushState({ view, section }, '', '');
@@ -540,9 +529,6 @@
     function switchView(view) { navigateTo(view, null, true); }
     function switchPublicSection(sec) { navigateTo('public', sec, true); }
 
-    /* ============================================
-       MODAL LEGAL (PRIVACY & TERMS)
-       ============================================ */
     async function openModal(type) {
         currentType = type;
         var modal = document.getElementById('modal');
@@ -553,7 +539,6 @@
         title.textContent = type === 'privacy' ? 'Kebijakan Privasi' : 'Syarat dan Ketentuan';
         var sheetName = type === 'privacy' ? 'Privacy_Policy' : 'Terms_Conditions';
         
-        // Membaca dari cache memori secara instan
         var res = await getCachedData(sheetName);
 
         var html = '<div class="modal-date"><i class="fas fa-calendar-day"></i> Terakhir diperbarui: ' + getFormattedDate() + '</div>';
@@ -706,7 +691,6 @@
       const isReadOnly = ['System_Logs', 'Analytics_Heatmap', 'Visitor_Attendance'].includes(sheetName);
       document.getElementById('btn-add').style.display = isReadOnly ? 'none' : 'flex';
 
-      // Membaca dari cache tanpa jeda
       if (!force && memoryCache[sheetName]) {
          renderAdminTable(memoryCache[sheetName].headers, memoryCache[sheetName].data);
          return;
