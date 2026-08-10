@@ -453,9 +453,10 @@
     let otpExpiresAt = null;
     let splashAutoTimer = null;
 
+    // MENU DIPERBARUI: Menggunakan 'Web_Branding' untuk memisahkan dari System_Settings Anda yang lama
     const menuGroups = [
       { title: "Manajemen Konten", items: ['Portfolio', 'Blog', 'Career_Timeline', 'Documents', 'Gallery'] },
-      { title: "Pengaturan Hukum & Web", items: ['Privacy_Policy', 'Terms_Conditions', 'System_Settings', 'Dynamic_Menu', 'Banners_Popups'] },
+      { title: "Pengaturan Hukum & Web", items: ['Web_Branding', 'Privacy_Policy', 'Terms_Conditions', 'System_Settings', 'Dynamic_Menu', 'Banners_Popups'] },
       { title: "Interaksi Visitor", items: ['Visitor_Attendance', 'Inbox_Newsletter', 'Notifications', 'User_Bookmarks', 'Analytics_Heatmap'] },
       { title: "Sistem Keamanan", items: ['Users', 'System_Logs'] }
     ];
@@ -658,7 +659,7 @@
        }
     }
 
-    /* FORM INPUT MODAL ADMIN DINAMIS (TERMASUK FAVICON/LOGO JIKA DI SYSTEM SETTINGS) */
+    /* FORM INPUT MODAL ADMIN DINAMIS */
     function openModalInput() {
        const headers = memoryCache[activeModule].headers.slice(1);
        document.getElementById('modal-title').innerText = `Input: ${activeModule.replace('_', ' ')}`;
@@ -668,7 +669,7 @@
        headers.forEach(col => {
           let label = col.replace('_', ' ');
           let isImage = col.toLowerCase().includes('url') || col.toLowerCase().includes('image') || col.toLowerCase().includes('cover') || col.toLowerCase().includes('pic') || col.toLowerCase().includes('logo') || col.toLowerCase().includes('favicon');
-          let isLong = col.includes('Description') || col.includes('Content') || col.includes('JSON');
+          let isLong = col.includes('Description') || col.includes('Content') || col.includes('JSON') || col.includes('Value');
           let span = (isImage || isLong) ? 'md:col-span-2' : 'col-span-1';
 
           if(isImage) {
@@ -727,10 +728,10 @@
           await loadAdminModule(activeModule, true); 
           showToast('Data berhasil disimpan!', 'success'); 
           
-          // Refresh logo/favicon langsung setelah update System Settings
-          if(activeModule === 'System_Settings') {
-              getCachedData('System_Settings', true).then(d => {
-                  if(d.status === 'success') applySystemSettings(d.data);
+          // Refresh logo/favicon langsung setelah update Web Branding
+          if(activeModule === 'Web_Branding') {
+              getCachedData('Web_Branding', true).then(d => {
+                  if(d.status === 'success') applyWebBranding(d.data);
               });
           }
        } else { 
@@ -758,7 +759,7 @@
     async function getCachedData(sheetName, force = false) {
       if (!force && memoryCache[sheetName]) return memoryCache[sheetName];
       // Hindari memunculkan loader terlalu sering untuk sheet esensial background task
-      if (!['System_Settings'].includes(sheetName) && !force) toggleLoader(true);
+      if (!['Web_Branding'].includes(sheetName) && !force) toggleLoader(true);
       
       const res = await apiCall('GET', { action: 'getData', sheet: sheetName });
       toggleLoader(false);
@@ -770,18 +771,19 @@
       return { headers: [], data: [] };
     }
 
+    // Diperbarui agar menarik data dari Web_Branding
     function prefetchEssentialSheets() {
-       ['System_Settings', 'Portfolio', 'Privacy_Policy', 'Terms_Conditions'].forEach(sheet => { 
+       ['Web_Branding', 'Portfolio', 'Privacy_Policy', 'Terms_Conditions'].forEach(sheet => { 
            getCachedData(sheet).then(res => {
-               if(sheet === 'System_Settings' && res.status === 'success' && res.data.length > 0) {
-                   applySystemSettings(res.data);
+               if(sheet === 'Web_Branding' && res.status === 'success' && res.data.length > 0) {
+                   applyWebBranding(res.data);
                }
            }); 
        });
     }
 
-    /* MENGUBAH FAVICON DAN LOGO SECARA DINAMIS DARI DATABASE SYSTEM_SETTINGS */
-    function applySystemSettings(data) {
+    /* MENGUBAH FAVICON DAN LOGO SECARA DINAMIS DARI DATABASE WEB_BRANDING */
+    function applyWebBranding(data) {
         if (!data || data.length === 0) return;
         // Cari data yang statusnya publish/active, atau gunakan baris pertama
         const activeSettings = data.find(s => s.Status === 'publish' || s.Status === 'active') || data[0];
@@ -1071,9 +1073,10 @@
           delete memoryCache[activeModule]; 
           await loadAdminModule(activeModule, true); 
           
-          if(activeModule === 'System_Settings') {
-             getCachedData('System_Settings', true).then(d => {
-                 if(d.status === 'success') applySystemSettings(d.data);
+          // Refresh logo/favicon langsung setelah update Web Branding
+          if(activeModule === 'Web_Branding') {
+             getCachedData('Web_Branding', true).then(d => {
+                 if(d.status === 'success') applyWebBranding(d.data);
              });
           }
           
