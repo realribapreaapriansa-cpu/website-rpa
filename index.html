@@ -24,11 +24,11 @@
     /* EFEK ANIMASI UTAMA */
     @keyframes fadeIn { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: scale(1); } }
     @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-    @keyframes pulseGlow { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.8; } }
+    @keyframes pulseGlow { 0%, 100% { opacity: 0.3; transform: scale(1); } 50% { opacity: 0.6; transform: scale(1.05); } }
     
     .animate-fade-in { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
     .animate-slide-up { animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-    .glow-bg { animation: pulseGlow 4s ease-in-out infinite; }
+    .glow-bg { animation: pulseGlow 5s ease-in-out infinite; }
 
     .glass-header { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
     .nav-btn.active { color: #2563eb; font-weight: 700; }
@@ -123,28 +123,78 @@
     
     <!-- LATAR KANVAS BERANIMASI -->
     <div class="absolute inset-0 overflow-hidden pointer-events-none">
-       <div class="absolute -top-40 -left-40 w-96 h-96 bg-blue-600/30 rounded-full blur-3xl glow-bg"></div>
-       <div class="absolute -bottom-40 -right-40 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl glow-bg" style="animation-delay: 2s;"></div>
+       <div class="absolute -top-40 -left-40 w-[30rem] h-[30rem] bg-blue-600/25 rounded-full blur-3xl glow-bg"></div>
+       <div class="absolute -bottom-40 -right-40 w-[30rem] h-[30rem] bg-indigo-600/20 rounded-full blur-3xl glow-bg" style="animation-delay: 2.5s;"></div>
     </div>
 
-    <!-- 0A. SPLASH SCREEN ANIMATED INTRO (20 DETIK / MANUAL SKIP) -->
-    <div id="splash-screen" class="relative z-10 text-center max-w-xl mx-auto space-y-6 animate-slide-up">
-       <div class="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-tr from-blue-600 to-indigo-500 rounded-3xl text-white text-3xl shadow-2xl shadow-blue-500/40 border border-white/20">
-          <i class="fas fa-shield-halved animate-pulse"></i>
-       </div>
-       <h1 class="text-3xl md:text-5xl font-black text-white tracking-tight leading-tight">Selamat Datang di <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-300">Portal Enterprise</span></h1>
-       <p class="text-slate-400 text-sm md:text-base font-medium max-w-md mx-auto leading-relaxed">Sistem verifikasi keamanan dan presensi tamu profesional terintegrasi digital.</p>
+    <!-- 0A. SPLASH SCREEN ENTERPRISE REDESIGN (MANUAL CLICK ONLY) -->
+    <div id="splash-screen" class="relative z-10 text-center max-w-xl mx-auto space-y-7 animate-slide-up bg-slate-900/60 backdrop-blur-2xl p-8 sm:p-11 rounded-[2.5rem] border border-white/10 shadow-2xl shadow-blue-950/50">
        
-       <div class="pt-4 flex flex-col sm:flex-row gap-20 justify-center items-center">
-          <button onclick="skipSplash()" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 text-white font-extrabold px-8 py-4 rounded-2xl text-sm shadow-xl shadow-blue-600/30 transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-20">
-             <span>Isi Buku Tamu Sekarang</span>
+       <!-- BADGE STATUS OTENTIKASI -->
+       <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-400/20 text-blue-400 text-[11px] font-bold tracking-wider uppercase backdrop-blur-md shadow-inner">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          Enterprise Security Gateway V18
+       </div>
+
+       <!-- BRAND LOGO ICON -->
+       <div class="relative w-24 h-24 mx-auto flex items-center justify-center bg-gradient-to-tr from-blue-600 via-indigo-600 to-blue-500 rounded-3xl shadow-2xl shadow-blue-500/30 border border-white/20">
+          <i class="fas fa-shield-halved text-white text-4xl"></i>
+          <div class="absolute -bottom-1 -right-1 w-7 h-7 bg-emerald-500 rounded-full border-2 border-slate-900 flex items-center justify-center text-white text-xs shadow-md">
+             <i class="fas fa-check"></i>
+          </div>
+       </div>
+
+       <!-- HEADLINE & SUBTITLE -->
+       <div class="space-y-3">
+          <h1 class="text-3xl sm:text-4xl font-black text-white tracking-tight leading-tight">
+             Selamat Datang di <br><span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-300 to-sky-400">Portal Enterprise</span>
+          </h1>
+          <p class="text-slate-400 text-xs sm:text-sm font-normal max-w-md mx-auto leading-relaxed">
+             Sistem verifikasi keamanan dan presensi tamu profesional terintegrasi digital. Silakan melakukan verifikasi untuk melanjutkan.
+          </p>
+       </div>
+       
+       <!-- MINI FEATURE STATUS BADGES -->
+       <div class="grid grid-cols-3 gap-2 sm:gap-3 max-w-md mx-auto pt-1 text-left">
+          <div class="bg-slate-800/50 border border-white/5 p-3 rounded-2xl flex items-center gap-2.5">
+             <i class="fas fa-envelope-circle-check text-blue-400 text-sm shrink-0"></i>
+             <div class="min-w-0">
+                <p class="text-[9px] text-slate-400 font-semibold uppercase tracking-wider">Otentikasi</p>
+                <p class="text-[11px] font-bold text-white truncate">OTP Email</p>
+             </div>
+          </div>
+          <div class="bg-slate-800/50 border border-white/5 p-3 rounded-2xl flex items-center gap-2.5">
+             <i class="fas fa-lock text-emerald-400 text-sm shrink-0"></i>
+             <div class="min-w-0">
+                <p class="text-[9px] text-slate-400 font-semibold uppercase tracking-wider">Proteksi</p>
+                <p class="text-[11px] font-bold text-white truncate">Enkripsi Data</p>
+             </div>
+          </div>
+          <div class="bg-slate-800/50 border border-white/5 p-3 rounded-2xl flex items-center gap-2.5">
+             <i class="fas fa-bolt text-amber-400 text-sm shrink-0"></i>
+             <div class="min-w-0">
+                <p class="text-[9px] text-slate-400 font-semibold uppercase tracking-wider">Proses</p>
+                <p class="text-[11px] font-bold text-white truncate">Realtime</p>
+             </div>
+          </div>
+       </div>
+
+       <!-- ACTION BUTTON (MANUAL CLICK ONLY) -->
+       <div class="pt-2 flex justify-center">
+          <button onclick="skipSplash()" class="w-full sm:w-auto bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold px-9 py-4 rounded-2xl text-sm shadow-xl shadow-blue-600/30 transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-3 border border-white/20 cursor-pointer">
+             <span>Mulai Isi Buku Tamu</span>
              <i class="fas fa-arrow-right text-xs"></i>
           </button>
        </div>
-       <div class="text-xs text-slate-500 font-bold tracking-widest uppercase pt-6">Membuka otomatis dalam <span id="splash-timer">20</span>s...</div>
+
+       <!-- STATUS KETENTUAN MASUK -->
+       <div class="text-[11px] text-slate-500 font-semibold tracking-wider uppercase pt-1 flex items-center justify-center gap-2">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+          Sistem Siap • Silakan Tekan Tombol Untuk Lanjut
+       </div>
     </div>
 
-    <!-- 0B. FORM BUKU TAMU CLEAN & ELEGANT (MUTU TINGGI) -->
+    <!-- 0B. FORM BUKU TAMU CLEAN & ELEGANT -->
     <div id="guest-form-card" class="hidden relative z-10 bg-white/95 backdrop-blur-2xl p-8 md:p-10 rounded-[2.5rem] shadow-2xl border border-white/40 w-full max-w-md my-auto animate-fade-in">
        <div class="flex justify-between items-center mb-6">
           <div>
@@ -178,7 +228,7 @@
                 <label class="text-[11px] font-extrabold text-blue-600 uppercase tracking-wider">Kode Verifikasi Email</label>
                 <span id="otp-timer-display" class="text-[10px] font-black text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md">03:00</span>
              </div>
-             <input type="text" id="att-code" maxlength="2" placeholder="Masukkan 4 digit kode" class="w-full p-3.5 bg-blue-50/50 border border-blue-200 rounded-xl text-sm font-extrabold text-center tracking-[0.4em] outline-none focus:border-blue-600 focus:bg-white transition-all">
+             <input type="text" id="att-code" maxlength="4" placeholder="Masukkan 4 digit kode" class="w-full p-3.5 bg-blue-50/50 border border-blue-200 rounded-xl text-sm font-extrabold text-center tracking-[0.4em] outline-none focus:border-blue-600 focus:bg-white transition-all">
           </div>
 
           <button onclick="submitAttendance()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold py-4 rounded-xl text-sm shadow-xl shadow-blue-600/30 transition-all hover:scale-[1.02] active:scale-95 mt-4 flex items-center justify-center gap-2">
@@ -231,12 +281,14 @@
           <div class="bg-white rounded-3xl p-8 md:p-16 shadow-sm border border-slate-200 flex flex-col md:flex-row items-center gap-10">
              <div class="relative shrink-0">
                 <div class="absolute inset-0 bg-blue-600 blur-2xl opacity-20 rounded-full"></div>
-                <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&q=80" alt="Profile" class="relative h-40 w-40 md:h-56 md:w-56 rounded-full object-cover border-4 border-white shadow-xl">
+                <!-- AVATAR NEUTRAL PLACEHOLDER TANPA FOTO DEMO -->
+                <div class="relative h-40 w-40 md:h-56 md:w-56 rounded-full bg-slate-100 border-4 border-white shadow-xl flex items-center justify-center text-slate-300 text-6xl md:text-7xl">
+                   <i class="fas fa-user-circle"></i>
+                </div>
              </div>
              <div class="text-center md:text-left">
-                <span class="inline-block bg-blue-50 text-blue-700 text-xs font-extrabold px-3 py-1 rounded-full uppercase tracking-wider mb-3">Senior Software Architect</span>
-                <h1 class="text-3xl md:text-5xl font-black text-slate-900 leading-tight">Membangun Ekosistem Digital Skala Enterprise.</h1>
-                <p class="text-slate-500 mt-4 max-w-2xl text-sm md:text-base leading-relaxed">Selamat datang di portal profesional saya. Absensi Anda telah diverifikasi dan terekam secara aman.</p>
+                <h1 class="text-3xl md:text-5xl font-black text-slate-900 leading-tight">Selamat Datang di Portal Website</h1>
+                <p class="text-slate-500 mt-4 max-w-2xl text-sm md:text-base leading-relaxed">Absensi kunjungan Anda telah terverifikasi dan terekam ke dalam sistem.</p>
                 <div class="mt-8 flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
                    <button onclick="switchPublicSection('portfolio')" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-blue-600/30 transition-all text-sm">Lihat Portfolio</button>
                    <button onclick="switchPublicSection('career')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-6 py-3 rounded-xl font-bold transition-all text-sm">Unduh Resume (PDF)</button>
@@ -426,18 +478,9 @@
         setTimeout(() => { toast.classList.remove('show'); }, 3800);
     }
 
-    /* CONTROLLER SPLASH SCREEN INTRO */
+    /* CONTROLLER SPLASH SCREEN INTRO (SKIP OTOMATIS DINONAKTIFKAN) */
     function startSplashTimer() {
-       let sec = 3;
-       const timerDisplay = document.getElementById('splash-timer');
-       splashAutoTimer = setInterval(() => {
-          sec--;
-          if (timerDisplay) timerDisplay.textContent = sec;
-          if (sec <= 0) {
-             clearInterval(splashAutoTimer);
-             skipSplash();
-          }
-       }, 1000);
+       // Skip otomatis dinonaktifkan. Pengunjung harus menekan tombol secara manual.
     }
 
     function skipSplash() {
@@ -592,13 +635,13 @@
        const email = currentUser ? currentUser.Email : '-';
 
        if(tab === 'dash') {
-          container.innerHTML = `<div class="bg-white p-8 rounded-3xl border shadow-sm space-y-4 animate-fade-in"><h2 class="font-extrabold text-xl text-slate-900">Dashboard Utama Visitor</h2><p class="text-sm text-slate-500">Selamat datang kembali, ${name}!</p><div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4"><div class="bg-blue-50 p-5 rounded-2xl border border-blue-100"><div class="text-2xl font-black text-blue-600">1</div><div class="text-xs text-slate-500 font-bold mt-1">Dokumen Diunduh</div></div><div class="bg-emerald-50 p-5 rounded-2xl border border-emerald-100"><div class="text-2xl font-black text-emerald-600">0</div><div class="text-xs text-slate-500 font-bold mt-1">Bookmark Disimpan</div></div><div class="bg-indigo-50 p-5 rounded-2xl border border-indigo-100"><div class="text-2xl font-black text-indigo-600">Terverifikasi</div><div class="text-xs text-slate-500 font-bold mt-1">Status Keamanan Akun</div></div></div></div>`;
+          container.innerHTML = `<div class="bg-white p-8 rounded-3xl border shadow-sm space-y-4 animate-fade-in"><h2 class="font-extrabold text-xl text-slate-900">Dashboard Utama Visitor</h2><p class="text-sm text-slate-500">Selamat datang kembali, ${name}!</p><div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4"><div class="bg-blue-50 p-5 rounded-2xl border border-blue-100"><div class="text-2xl font-black text-blue-600">0</div><div class="text-xs text-slate-500 font-bold mt-1">Dokumen Diunduh</div></div><div class="bg-emerald-50 p-5 rounded-2xl border border-emerald-100"><div class="text-2xl font-black text-emerald-600">0</div><div class="text-xs text-slate-500 font-bold mt-1">Bookmark Disimpan</div></div><div class="bg-indigo-50 p-5 rounded-2xl border border-indigo-100"><div class="text-2xl font-black text-indigo-600">Terverifikasi</div><div class="text-xs text-slate-500 font-bold mt-1">Status Keamanan Akun</div></div></div></div>`;
        } else if(tab === 'profile') {
           container.innerHTML = `<div class="bg-white p-8 rounded-3xl border shadow-sm space-y-4 animate-fade-in"><h2 class="font-extrabold text-xl text-slate-900">Profil Saya</h2><div class="space-y-3 text-sm"><div><label class="font-bold text-xs text-slate-400 block mb-1">NAMA LENGKAP</label><div class="p-3 bg-slate-50 rounded-xl font-bold text-slate-800">${name}</div></div><div><label class="font-bold text-xs text-slate-400 block mb-1">EMAIL</label><div class="p-3 bg-slate-50 rounded-xl font-bold text-slate-800">${email}</div></div></div></div>`;
        } else if(tab === 'edit') {
           container.innerHTML = `<div class="bg-white p-8 rounded-3xl border shadow-sm space-y-4 animate-fade-in"><h2 class="font-extrabold text-xl text-slate-900">Edit Profil Akun</h2><div class="space-y-4 text-sm"><div><label class="font-bold text-xs text-slate-600 block mb-1">NAMA LENGKAP</label><input type="text" value="${name}" class="w-full p-3 bg-slate-50 border rounded-xl outline-none focus:border-blue-600"></div><div><label class="font-bold text-xs text-slate-600 block mb-1">EMAIL</label><input type="email" value="${email}" class="w-full p-3 bg-slate-100 border rounded-xl outline-none text-slate-400" disabled></div><button onclick="showToast('Perubahan profil berhasil disimpan!', 'success')" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold text-xs shadow-md">Simpan Perubahan</button></div></div>`;
        } else if(tab === 'activity') {
-          container.innerHTML = `<div class="bg-white p-8 rounded-3xl border shadow-sm space-y-4 animate-fade-in"><h2 class="font-extrabold text-xl text-slate-900">Riwayat Aktivitas</h2><div class="space-y-3 text-sm"><div class="p-4 bg-slate-50 rounded-2xl border flex justify-between items-center"><div><div class="font-bold text-slate-800">Melakukan Absensi Kunjungan</div><div class="text-xs text-slate-400">Sistem Portal Web</div></div><span class="text-xs font-bold text-blue-600">Baru Saja</span></div></div></div>`;
+          container.innerHTML = `<div class="bg-white p-8 rounded-3xl border shadow-sm space-y-4 animate-fade-in"><h2 class="font-extrabold text-xl text-slate-900">Riwayat Aktivitas</h2><div class="space-y-3 text-sm"><p class="text-slate-400 text-sm font-medium">Belum ada riwayat aktivitas recorded.</p></div></div>`;
        } else {
           container.innerHTML = `<div class="bg-white p-8 rounded-3xl border shadow-sm animate-fade-in"><h2 class="font-extrabold text-xl mb-2">Modul Portal</h2><p class="text-sm text-slate-500">Aktivitas dan keamanan akun Anda aktif.</p></div>`;
        }
@@ -846,10 +889,11 @@
           if(list) {
               list.innerHTML = '';
               res.data.slice(0, 6).forEach(item => {
+                 const imgSrc = item.CoverImage_URL || item.ImageURL || '';
                  list.innerHTML += `
                    <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm hover:shadow-lg transition-shadow group flex flex-col h-full cursor-pointer animate-fade-in">
-                      <div class="overflow-hidden rounded-2xl mb-4">
-                         <img src="${item.CoverImage_URL || item.ImageURL || 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=400&q=80'}" class="h-48 w-full object-cover group-hover:scale-105 transition-transform duration-500">
+                      <div class="overflow-hidden rounded-2xl mb-4 bg-slate-100 h-48 flex items-center justify-center">
+                         ${imgSrc ? `<img src="${imgSrc}" class="h-48 w-full object-cover group-hover:scale-105 transition-transform duration-500">` : `<i class="fas fa-image text-slate-300 text-3xl"></i>`}
                       </div>
                       <h4 class="font-extrabold text-base text-slate-900 mb-2">${item.Title_ID || item.Title || 'Project'}</h4>
                       <p class="text-sm text-slate-500 line-clamp-2 flex-1">${item.Description_ID || item.Description || ''}</p>
