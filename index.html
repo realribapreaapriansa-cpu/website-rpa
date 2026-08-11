@@ -421,12 +421,13 @@
            <div class="flex items-center gap-2 md:gap-3">
              <input id="admin-search" type="search" oninput="filterAdminTable(this.value)" placeholder="Cari data..." class="admin-search px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500">
              <button onclick="refreshAdminModule()" id="btn-refresh" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2.5 rounded-xl font-bold text-xs shadow-sm" title="Muat ulang">↻</button>
-             <div class="flex items-center gap-2"><input id="admin-search" oninput="filterAdminTable(this.value)" type="search" placeholder="Cari data..." class="hidden sm:block w-40 lg:w-56 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold outline-none focus:border-blue-500"><button onclick="refreshAdminModule()" class="hidden sm:flex bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2.5 rounded-xl font-bold text-xs" title="Refresh"><i class="fas fa-rotate"></i></button><button onclick="openModalInput()" id="btn-add" class="hidden bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-md shrink-0 items-center gap-2">
+             <div class="flex items-center gap-2"><button onclick="openModalInput()" id="btn-add" class="hidden bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-md shrink-0 items-center gap-2">
               <span class="text-lg leading-none">+</span> Tambah Data
            </button>
         </header>
         <div class="admin-content-scroll flex-1 p-4 md:p-6 overflow-y-auto w-full pb-16 min-h-0">
-           <div id="welcome-panel" class="bg-white p-12 rounded-3xl border border-slate-200 text-center max-w-lg mx-auto mt-10 shadow-sm animate-fade-in">
+           <div id="admin-overview" class="hidden space-y-5 animate-fade-in"></div>
+            <div id="welcome-panel" class="bg-white p-12 rounded-3xl border border-slate-200 text-center max-w-lg mx-auto mt-10 shadow-sm animate-fade-in">
               <div class="text-5xl mb-4">🗄️</div>
               <h2 class="text-2xl font-extrabold text-slate-800 mb-2">Workspace Admin</h2>
               <p class="text-sm text-slate-500">Pilih modul di samping untuk mengelola database secara instan.</p>
@@ -477,6 +478,9 @@
     let splashAutoTimer = null;
 
     const menuGroups = [
+      { title: "Pusat Kontrol", icon: 'fa-gauge-high', items: [
+        {sheet:'__OVERVIEW__',label:'Overview Dashboard'}
+      ]},
       { title: "Dashboard & Profil", icon: 'fa-house', items: [
         {sheet:'Home',label:'Home'}, {sheet:'Profile',label:'Profile'}, {sheet:'Contact',label:'Contact'}
       ]},
@@ -1046,7 +1050,7 @@ async function handleLogin() {
       if (res.status === 'success') {
         currentUser = res.user;
         showToast("Login Berhasil! Selamat datang.", "success");
-        if (currentUser.Role === 'SuperAdmin') { initAdminSidebar(); switchView('admin'); } 
+        if (currentUser.Role === 'SuperAdmin' || currentUser.Role === 'Admin') { initAdminSidebar(); switchView('admin'); } 
         else { switchView('visitor'); }
       } else { showToast(res.message, "error"); }
     }
@@ -1067,15 +1071,44 @@ async function handleLogin() {
     }
     function toggleAdminSidebar(){ const sb=document.getElementById('adm-sidebar'); if(!sb)return; const open=sb.classList.contains('hidden'); sb.classList.toggle('hidden'); sb.classList.toggle('mobile-open',open); document.body.style.overflow=open?'hidden':''; }
     async function loadAdminModule(sheetName, force = false) {
+       if (sheetName === '__OVERVIEW__') {
+          activeModule='__OVERVIEW__';
+          document.getElementById('welcome-panel').classList.add('hidden');
+          document.getElementById('table-panel').classList.add('hidden');
+          document.getElementById('admin-overview').classList.remove('hidden');
+          document.getElementById('admin-module-title').innerText='Overview Dashboard';
+          document.getElementById('btn-add').style.display='none';
+          document.querySelectorAll('.mod-btn').forEach(b=>{const a=b.dataset.mod==='__OVERVIEW__';b.classList.toggle('bg-blue-600',a);b.classList.toggle('text-white',a);b.classList.toggle('shadow-md',a);b.classList.toggle('text-slate-300',!a);});
+          await renderAdminOverview(force);
+          if(innerWidth<768){const sb=document.getElementById('adm-sidebar');sb.classList.add('hidden');sb.classList.remove('mobile-open');document.body.style.overflow='';}
+          return;
+       }
        activeModule=sheetName;
        document.getElementById('welcome-panel').classList.add('hidden');
+       document.getElementById('admin-overview').classList.add('hidden');
        document.getElementById('table-panel').classList.remove('hidden');
        const activeLabel=menuGroups.flatMap(g=>g.items).find(x=>x.sheet===sheetName)?.label||sheetName.replace(/_/g,' ');document.getElementById('admin-module-title').innerText=activeLabel;
        document.querySelectorAll('.mod-btn').forEach(b=>{const a=b.dataset.mod===sheetName;b.classList.toggle('bg-blue-600',a);b.classList.toggle('text-white',a);b.classList.toggle('shadow-md',a);b.classList.toggle('text-slate-300',!a);});
        if(innerWidth<768){const sb=document.getElementById('adm-sidebar');sb.classList.add('hidden');sb.classList.remove('mobile-open');document.body.style.overflow='';}
-       const ro=['System_Logs','Analytics','Visitor_Attendance'].includes(sheetName); document.getElementById('btn-add').style.display=ro?'none':'flex';
-       if(!force && memoryCache[sheetName]){renderAdminTable(memoryCache[sheetName].headers,memoryCache[sheetName].data);return;}
-       const res=await getCachedData(sheetName,force); renderAdminTable(res.headers||[],res.data||[]);
+       const ro=['System_Logs','Analytics','Visitor_Attendance'].includes(sheetName);document.getElementById('btn-add').style.display=ro?'none':'flex';
+       if(!force&&memoryCache[sheetName]){renderAdminTable(memoryCache[sheetName].headers,memoryCache[sheetName].data);return;}
+       const res=await getCachedData(sheetName,force);renderAdminTable(res.headers||[],res.data||[]);
+    }
+    async function renderAdminOverview(force=false){
+       const sheets=menuGroups.flatMap(g=>g.items).map(x=>x.sheet).filter(x=>x!=='__OVERVIEW__');
+       const panel=document.getElementById('admin-overview');
+       panel.innerHTML='<div class="bg-white p-6 rounded-3xl border shadow-sm"><i class="fas fa-spinner fa-spin mr-2 text-blue-600"></i> Memuat database...</div>';
+       const results=await Promise.all(sheets.map(s=>getCachedData(s,force).catch(()=>({data:[]}))));
+       const counts={};sheets.forEach((s,i)=>counts[s]=(results[i].data||[]).length);
+       const total=Object.values(counts).reduce((a,b)=>a+b,0);
+       const groups=[
+         ['Manajemen Konten','fa-pen-to-square',['Home','Profile','Contact','Portfolio','Blog','Career_Timeline','Documents','Gallery'],'bg-blue-50 text-blue-600'],
+         ['Website & Legal','fa-palette',['Web_Branding','Privacy_Policy','Terms_Conditions','Dynamic_Menu','Banners','Popups'],'bg-indigo-50 text-indigo-600'],
+         ['Interaksi Visitor','fa-users',['Visitor_Attendance','Newsletter','Notifications','Bookmarks','Analytics'],'bg-emerald-50 text-emerald-600'],
+         ['Sistem & Keamanan','fa-shield-halved',['Users','System_Logs'],'bg-rose-50 text-rose-600']
+       ];
+       const card=(g)=>{const [title,icon,arr,cls]=g;return `<div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-5"><div class="flex items-center justify-between mb-4"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-2xl ${cls} flex items-center justify-center"><i class="fas ${icon}"></i></div><div><h3 class="font-black">${title}</h3><p class="text-[11px] text-slate-500">${arr.length} modul</p></div></div><span class="text-xs font-black text-slate-500">${arr.reduce((n,x)=>n+counts[x],0)} data</span></div><div class="grid grid-cols-2 gap-2">${arr.map(x=>`<button onclick="loadAdminModule('${x}')" class="text-left p-3 rounded-xl bg-slate-50 hover:bg-blue-50 border border-slate-100 transition"><div class="text-xs font-bold text-slate-700 truncate">${x.replace(/_/g,' ')}</div><div class="text-[10px] text-slate-400 mt-1">${counts[x]} record</div></button>`).join('')}</div></div>`};
+       panel.innerHTML=`<div class="space-y-5"><div class="grid grid-cols-2 lg:grid-cols-4 gap-4"><div class="bg-slate-900 text-white p-5 rounded-3xl"><div class="text-xs text-slate-400 font-bold">TOTAL DATABASE</div><div class="text-3xl font-black mt-2">${total}</div><div class="text-[10px] text-slate-400 mt-1">21 modul terintegrasi</div></div><div class="bg-white p-5 rounded-3xl border"><div class="text-xs text-slate-400 font-bold">MODUL</div><div class="text-3xl font-black text-blue-600 mt-2">${sheets.length}</div><div class="text-[10px] text-slate-400 mt-1">database aktif</div></div><div class="bg-white p-5 rounded-3xl border"><div class="text-xs text-slate-400 font-bold">KONTEN WEBSITE</div><div class="text-3xl font-black text-indigo-600 mt-2">${['Home','Profile','Contact','Portfolio','Blog','Career_Timeline','Documents','Gallery'].reduce((n,x)=>n+counts[x],0)}</div></div><div class="bg-white p-5 rounded-3xl border"><div class="text-xs text-slate-400 font-bold">VISITOR</div><div class="text-3xl font-black text-emerald-600 mt-2">${['Visitor_Attendance','Newsletter','Notifications','Bookmarks','Analytics'].reduce((n,x)=>n+counts[x],0)}</div></div></div><div class="grid grid-cols-1 xl:grid-cols-2 gap-5">${groups.map(card).join('')}</div></div>`;
     }
     function renderAdminTable(headers,rows){
        const thead=document.getElementById('admin-thead'),tbody=document.getElementById('admin-tbody'); thead.innerHTML='';tbody.innerHTML='';
@@ -1092,6 +1125,14 @@ async function handleLogin() {
     async function actionData(id,actionType){if(!confirm(actionType==='softDelete'?'Pindahkan data ini ke tempat sampah?':'Pulihkan data ini?'))return;toggleLoader(true);try{const r=await apiCall('POST',{action:actionType,sheet:activeModule,user:currentUser?currentUser.UserID:'System',data:{id:id}});if(r.status==='success'){invalidateCache(activeModule);await loadAdminModule(activeModule,true);showToast(r.message,'success')}else showToast(r.message||'Gagal memproses data.','error')}finally{toggleLoader(false)}}
 
 
+
+    async function prefetchEssentialSheets(){
+       const essential=['Home','Profile','Contact','Portfolio','Blog','Career_Timeline','Documents','Gallery','Web_Branding','Dynamic_Menu','Banners','Popups','Privacy_Policy','Terms_Conditions'];
+       await Promise.all(essential.map(s=>getCachedData(s).catch(()=>null)));
+       try{applyWebBranding(memoryCache.Web_Branding?.data||[]);}catch(e){}
+       try{await renderDynamicMenu();}catch(e){}
+       try{renderPublicContent(false);renderPublicBanners();renderPublicPopup();}catch(e){}
+    }
 
     window.onload = () => {
        history.replaceState({ view: 'attendance', section: null }, '', '');
