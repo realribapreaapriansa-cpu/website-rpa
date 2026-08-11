@@ -111,6 +111,15 @@
     .admin-search { min-width:220px; }
     @media(max-width:767px){ .public-banner-wrap{padding:12px 16px 0}.admin-search{min-width:0;width:100%} }
 
+
+    /* AUTH UPGRADE */
+    .auth-overlay{position:fixed;inset:0;background:rgba(15,23,42,.72);backdrop-filter:blur(10px);z-index:99998;display:flex;align-items:center;justify-content:center;padding:16px}
+    .auth-card{width:min(520px,100%);max-height:92vh;overflow:auto;background:#fff;border-radius:28px;box-shadow:0 30px 90px rgba(0,0,0,.3)}
+    .auth-tab{padding:.7rem 1rem;border-radius:.8rem;font-size:.75rem;font-weight:800}
+    .auth-tab.active{background:#eff6ff;color:#2563eb}
+    .protected-card{background:linear-gradient(135deg,#0f172a,#1e3a8a);color:#fff;border-radius:28px;padding:28px;box-shadow:0 18px 50px rgba(30,64,175,.18)}
+    .face-preview{width:180px;height:180px;border-radius:28px;object-fit:cover;background:#0f172a;border:4px solid #e2e8f0}
+
   </style>
 </head>
 <!-- REVISI: h-[100dvh] menangani address bar HP agar tidak terpotong ke bawah -->
@@ -344,19 +353,57 @@
   <!-- ================================================================= -->
   <!-- 2. LOGIN VIEW                                                     -->
   <!-- ================================================================= -->
-  <div id="view-login" class="hidden absolute inset-0 bg-slate-50 z-50 flex flex-col justify-center items-center p-4">
-    <div class="bg-white p-8 md:p-10 rounded-3xl shadow-xl border border-slate-100 w-full max-w-md relative animate-fade-in">
-       <button onclick="history.back()" class="absolute top-6 left-6 text-slate-400 hover:text-slate-800 font-bold text-xl">&times;</button>
-       <div class="text-center mb-8 mt-2">
-          <div class="inline-flex items-center justify-center w-12 h-12 bg-blue-50 text-blue-600 rounded-xl mb-4 text-xl">🔒</div>
-          <h2 class="text-2xl font-black text-slate-900">Secure Access</h2>
-          <p class="text-sm text-slate-500 mt-1">Masuk untuk mengakses Dashboard.</p>
+  <div id="view-login" class="hidden absolute inset-0 bg-slate-50 z-50 flex flex-col justify-center items-center p-4 overflow-y-auto">
+    <div class="bg-white p-7 md:p-9 rounded-[2rem] shadow-xl border border-slate-100 w-full max-w-md relative animate-fade-in">
+       <button onclick="history.back()" class="absolute top-5 left-5 text-slate-400 hover:text-slate-800 font-bold text-xl">&times;</button>
+       <div class="text-center mb-6 mt-2">
+          <div class="inline-flex items-center justify-center w-12 h-12 bg-blue-50 text-blue-600 rounded-xl mb-4 text-xl">🔐</div>
+          <h2 class="text-2xl font-black text-slate-900">Portal Akses</h2>
+          <p class="text-sm text-slate-500 mt-1">Login atau buat akun Visitor.</p>
        </div>
-       <div class="space-y-4">
-          <div><label class="text-xs font-bold text-slate-700 mb-1 block">Alamat Email</label><input type="email" id="login-email" placeholder="nama@email.com" class="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none"></div>
-          <div><label class="text-xs font-bold text-slate-700 mb-1 block">Kata Sandi</label><input type="password" id="login-password" placeholder="••••••••" class="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none"></div>
-          <button onclick="handleLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl text-sm shadow-md mt-2">Masuk ke Sistem</button>
+       <div class="flex gap-2 bg-slate-50 p-1.5 rounded-2xl mb-5">
+          <button id="auth-login-tab" class="auth-tab active flex-1" onclick="showAuthPanel('login')">Masuk</button>
+          <button id="auth-register-tab" class="auth-tab flex-1" onclick="showAuthPanel('register')">Registrasi</button>
        </div>
+       <div id="auth-login-panel" class="space-y-4">
+          <div><label class="text-xs font-bold text-slate-700 mb-1 block">Alamat Email</label><input type="email" id="login-email" autocomplete="email" placeholder="nama@email.com" class="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500"></div>
+          <div><label class="text-xs font-bold text-slate-700 mb-1 block">Kata Sandi</label><input type="password" id="login-password" autocomplete="current-password" placeholder="••••••••" class="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500"></div>
+          <button onclick="handleLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl text-sm shadow-md">Masuk ke Sistem</button>
+          <button onclick="openRecoveryPanel()" class="w-full text-blue-600 font-bold text-xs py-2">Lupa akun / password?</button>
+       </div>
+       <div id="auth-register-panel" class="hidden space-y-4">
+          <div><label class="text-xs font-bold text-slate-700 mb-1 block">Nama Lengkap</label><input id="register-name" autocomplete="name" type="text" placeholder="Nama lengkap" class="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500"></div>
+          <div><label class="text-xs font-bold text-slate-700 mb-1 block">Alamat Email</label><input id="register-email" autocomplete="email" type="email" placeholder="nama@email.com" class="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500"></div>
+          <div><label class="text-xs font-bold text-slate-700 mb-1 block">Kata Sandi</label><input id="register-password" autocomplete="new-password" type="password" placeholder="Minimal 8 karakter" class="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500"></div>
+          <div><label class="text-xs font-bold text-slate-700 mb-1 block">Ulangi Kata Sandi</label><input id="register-password2" autocomplete="new-password" type="password" placeholder="Ulangi kata sandi" class="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500"></div>
+          <button onclick="handleRegister()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 rounded-xl text-sm shadow-md">Buat Akun Visitor</button>
+       </div>
+    </div>
+  </div>
+
+  <div id="auth-recovery" class="hidden auth-overlay">
+    <div class="auth-card p-7 md:p-9">
+      <div class="flex justify-between items-start"><div><div class="text-blue-600 text-2xl mb-2">🛡️</div><h3 class="text-xl font-black text-slate-900">Pemulihan Akun</h3><p class="text-xs text-slate-500 mt-1">Masukkan email akun Anda untuk memulai proses pemulihan.</p></div><button onclick="closeRecoveryPanel()" class="text-2xl text-slate-400">&times;</button></div>
+      <div class="mt-6 space-y-4">
+        <input id="recovery-email" type="email" placeholder="Email akun" class="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none">
+        <button onclick="handleRecovery()" class="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl text-sm">Kirim Permintaan Pemulihan</button>
+        <p id="recovery-note" class="text-[11px] text-slate-500 bg-slate-50 p-4 rounded-xl">Pemulihan password harus diproses oleh endpoint keamanan pada Apps Script. Password lama tidak akan ditampilkan.</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="face-verification-modal" class="hidden auth-overlay">
+    <div class="auth-card p-7 md:p-9">
+      <div class="flex justify-between items-start"><div><div class="text-blue-600 text-2xl mb-2">◉</div><h3 class="text-xl font-black text-slate-900">Verifikasi Wajah</h3><p class="text-xs text-slate-500 mt-1">Ambil selfie untuk konfirmasi akses dokumen sensitif.</p></div><button onclick="closeFaceVerification()" class="text-2xl text-slate-400">&times;</button></div>
+      <div class="mt-6 flex flex-col items-center gap-4">
+        <video id="face-camera" class="face-preview hidden" autoplay playsinline muted></video>
+        <canvas id="face-canvas" class="hidden"></canvas>
+        <img id="face-captured" class="face-preview hidden" alt="Foto verifikasi">
+        <div id="face-placeholder" class="face-preview flex items-center justify-center text-slate-500"><i class="fas fa-camera text-4xl"></i></div>
+        <div class="flex gap-2 w-full"><button onclick="startFaceCamera()" id="face-start-btn" class="flex-1 bg-slate-900 text-white py-3 rounded-xl font-bold text-xs">Aktifkan Kamera</button><button onclick="captureFace()" id="face-capture-btn" class="hidden flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold text-xs">Ambil Foto</button></div>
+        <button onclick="confirmFaceVerification()" id="face-confirm-btn" class="hidden w-full bg-emerald-600 text-white py-3.5 rounded-xl font-bold text-sm">Konfirmasi & Lanjutkan</button>
+        <p class="text-[10px] text-slate-400 text-center">Kamera hanya digunakan setelah Anda menekan tombol. Foto tidak otomatis dikirim ke server oleh HTML ini.</p>
+      </div>
     </div>
   </div>
 
@@ -384,6 +431,7 @@
            <button onclick="switchVisitorTab('favorite')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50 transition-all" data-vtab="favorite">❤️ Favorite</button>
            <button onclick="switchVisitorTab('message')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50 transition-all" data-vtab="message">✉️ Pesan Inbox</button>
            <button onclick="switchVisitorTab('notif')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50 transition-all" data-vtab="notif">🔔 Notifikasi</button>
+           <button onclick="switchVisitorTab('documents')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50 transition-all" data-vtab="documents">📄 CV & Lamaran Kerja</button>
            <button onclick="switchVisitorTab('settings')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50 transition-all" data-vtab="settings">⚙️ Pengaturan Akun</button>
            <button onclick="switchVisitorTab('security')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50 transition-all" data-vtab="security">🔒 Keamanan Akun</button>
            <button onclick="switchVisitorTab('password')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50 transition-all" data-vtab="password">🔑 Ganti Password</button>
@@ -419,7 +467,7 @@
         <header class="bg-white px-4 md:px-6 py-4 border-b border-slate-200 flex flex-col md:flex-row gap-3 md:gap-4 justify-between items-stretch md:items-center shadow-sm shrink-0">
            <div class="flex items-center gap-3 min-w-0"><button onclick="toggleAdminSidebar()" class="md:hidden p-2 rounded-xl bg-slate-100 text-slate-600" aria-label="Menu">☰</button><div class="min-w-0"><h1 id="admin-module-title" class="font-extrabold text-lg text-slate-800 tracking-tight truncate">Pusat Database</h1><p class="hidden sm:block text-[11px] text-slate-400 font-semibold">Kelola website langsung dari Dashboard Admin</p></div></div>
            <div class="flex items-center gap-2 md:gap-3">
-             <input id="admin-search" type="search" oninput="filterAdminTable(this.value)" placeholder="Cari data..." class="admin-search px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500">
+             <input id="admin-search-mobile" type="search" oninput="filterAdminTable(this.value)" placeholder="Cari data..." class="admin-search px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500">
              <button onclick="refreshAdminModule()" id="btn-refresh" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2.5 rounded-xl font-bold text-xs shadow-sm" title="Muat ulang">↻</button>
              <div class="flex items-center gap-2"><input id="admin-search" oninput="filterAdminTable(this.value)" type="search" placeholder="Cari data..." class="hidden sm:block w-40 lg:w-56 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold outline-none focus:border-blue-500"><button onclick="refreshAdminModule()" class="hidden sm:flex bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2.5 rounded-xl font-bold text-xs" title="Refresh"><i class="fas fa-rotate"></i></button><button onclick="openModalInput()" id="btn-add" class="hidden bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-md shrink-0 items-center gap-2">
               <span class="text-lg leading-none">+</span> Tambah Data
@@ -770,6 +818,9 @@
          } else if(tab==='notif') {
            const res=await getCachedData('Notifications'); const rows=(res.data||[]).filter(x=>!x.Status||x.Status==='active'||x.Status==='publish').slice(-30).reverse();
            container.innerHTML=`<div class="bg-white p-8 rounded-3xl border shadow-sm animate-fade-in"><h2 class="font-extrabold text-xl text-slate-900 mb-5">Notifikasi</h2>${rows.length?rows.map(x=>`<div class="p-4 bg-slate-50 rounded-2xl mb-3"><div class="font-bold">${escapeHtml(x.Title||'Notifikasi')}</div><div class="text-xs text-slate-500 mt-1">${escapeHtml(x.Message||'')}</div><div class="text-[10px] text-slate-400 mt-2">${escapeHtml(x.Date||'')}</div></div>`).join(''):'<div class="empty-state">Belum ada notifikasi.</div>'}</div>`;
+         } else if(tab==='documents') {
+           const res=await getCachedData('Documents'); const rows=(res.data||[]).filter(x=>!x.Status||x.Status==='publish'||x.Status==='active').filter(x=>/cv|curriculum|lamaran|surat lamaran|resume|resume kerja/i.test(String(x.Title||'')+' '+String(x.Description||'')));
+           container.innerHTML=`<div class="space-y-5 animate-fade-in"><div class="protected-card"><div class="flex items-start gap-4"><div class="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center"><i class="fas fa-shield-halved"></i></div><div><h2 class="text-xl font-black">CV & Lamaran Kerja</h2><p class="text-sm text-blue-100 mt-2">Akses khusus Visitor. Konfirmasi wajah diperlukan sebelum dokumen dibuka.</p><button onclick="requestProtectedDocuments()" class="mt-5 bg-white text-slate-900 px-5 py-3 rounded-xl text-xs font-black">Verifikasi & Buka</button></div></div></div><div class="text-xs text-slate-500">${rows.length} dokumen terdeteksi.</div></div>`;
          } else if(tab==='settings') {
            container.innerHTML=`<div class="bg-white p-8 rounded-3xl border shadow-sm animate-fade-in"><h2 class="font-extrabold text-xl text-slate-900">Pengaturan Akun</h2><p class="text-sm text-slate-500 mt-2">Pengaturan akun dikelola berdasarkan data pengguna yang tersimpan di Sheet Users.</p><div class="mt-6 p-4 bg-slate-50 rounded-2xl text-sm"><b>Email:</b> ${escapeHtml(email)}<br><b>Role:</b> ${escapeHtml(safeText(currentUser?.Role,'Visitor'))}</div></div>`;
          } else if(tab==='security') {
@@ -1004,51 +1055,14 @@
     function renderPublicCareer(r){const e=document.getElementById('public-career-content');if(!e)return;const a=r.filter(x=>!x.Status||x.Status==='publish'||x.Status==='active');if(!a.length){renderEmpty(e,'Belum ada data Career Center.');return}e.className='space-y-4';e.innerHTML=a.map(x=>`<article class="bg-white p-6 rounded-3xl border shadow-sm"><div class="text-xs text-blue-600 font-bold">${escapeHtml(safeText(x.Year))}</div><h3 class="font-black text-lg mt-2">${escapeHtml(safeText(x.Title))}</h3><p class="text-slate-500 text-sm mt-1">${escapeHtml(safeText(x.Organization))}</p><p class="text-slate-500 text-sm mt-2 whitespace-pre-line">${escapeHtml(safeText(x.Description))}</p></article>`).join('')}
     function renderPublicGallery(r){const e=document.getElementById('public-gallery-content');if(!e)return;const a=r.filter(x=>!x.Status||x.Status==='publish'||x.Status==='active');if(!a.length){renderEmpty(e,'Belum ada gallery.');return}e.innerHTML=a.map(x=>{const img=safeUrl(x.Image_URL);return `<article class="bg-white rounded-3xl border shadow-sm overflow-hidden">${img?`<img src="${img}" class="w-full h-64 object-cover" alt="">`:''}<div class="p-5"><h3 class="font-black">${escapeHtml(safeText(x.Title,'Gallery'))}</h3><p class="text-sm text-slate-500 mt-2">${escapeHtml(safeText(x.Description))}</p></div></article>`}).join('')}
     function renderPublicBlog(r){const e=document.getElementById('public-blog-content');if(!e)return;const a=r.filter(x=>!x.Status||x.Status==='publish'||x.Status==='active');if(!a.length){renderEmpty(e,'Belum ada artikel blog.');return}e.innerHTML=a.map(x=>`<article class="bg-white p-6 rounded-3xl border shadow-sm"><div class="text-xs text-blue-600 font-bold">${escapeHtml(safeText(x.PublishDate))}</div><h3 class="font-black text-xl mt-2">${escapeHtml(safeText(x.Title))}</h3><p class="text-sm text-slate-500 mt-3 whitespace-pre-line">${escapeHtml(safeText(x.Excerpt||x.Content))}</p></article>`).join('')}
-    function renderPublicDocuments(r){const e=document.getElementById('public-documents-content');if(!e)return;const a=r.filter(x=>!x.Status||x.Status==='publish'||x.Status==='active');if(!a.length){renderEmpty(e,'Belum ada dokumen.');return}e.innerHTML=a.map(x=>{const u=safeUrl(x.File_URL);return `<article class="bg-white p-6 rounded-3xl border shadow-sm"><div class="w-11 h-11 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center"><i class="fas fa-file-lines"></i></div><h3 class="font-black text-lg mt-4">${escapeHtml(safeText(x.Title,'Dokumen'))}</h3><p class="text-sm text-slate-500 mt-2">${escapeHtml(safeText(x.Description))}</p>${u?`<a href="${u}" target="_blank" rel="noopener" class="inline-flex mt-4 bg-blue-600 text-white px-4 py-2.5 rounded-xl text-xs font-bold">Buka Dokumen</a>`:''}</article>`}).join('')}
-    function renderPublicContact(r){const e=document.getElementById('public-contact-content');if(!e)return;const x=r.find(a=>a.Status==='publish'||a.Status==='active')||r[0];if(!x){renderEmpty(e,'Belum ada informasi Contact. Tambahkan melalui Dashboard Admin.');return}e.className='bg-white p-8 md:p-10 rounded-3xl border shadow-sm animate-fade-in';e.innerHTML=`<h2 class="text-2xl font-black">Informasi Contact</h2><div class="space-y-3 mt-7">${[['Email',x.Email],['WhatsApp',x.WhatsApp],['Address',x.Address],['Instagram',x.Instagram_URL],['Facebook',x.Facebook_URL],['LinkedIn',x.LinkedIn_URL],['YouTube',x.YouTube_URL],['GitHub',x.GitHub_URL]].filter(a=>a[1]).map(a=>`<div class="p-4 bg-slate-50 rounded-2xl"><span class="text-xs text-slate-400 font-bold uppercase">${escapeHtml(a[0])}</span><div class="mt-1 font-bold break-all">${escapeHtml(a[1])}</div></div>`).join('')}</div><form onsubmit="submitContactMessage(event)" class="mt-8 space-y-3"><input id="contact-name" required class="w-full p-3 rounded-xl border" placeholder="Nama"><input id="contact-email" type="email" required class="w-full p-3 rounded-xl border" placeholder="Email"><input id="contact-subject" required class="w-full p-3 rounded-xl border" placeholder="Subjek"><textarea id="contact-message" required rows="5" class="w-full p-3 rounded-xl border" placeholder="Pesan"></textarea><button class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold">Kirim Pesan</button></form>`}
-
-    function renderPublicProfile(r){
-      const e=document.getElementById('public-profile-content'); if(!e)return;
-      const x=r.find(a=>a.Status==='publish'||a.Status==='active')||r[0];
-      if(!x){renderEmpty(e,'Belum ada data Profile. Tambahkan melalui Dashboard Admin.');return;}
-      e.className='bg-white rounded-3xl p-8 md:p-12 shadow-sm border border-slate-200 animate-fade-in';
-      e.innerHTML=`<div class="flex flex-col md:flex-row gap-8 items-center md:items-start">${safeUrl(x.Profile_URL)?`<img src="${safeUrl(x.Profile_URL)}" class="w-36 h-36 rounded-3xl object-cover border shadow" alt="">`:''}<div class="flex-1 text-center md:text-left"><h2 class="text-3xl font-black text-slate-900">${escapeHtml(safeText(x.FullName))}</h2><p class="text-blue-600 font-bold mt-2">${escapeHtml(safeText(x.Profession))}</p><p class="text-sm text-slate-600 mt-5 whitespace-pre-line leading-relaxed">${escapeHtml(safeText(x.About))}</p><div class="grid sm:grid-cols-2 gap-3 mt-6 text-sm"><div class="bg-slate-50 p-3 rounded-xl"><b>Email</b><br>${escapeHtml(safeText(x.Email,'-'))}</div><div class="bg-slate-50 p-3 rounded-xl"><b>Telepon</b><br>${escapeHtml(safeText(x.Phone,'-'))}</div><div class="bg-slate-50 p-3 rounded-xl sm:col-span-2"><b>Alamat</b><br>${escapeHtml(safeText(x.Address,'-'))}</div></div></div></div>`;
-    }
-
-    function renderPublicPortfolio(r){
-      const e=document.getElementById('public-portfolio-list'); if(!e)return;
-      const rows=r.filter(x=>!x.Status||x.Status==='publish'||x.Status==='active');
-      if(!rows.length){renderEmpty(e,'Belum ada portfolio. Tambahkan melalui Dashboard Admin.');return;}
-      e.innerHTML=rows.map(x=>{const img=safeUrl(x.CoverImage_URL);const u=safeUrl(x.Link);return `<article class="bg-white p-5 rounded-3xl border shadow-sm">${img?`<img src="${img}" class="w-full h-48 object-cover rounded-2xl mb-4" alt="">`:''}<h3 class="font-black text-lg">${escapeHtml(safeText(x.Title,'Project'))}</h3><p class="text-sm text-slate-500 mt-2">${escapeHtml(safeText(x.Description))}</p>${u?`<a href="${u}" target="_blank" rel="noopener" class="inline-flex mt-4 bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold">Lihat Project</a>`:''}</article>`}).join('');
-    }
-
-    function renderPublicCareer(r){
-      const e=document.getElementById('public-career-content'); if(!e)return;
-      const rows=r.filter(x=>!x.Status||x.Status==='publish'||x.Status==='active').sort((a,b)=>String(b.Year||'').localeCompare(String(a.Year||'')));
-      if(!rows.length){renderEmpty(e,'Belum ada Career Timeline.');return;}
-      e.className='bg-white rounded-3xl p-8 md:p-12 shadow-sm border animate-fade-in';
-      e.innerHTML=`<h2 class="text-2xl font-black mb-6">Career Timeline</h2><div class="space-y-5">${rows.map(x=>`<div class="border-l-4 border-blue-500 pl-5"><div class="text-xs font-black text-blue-600">${escapeHtml(safeText(x.Year))}</div><h3 class="font-black text-lg mt-1">${escapeHtml(safeText(x.Title))}</h3><div class="text-sm font-bold text-slate-600">${escapeHtml(safeText(x.Organization))}</div><div class="text-sm text-slate-500 mt-2 whitespace-pre-line">${escapeHtml(safeText(x.Description))}</div></div>`).join('')}</div>`;
-    }
-
-    function renderPublicGallery(r){
-      const e=document.getElementById('public-gallery-content'); if(!e)return;
-      const rows=r.filter(x=>!x.Status||x.Status==='publish'||x.Status==='active');
-      if(!rows.length){renderEmpty(e,'Belum ada Gallery.');return;}
-      e.innerHTML=rows.map(x=>{const img=safeUrl(x.Image_URL);return `<article class="bg-white rounded-3xl border shadow-sm overflow-hidden">${img?`<img src="${img}" class="w-full h-64 object-cover" alt="">`:''}<div class="p-5"><h3 class="font-black">${escapeHtml(safeText(x.Title,'Gallery'))}</h3><p class="text-sm text-slate-500 mt-2">${escapeHtml(safeText(x.Description))}</p></div></article>`}).join('');
-    }
-
-    function renderPublicBlog(r){
-      const e=document.getElementById('public-blog-content'); if(!e)return;
-      const rows=r.filter(x=>!x.Status||x.Status==='publish'||x.Status==='active');
-      if(!rows.length){renderEmpty(e,'Belum ada Blog.');return;}
-      e.innerHTML=rows.map(x=>{const img=safeUrl(x.CoverImage_URL);return `<article class="bg-white rounded-3xl border shadow-sm overflow-hidden">${img?`<img src="${img}" class="w-full h-52 object-cover" alt="">`:''}<div class="p-6"><div class="text-xs text-blue-600 font-bold">${escapeHtml(safeText(x.PublishDate))}</div><h3 class="font-black text-xl mt-2">${escapeHtml(safeText(x.Title,'Artikel'))}</h3><p class="text-sm text-slate-500 mt-3">${escapeHtml(safeText(x.Excerpt||x.Content))}</p></div></article>`}).join('');
-    }
-
     function renderPublicDocuments(r){
       const e=document.getElementById('public-documents-content'); if(!e)return;
       const rows=r.filter(x=>!x.Status||x.Status==='publish'||x.Status==='active');
-      if(!rows.length){renderEmpty(e,'Belum ada Documents.');return;}
-      e.innerHTML=rows.map(x=>{const u=safeUrl(x.File_URL);return `<article class="bg-white p-5 rounded-3xl border shadow-sm"><div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center"><i class="fas fa-file-lines"></i></div><h3 class="font-black mt-4">${escapeHtml(safeText(x.Title,'Dokumen'))}</h3><p class="text-sm text-slate-500 mt-2">${escapeHtml(safeText(x.Description))}</p>${u?`<a href="${u}" target="_blank" rel="noopener" class="inline-flex mt-4 bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold">Buka Dokumen</a>`:''}</article>`}).join('');
+      const protectedRows=rows.filter(x=>/cv|curriculum|lamaran|surat lamaran|resume|resume kerja/i.test(String(x.Title||'')+' '+String(x.Description||'')));
+      const normalRows=rows.filter(x=>!protectedRows.includes(x));
+      const protectedCard=`<div class="protected-card mb-6"><div class="flex items-start gap-4"><div class="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center shrink-0"><i class="fas fa-shield-halved"></i></div><div class="flex-1"><h3 class="font-black text-xl">CV & Lamaran Kerja</h3><p class="text-sm text-blue-100 mt-2">Dokumen ini dilindungi. Login sebagai Visitor dan konfirmasi verifikasi wajah sebelum membukanya.</p><button onclick="requestProtectedDocuments()" class="mt-5 bg-white text-slate-900 px-5 py-3 rounded-xl font-black text-xs">${currentUser?'Lanjutkan Verifikasi':'Login untuk Membuka'}</button></div></div></div>`;
+      const normal=normalRows.map(x=>{const u=safeUrl(x.File_URL);return `<article class="bg-white p-5 rounded-3xl border shadow-sm"><div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center"><i class="fas fa-file-lines"></i></div><h3 class="font-black mt-4">${escapeHtml(safeText(x.Title,'Dokumen'))}</h3><p class="text-sm text-slate-500 mt-2">${escapeHtml(safeText(x.Description))}</p>${u?`<a href="${u}" target="_blank" rel="noopener" class="inline-flex mt-4 bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold">Buka Dokumen</a>`:''}</article>`}).join('');
+      e.innerHTML=protectedCard+(normal?`<div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">${normal}</div>`:'');
     }
 
     function renderPublicContact(r){
@@ -1070,7 +1084,52 @@
     function renderPublicPopup(){const root=document.getElementById('public-popup-root');if(!root)return;const rows=(memoryCache.Popups?.data||[]).filter(x=>!x.Status||x.Status==='publish'||x.Status==='active');const now=new Date();const active=rows.find(x=>{const a=x.StartDate?new Date(x.StartDate):null,b=x.EndDate?new Date(x.EndDate):null;return(!a||isNaN(a)||now>=a)&&(!b||isNaN(b)||now<=b);});if(!active||sessionStorage.getItem('zexraps_popup_'+(active.PopupID||active.Title)))return;const img=safeUrl(active.Image_URL),u=safeUrl(active.Button_URL);root.classList.remove('hidden');root.innerHTML=`<div class="public-popup-overlay" onclick="closePublicPopup()"><div class="public-popup-card" onclick="event.stopPropagation()">${img?`<img src="${img}" class="w-full max-h-64 object-cover" alt="">`:''}<div class="p-7"><div class="flex justify-between gap-4"><h3 class="text-xl font-black text-slate-900">${escapeHtml(safeText(active.Title))}</h3><button onclick="closePublicPopup()" class="text-slate-400 text-xl">&times;</button></div><div class="text-sm text-slate-600 mt-4 whitespace-pre-line">${escapeHtml(safeText(active.Content))}</div>${u?`<a href="${u}" target="_blank" rel="noopener" class="inline-flex mt-6 bg-blue-600 text-white px-5 py-3 rounded-xl font-bold text-sm">${escapeHtml(safeText(active.Button_Text,'Lanjutkan'))}</a>`:''}</div></div></div>`}
     function closePublicPopup(){const root=document.getElementById('public-popup-root');if(root){root.classList.add('hidden');root.innerHTML='';}const key=(memoryCache.Popups?.data||[]).find(x=>!x.Status||x.Status==='publish'||x.Status==='active');if(key)sessionStorage.setItem('zexraps_popup_'+(key.PopupID||key.Title),'1');}
 
-async function handleLogin() {
+function showAuthPanel(panel){
+      const lp=document.getElementById('auth-login-panel'), rp=document.getElementById('auth-register-panel');
+      const lt=document.getElementById('auth-login-tab'), rt=document.getElementById('auth-register-tab');
+      if(!lp||!rp)return;
+      const isLogin=panel==='login'; lp.classList.toggle('hidden',!isLogin); rp.classList.toggle('hidden',isLogin);
+      lt.classList.toggle('active',isLogin); rt.classList.toggle('active',!isLogin);
+    }
+    async function handleRegister(){
+      const name=document.getElementById('register-name')?.value.trim(),email=document.getElementById('register-email')?.value.trim().toLowerCase();
+      const pass=document.getElementById('register-password')?.value||'',pass2=document.getElementById('register-password2')?.value||'';
+      if(!name||!email||!pass||!pass2)return showToast('Semua data registrasi wajib diisi.','warning');
+      if(!/^\S+@\S+\.\S+$/.test(email))return showToast('Format email tidak valid.','warning');
+      if(pass.length<8)return showToast('Kata sandi minimal 8 karakter.','warning');
+      if(pass!==pass2)return showToast('Konfirmasi kata sandi tidak sama.','warning');
+      toggleLoader(true);try{const r=await apiCall('POST',{action:'register',data:{fullName:name,email,password:pass,role:'Visitor'}});if(r.status==='success'){showToast(r.message||'Registrasi berhasil.','success');document.getElementById('login-email').value=email;showAuthPanel('login');}else showToast(r.message||'Registrasi gagal.','error');}catch(e){showToast('Koneksi bermasalah saat registrasi.','error')}finally{toggleLoader(false)}
+    }
+    function openRecoveryPanel(){document.getElementById('auth-recovery')?.classList.remove('hidden');}
+    function closeRecoveryPanel(){document.getElementById('auth-recovery')?.classList.add('hidden');}
+    async function handleRecovery(){
+      const email=document.getElementById('recovery-email')?.value.trim().toLowerCase();
+      if(!email)return showToast('Email wajib diisi.','warning');
+      try{
+        const r=await apiCall('POST',{action:'forgotPassword',data:{email}});
+        if(r.status==='success')showToast(r.message||'Permintaan pemulihan diproses.','success');
+        else showToast(r.message||'Endpoint pemulihan belum tersedia.','error');
+      }catch(e){showToast('Fitur pemulihan belum tersedia pada endpoint Apps Script saat ini.','warning')}
+    }
+    let faceStream=null,faceDataUrl='';
+    function requestProtectedDocuments(){if(!currentUser){switchView('login');return;}openFaceVerification();}
+    function openFaceVerification(){document.getElementById('face-verification-modal')?.classList.remove('hidden');document.getElementById('face-placeholder')?.classList.remove('hidden');document.getElementById('face-captured')?.classList.add('hidden');document.getElementById('face-confirm-btn')?.classList.add('hidden');}
+    async function startFaceCamera(){
+      try{faceStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});const v=document.getElementById('face-camera');v.srcObject=faceStream;v.classList.remove('hidden');document.getElementById('face-placeholder')?.classList.add('hidden');document.getElementById('face-start-btn')?.classList.add('hidden');document.getElementById('face-capture-btn')?.classList.remove('hidden');}
+      catch(e){showToast('Kamera tidak dapat diakses. Izinkan kamera pada browser.','warning')}
+    }
+    function captureFace(){const v=document.getElementById('face-camera'),c=document.getElementById('face-canvas'),img=document.getElementById('face-captured');if(!v||!c||!img||!v.videoWidth)return showToast('Kamera belum siap.','warning');c.width=v.videoWidth;c.height=v.videoHeight;c.getContext('2d').drawImage(v,0,0,c.width,c.height);faceDataUrl=c.toDataURL('image/jpeg',0.82);img.src=faceDataUrl;img.classList.remove('hidden');v.classList.add('hidden');document.getElementById('face-capture-btn')?.classList.add('hidden');document.getElementById('face-confirm-btn')?.classList.remove('hidden');if(faceStream){faceStream.getTracks().forEach(t=>t.stop());faceStream=null;}}
+    function closeFaceVerification(){if(faceStream){faceStream.getTracks().forEach(t=>t.stop());faceStream=null;}document.getElementById('face-verification-modal')?.classList.add('hidden');faceDataUrl='';}
+    async function confirmFaceVerification(){if(!faceDataUrl)return showToast('Ambil foto terlebih dahulu.','warning');closeFaceVerification();await openProtectedDocuments();}
+    async function openProtectedDocuments(){
+      const container=document.getElementById('public-documents-content');if(!container)return;
+      const res=await getCachedData('Documents',true);const rows=(res.data||[]).filter(x=>!x.Status||x.Status==='publish'||x.Status==='active').filter(x=>/cv|curriculum|lamaran|surat lamaran|resume|resume kerja/i.test(String(x.Title||'')+' '+String(x.Description||'')));
+      if(!rows.length){showToast('CV atau Lamaran Kerja belum tersedia.','info');return;}
+      container.innerHTML=`<div class="bg-white p-7 rounded-3xl border shadow-sm"><div class="flex items-center gap-3 mb-5"><div class="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center"><i class="fas fa-user-shield"></i></div><div><h2 class="font-black text-xl text-slate-900">Dokumen Terverifikasi</h2><p class="text-xs text-slate-500">Akses diberikan setelah konfirmasi selfie.</p></div></div><div class="grid sm:grid-cols-2 gap-4">${rows.map(x=>{const u=safeUrl(x.File_URL);return `<article class="p-5 bg-slate-50 rounded-2xl border"><div class="font-black">${escapeHtml(safeText(x.Title,'Dokumen'))}</div><p class="text-xs text-slate-500 mt-2">${escapeHtml(safeText(x.Description))}</p>${u?`<a href="${u}" target="_blank" rel="noopener" onclick="logProtectedAccess('${escapeHtml(safeText(x.Title))}')" class="inline-flex mt-4 bg-slate-900 text-white px-4 py-2 rounded-xl text-xs font-bold">Buka Dokumen</a>`:''}</article>`}).join('')}</div></div>`;
+    }
+    async function logProtectedAccess(title){try{await apiCall('POST',{action:'logActivity',user:currentUser?.UserID||currentUser?.Email||'Visitor',data:{action:'PROTECTED_DOCUMENT_ACCESS',description:'Akses '+title}})}catch(e){}}
+    
+    async function handleLogin() {
       const email = document.getElementById('login-email').value;
       const pass = document.getElementById('login-password').value;
       if (!email || !pass) return showToast("Email dan Password wajib diisi!", "warning");
