@@ -272,7 +272,7 @@
                 <label class="text-[11px] font-extrabold text-blue-600 uppercase tracking-wider">Kode Verifikasi Email</label>
                 <span id="otp-timer-display" class="text-[10px] font-black text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md">03:00</span>
              </div>
-             <input type="text" id="att-code" maxlength="4" placeholder="Masukkan 4 digit kode" class="w-full p-3.5 bg-blue-50/50 border border-blue-200 rounded-xl text-sm font-extrabold text-center tracking-[0.4em] outline-none focus:border-blue-600 focus:bg-white transition-all">
+             <input type="text" id="att-code" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" autocomplete="one-time-code" placeholder="Masukkan 4 digit kode" class="w-full p-3.5 bg-blue-50/50 border border-blue-200 rounded-xl text-sm font-extrabold text-center tracking-[0.4em] outline-none focus:border-blue-600 focus:bg-white transition-all">
           </div>
 
           <button onclick="submitAttendance()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold py-4 rounded-xl text-sm shadow-xl shadow-blue-600/30 transition-all hover:scale-[1.02] active:scale-95 mt-4 flex items-center justify-center gap-2">
@@ -659,6 +659,13 @@
       return `${browser} (${os})`;
     }
 
+    /* OTP INPUT: HANYA 4 DIGIT ANGKA */
+    document.addEventListener('input', function(e) {
+       if(e.target && e.target.id === 'att-code') {
+          e.target.value = e.target.value.replace(/\\D/g, '').slice(0, 4);
+       }
+    });
+
     /* REQUEST OTP */
     async function requestEmailOTP() {
        const emailInput = document.getElementById('att-email');
@@ -680,6 +687,7 @@
                   (Date.now() + ((res.expiresInSeconds || 180) * 1000))
                 )
               );
+             btn.innerText = "Kode Terkirim";
              showToast(res.message || 'Kode verifikasi berhasil dikirim.', "success");
              document.getElementById('att-code').focus();
           } else {
