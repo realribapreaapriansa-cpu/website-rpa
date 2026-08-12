@@ -43,6 +43,10 @@
     button:disabled { opacity: .65; cursor: not-allowed; transform: none !important; }
     .table-action-btn { min-height: 36px; }
     .empty-state { padding: 48px 20px; text-align:center; color:#64748b; }
+    .data-loading { min-height: 180px; display:flex; align-items:center; justify-content:center; text-align:center; }
+    .data-loading-inner { display:flex; flex-direction:column; align-items:center; gap:10px; color:#64748b; font-size:.82rem; font-weight:700; }
+    .data-loading-spinner { width:28px; height:28px; border:3px solid #e2e8f0; border-top-color:#2563eb; border-radius:50%; animation:dataSpin .75s linear infinite; }
+    @keyframes dataSpin { to { transform:rotate(360deg); } }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 
@@ -509,7 +513,7 @@
 
   <script>
     /* PASTE URL DEPLOY APPS SCRIPT DI SINI */
-    const API_URL = "https://script.google.com/macros/s/AKfycbwN-xB6BfOK3CtqzVXXoKVHe8CSGb6__FgeprTjPZfOF-8fRdme9cidDr5QhS0epj79/exec";
+    const API_URL = ":https://script.google.com/macros/s/AKfycbwN-xB6BfOK3CtqzVXXoKVHe8CSGb6__FgeprTjPZfOF-8fRdme9cidDr5QhS0epj79/exec";
     
     let memoryCache = {};
     let currentUser = null;
@@ -924,7 +928,7 @@
                 btn.classList.remove('text-slate-600');
              }
           });
-          renderPublicContent();
+          renderPublicContent(false, sec);
        } else if (view === 'visitor') {
           switchVisitorTab('dash');
        }
@@ -1052,11 +1056,71 @@
     function safeText(v,f=''){return v==null||v===''?f:String(v)}
     function safeUrl(v){try{const u=new URL(v);return ['http:','https:'].includes(u.protocol)?u.href:''}catch(e){return ''}}
     function renderEmpty(el,msg){if(el)el.innerHTML=`<div class="empty-state"><i class="fas fa-inbox text-3xl mb-3 text-slate-300"></i><p>${msg}</p></div>`}
-    async function renderPublicContent(force=false){
+    /* ================================================================
+       PUBLIC DATA LOADER - REVISI PERFORMA
+       Prioritaskan section yang sedang dibuka. Konten lain dimuat
+       di background sehingga tampilan utama tidak menunggu 8 Sheet.
+       Tidak menghapus fitur/cache yang sudah ada.
+       ================================================================ */
+    async function renderPublicContent(force=false, prioritySection='home'){
       const names=['Home','Profile','Portfolio','Career_Timeline','Gallery','Blog','Documents','Contact'];
-      const results=await Promise.all(names.map(s=>getCachedData(s,force)));
-      const m={};names.forEach((n,i)=>m[n]=results[i].data||[]);
-      renderPublicHome(m.Home);renderPublicProfile(m.Profile);renderPublicPortfolio(m.Portfolio);renderPublicCareer(m.Career_Timeline);renderPublicGallery(m.Gallery);renderPublicBlog(m.Blog);renderPublicDocuments(m.Documents);renderPublicContact(m.Contact);
+      const sectionToSheet={
+        home:'Home',
+        profil:'Profile',
+        profile:'Profile',
+        portfolio:'Portfolio',
+        career:'Career_Timeline',
+        career_timeline:'Career_Timeline',
+        gallery:'Gallery',
+        blog:'Blog',
+        documents:'Documents',
+        contact:'Contact'
+      };
+      const priority=sectionToSheet[String(prioritySection||'home').toLowerCase()] || 'Home';
+
+      /* Render section yang sedang dibuka secepat mungkin. */
+      try {
+        const first=await getCachedData(priority,force);
+        const data=first.data||[];
+        if(priority==='Home') renderPublicHome(data);
+        else if(priority==='Profile') renderPublicProfile(data);
+        else if(priority==='Portfolio') renderPublicPortfolio(data);
+        else if(priority==='Career_Timeline') renderPublicCareer(data);
+        else if(priority==='Gallery') renderPublicGallery(data);
+        else if(priority==='Blog') renderPublicBlog(data);
+        else if(priority==='Documents') renderPublicDocuments(data);
+        else if(priority==='Contact') renderPublicContact(data);
+      } catch(error) {
+        console.warn('Gagal memuat section prioritas:', error);
+      }
+
+      /* Section lain dimuat di background, tanpa menahan tampilan. */
+      const backgroundNames=names.filter(name=>name!==priority);
+      await Promise.allSettled(backgroundNames.map(name=>getCachedData(name,force)));
+
+      /* Render semua section setelah data background tersedia. */
+      names.forEach(name=>{
+        const data=memoryCache[name]?.data||[];
+        if(name==='Home') renderPublicHome(data);
+        else if(name==='Profile') renderPublicProfile(data);
+        else if(name==='Portfolio') renderPublicPortfolio(data);
+        else if(name==='Career_Timeline') renderPublicCareer(data);
+        else if(name==='Gallery') renderPublicGallery(data);
+        else if(name==='Blog') renderPublicBlog(data);
+        else if(name==='Documents') renderPublicDocuments(data);
+        else if(name==='Contact') renderPublicContact(data);
+      });
+    }
+
+    /* Prefetch ringan: tidak dipanggil sebagai proses blocking saat startup. */
+    function prefetchEssentialSheets(){
+      const sheets=['Home','Profile','Dynamic_Menu','Banners','Popups','Web_Branding'];
+      const run=()=>Promise.allSettled(sheets.map(sheet=>getCachedData(sheet,false)));
+      if('requestIdleCallback' in window){
+        requestIdleCallback(run,{timeout:2500});
+      } else {
+        setTimeout(run,1200);
+      }
     }
     function renderPublicHome(r){const e=document.getElementById('public-home-content');if(!e)return;const x=r.find(a=>a.Status==='publish'||a.Status==='active')||r[0];if(!x){renderEmpty(e,'Belum ada konten Home. Tambahkan melalui Dashboard Admin.');return}const img=safeUrl(x.HeroImage_URL);e.className='bg-white rounded-3xl p-8 md:p-14 shadow-sm border border-slate-200 flex flex-col md:flex-row items-center gap-10 animate-fade-in';e.innerHTML=`${img?`<img src="${img}" class="w-36 h-36 md:w-52 md:h-52 rounded-full object-cover shadow-xl border-4 border-white" alt="">`:''}<div class="text-center md:text-left flex-1"><h1 class="text-3xl md:text-5xl font-black text-slate-900 leading-tight">${escapeHtml(safeText(x.Title))}</h1><p class="text-blue-600 font-bold mt-3">${escapeHtml(safeText(x.Subtitle))}</p><p class="text-slate-500 mt-4 max-w-2xl text-sm md:text-base leading-relaxed whitespace-pre-line">${escapeHtml(safeText(x.Description))}</p>${x.Action_Button?`<button onclick="switchPublicSection('portfolio')" class="mt-7 bg-blue-600 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg">${escapeHtml(x.Action_Button)}</button>`:''}</div>`}
     function renderPublicProfile(r){const e=document.getElementById('public-profile-content');if(!e)return;const x=r.find(a=>a.Status==='publish'||a.Status==='active')||r[0];if(!x){renderEmpty(e,'Belum ada data Profil. Tambahkan melalui Dashboard Admin.');return}e.className='bg-white p-8 md:p-10 rounded-3xl shadow-sm border animate-fade-in';e.innerHTML=`<h2 class="text-2xl md:text-3xl font-black">${escapeHtml(safeText(x.FullName,'Profil'))}</h2><p class="text-blue-600 font-bold mt-2">${escapeHtml(safeText(x.Profession))}</p><p class="text-slate-600 leading-8 mt-6 whitespace-pre-line">${escapeHtml(safeText(x.About,'Belum ada deskripsi profil.'))}</p><div class="grid sm:grid-cols-2 gap-4 mt-8">${[['Email',x.Email],['Phone',x.Phone],['Address',x.Address],['Profile URL',x.Profile_URL]].filter(a=>a[1]).map(a=>`<div class="p-4 bg-slate-50 rounded-2xl"><span class="text-xs text-slate-400 font-bold uppercase">${a[0]}</span><div class="font-semibold mt-1 break-all">${escapeHtml(a[1])}</div></div>`).join('')}</div>`}
@@ -1197,12 +1261,13 @@ function showAuthPanel(panel){
 
 
 
-    window.onload = () => {
+    window.addEventListener('load', () => {
        history.replaceState({ view: 'attendance', section: null }, '', '');
        renderView('attendance', null);
+       /* Jangan blokir first paint hanya untuk prefetch database. */
        prefetchEssentialSheets();
        startSplashTimer();
-    };
+    }, { once: true });
   </script>
 </body>
 </html>
