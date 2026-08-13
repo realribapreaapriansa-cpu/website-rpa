@@ -1261,8 +1261,6 @@ function showAuthPanel(panel){
     window.addEventListener('load', () => {
        history.replaceState({ view: 'attendance', section: null }, '', '');
        renderView('attendance', null);
-       /* Jangan blokir first paint hanya untuk prefetch database. */
-       prefetchEssentialSheets();
        startSplashTimer();
     }, { once: true });
   </script>
