@@ -7,12 +7,28 @@
     --text-muted: #64748b;
     --border-light: #e2e8f0;
 }
+
 /* REVISI BUG SCROLL: Mengizinkan overflow di body dan bergantung pada view kontainer */
-body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0f172a; color: #0f172a; margin: 0; padding: 0; overflow: hidden; height: 100dvh; }
+html { scroll-behavior: smooth; }
+body { 
+    font-family: 'Plus Jakarta Sans', sans-serif; 
+    background-color: #0f172a; 
+    color: #0f172a; 
+    margin: 0; 
+    padding: 0; 
+    overflow: hidden; 
+    height: 100vh; /* Fallback browser lawas */
+    height: 100dvh; 
+}
 html, body { width: 100%; min-height: 100%; }
-#view-admin { min-height: 100dvh; }
+
+#view-admin { 
+    min-height: 100vh; /* Fallback */
+    min-height: 100dvh; 
+}
 #adm-sidebar { overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
 #sidebar-menus { overscroll-behavior: contain; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+
 @media (max-width: 767px) {
   #view-admin { height: 100dvh !important; min-height: 100dvh; }
   #view-admin > main { height: calc(100dvh - 61px) !important; min-height: 0; }
@@ -22,6 +38,7 @@ html, body { width: 100%; min-height: 100%; }
   #adm-sidebar.mobile-open #sidebar-menus { overscroll-behavior-y: contain; scrollbar-width: thin; }
   #view-admin > main > .admin-content-scroll { min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 }
+
 .admin-menu-button { min-height: 44px; }
 button:disabled { opacity: .65; cursor: not-allowed; transform: none !important; }
 .table-action-btn { min-height: 36px; }
@@ -107,3 +124,45 @@ footer { width: 100%; padding: 24px 20px; border-top: 1px solid var(--border-lig
 .auth-tab.active{background:#eff6ff;color:#2563eb}
 .protected-card{background:linear-gradient(135deg,#0f172a,#1e3a8a);color:#fff;border-radius:28px;padding:28px;box-shadow:0 18px 50px rgba(30,64,175,.18)}
 .face-preview{width:180px;height:180px;border-radius:28px;object-fit:cover;background:#0f172a;border:4px solid #e2e8f0}
+
+/* ====================================================================
+   TAMBAHAN CSS UNTUK PASSWORD & KAMERA
+   ==================================================================== */
+
+/* Tambahan Keyframes untuk animasi spin agar tidak error di editor */
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Animasi Spinner di Kamera */
+.animate-spin-slow {
+    animation: spin 8s linear infinite;
+}
+
+/* Efek Cermin Untuk Kamera Depan (Mencegah user bingung saat selfie) */
+#face-camera {
+    transform: scaleX(-1);
+    -webkit-transform: scaleX(-1);
+}
+
+/* Warna Indikator Password Strength */
+.pw-weak { background-color: #f43f5e !important; } /* Rose 500 */
+.pw-medium { background-color: #eab308 !important; } /* Yellow 500 */
+.pw-strong { background-color: #10b981 !important; } /* Emerald 500 */
+
+/* Mencegah input number menampilkan panah (arrows) di browser */
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button { 
+    -webkit-appearance: none; 
+    margin: 0; 
+}
+input[type=number] {
+    -moz-appearance: textfield;
+    appearance: textfield; /* Standar baru agar editor tidak komplain */
+}
+
+/* Transisi Halus Form Lupa Akun */
+#recovery-dynamic-form, #recovery-new-data-form {
+    transition: all 0.3s ease-in-out;
+}

@@ -194,18 +194,11 @@ async function requestEmailOTP() {
 function startOTPCountdown(serverExpiresAt) {
     if(otpTimerInterval) clearInterval(otpTimerInterval);
 
-    /*
-     * Waktu expired berasal dari server.
-     * Timer browser hanya untuk tampilan.
-     * Keputusan valid/tidaknya OTP tetap dilakukan oleh server.
-     */
     otpExpiresAt = Number(serverExpiresAt);
-
     const display = document.getElementById('otp-timer-display');
     const btn = document.getElementById('btn-send-code');
 
     if(!display || !Number.isFinite(otpExpiresAt)) return;
-
     display.className = "text-[10px] font-black text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md";
 
     const tick = () => {
@@ -217,23 +210,17 @@ function startOTPCountdown(serverExpiresAt) {
         if(remainingSeconds <= 0) {
             clearInterval(otpTimerInterval);
             otpTimerInterval = null;
-
             display.textContent = "EXPIRED";
             display.className = "text-[10px] font-black text-rose-600 bg-rose-100 px-2 py-0.5 rounded-md";
-
             if(btn){
                 btn.disabled = false;
                 btn.innerText = "Kirim Kode";
             }
-
             return;
         }
-
         const mins = Math.floor(remainingSeconds / 60);
         const secs = remainingSeconds % 60;
-
-        display.textContent =
-            `${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`;
+        display.textContent = `${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`;
     };
 
     tick();
@@ -248,11 +235,7 @@ async function submitAttendance() {
     const code=document.getElementById('att-code').value.trim();
     if(!name||!age||!email){showToast("Harap isi seluruh kolom biodata terlebih dahulu!","warning");return;}
     if(!code||!/^\d{4}$/.test(code)){showToast("Silakan isi 4 digit kode verifikasi email Anda!","warning");return;}
-    /*
-     * Jangan menolak OTP berdasarkan jam browser.
-     * Browser dapat masuk background/sleep atau memiliki jam berbeda.
-     * Server akan melakukan pemeriksaan expired secara authoritative.
-     */
+    
     const submitBtn=document.querySelector('#guest-form-card button[onclick="submitAttendance()"]');
     if(submitBtn)submitBtn.disabled=true;
     document.getElementById('attendance-loader').classList.remove('hidden');
@@ -354,7 +337,6 @@ async function submitData(){
     closeModalForm();toggleLoader(true);
     try{const r=await apiCall('POST',payload);if(r.status==='success'){invalidateCache(activeModule);await loadAdminModule(activeModule,true);const related=['Home','Profile','Contact','Portfolio','Blog','Career_Timeline','Documents','Gallery','Web_Branding','Dynamic_Menu','Banners','Popups'];if(related.includes(activeModule)){related.forEach(x=>invalidateCache(x));await prefetchEssentialSheets();renderPublicContent(false);renderPublicBanners();renderPublicPopup();}showToast(r.message||'Data berhasil disimpan!','success')}else showToast(r.message||'Gagal menyimpan data.','error')}finally{toggleLoader(false);}
 }
-
 
 /* REVISI FITUR: Merubah Title Website di Browser Tab jika diset di Admin */
 function applyWebBranding(data) {
@@ -542,29 +524,21 @@ async function fetchPublicPortfolio() {
 function safeText(v,f=''){return v==null||v===''?f:String(v)}
 function safeUrl(v){try{const u=new URL(v);return ['http:','https:'].includes(u.protocol)?u.href:''}catch(e){return ''}}
 function renderEmpty(el,msg){if(el)el.innerHTML=`<div class="empty-state"><i class="fas fa-inbox text-3xl mb-3 text-slate-300"></i><p>${msg}</p></div>`}
+
 /* ================================================================
     PUBLIC DATA LOADER - REVISI PERFORMA
     Prioritaskan section yang sedang dibuka. Konten lain dimuat
     di background sehingga tampilan utama tidak menunggu 8 Sheet.
-    Tidak menghapus fitur/cache yang sudah ada.
     ================================================================ */
 async function renderPublicContent(force=false, prioritySection='home'){
     const names=['Home','Profile','Portfolio','Career_Timeline','Gallery','Blog','Documents','Contact'];
     const sectionToSheet={
-    home:'Home',
-    profil:'Profile',
-    profile:'Profile',
-    portfolio:'Portfolio',
-    career:'Career_Timeline',
-    career_timeline:'Career_Timeline',
-    gallery:'Gallery',
-    blog:'Blog',
-    documents:'Documents',
-    contact:'Contact'
+    home:'Home', profil:'Profile', profile:'Profile', portfolio:'Portfolio',
+    career:'Career_Timeline', career_timeline:'Career_Timeline', gallery:'Gallery',
+    blog:'Blog', documents:'Documents', contact:'Contact'
     };
     const priority=sectionToSheet[String(prioritySection||'home').toLowerCase()] || 'Home';
 
-    /* Render section yang sedang dibuka secepat mungkin. */
     try {
     const first=await getCachedData(priority,force);
     const data=first.data||[];
@@ -576,15 +550,11 @@ async function renderPublicContent(force=false, prioritySection='home'){
     else if(priority==='Blog') renderPublicBlog(data);
     else if(priority==='Documents') renderPublicDocuments(data);
     else if(priority==='Contact') renderPublicContact(data);
-    } catch(error) {
-    console.warn('Gagal memuat section prioritas:', error);
-    }
+    } catch(error) { console.warn('Gagal memuat section prioritas:', error); }
 
-    /* Section lain dimuat di background, tanpa menahan tampilan. */
     const backgroundNames=names.filter(name=>name!==priority);
     await Promise.allSettled(backgroundNames.map(name=>getCachedData(name,force)));
 
-    /* Render semua section setelah data background tersedia. */
     names.forEach(name=>{
     const data=memoryCache[name]?.data||[];
     if(name==='Home') renderPublicHome(data);
@@ -598,15 +568,10 @@ async function renderPublicContent(force=false, prioritySection='home'){
     });
 }
 
-/* Prefetch ringan: tidak dipanggil sebagai proses blocking saat startup. */
 function prefetchEssentialSheets(){
     const sheets=['Home','Profile','Dynamic_Menu','Banners','Popups','Web_Branding'];
     const run=()=>Promise.allSettled(sheets.map(sheet=>getCachedData(sheet,false)));
-    if('requestIdleCallback' in window){
-    requestIdleCallback(run,{timeout:2500});
-    } else {
-    setTimeout(run,1200);
-    }
+    if('requestIdleCallback' in window){ requestIdleCallback(run,{timeout:2500}); } else { setTimeout(run,1200); }
 }
 function renderPublicHome(r){const e=document.getElementById('public-home-content');if(!e)return;const x=r.find(a=>a.Status==='publish'||a.Status==='active')||r[0];if(!x){renderEmpty(e,'Belum ada konten Home. Tambahkan melalui Dashboard Admin.');return}const img=safeUrl(x.HeroImage_URL);e.className='bg-white rounded-3xl p-8 md:p-14 shadow-sm border border-slate-200 flex flex-col md:flex-row items-center gap-10 animate-fade-in';e.innerHTML=`${img?`<img src="${img}" class="w-36 h-36 md:w-52 md:h-52 rounded-full object-cover shadow-xl border-4 border-white" alt="">`:''}<div class="text-center md:text-left flex-1"><h1 class="text-3xl md:text-5xl font-black text-slate-900 leading-tight">${escapeHtml(safeText(x.Title))}</h1><p class="text-blue-600 font-bold mt-3">${escapeHtml(safeText(x.Subtitle))}</p><p class="text-slate-500 mt-4 max-w-2xl text-sm md:text-base leading-relaxed whitespace-pre-line">${escapeHtml(safeText(x.Description))}</p>${x.Action_Button?`<button onclick="switchPublicSection('portfolio')" class="mt-7 bg-blue-600 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg">${escapeHtml(x.Action_Button)}</button>`:''}</div>`}
 function renderPublicProfile(r){const e=document.getElementById('public-profile-content');if(!e)return;const x=r.find(a=>a.Status==='publish'||a.Status==='active')||r[0];if(!x){renderEmpty(e,'Belum ada data Profil. Tambahkan melalui Dashboard Admin.');return}e.className='bg-white p-8 md:p-10 rounded-3xl shadow-sm border animate-fade-in';e.innerHTML=`<h2 class="text-2xl md:text-3xl font-black">${escapeHtml(safeText(x.FullName,'Profil'))}</h2><p class="text-blue-600 font-bold mt-2">${escapeHtml(safeText(x.Profession))}</p><p class="text-slate-600 leading-8 mt-6 whitespace-pre-line">${escapeHtml(safeText(x.About,'Belum ada deskripsi profil.'))}</p><div class="grid sm:grid-cols-2 gap-4 mt-8">${[['Email',x.Email],['Phone',x.Phone],['Address',x.Address],['Profile URL',x.Profile_URL]].filter(a=>a[1]).map(a=>`<div class="p-4 bg-slate-50 rounded-2xl"><span class="text-xs text-slate-400 font-bold uppercase">${a[0]}</span><div class="font-semibold mt-1 break-all">${escapeHtml(a[1])}</div></div>`).join('')}</div>`}
@@ -650,67 +615,12 @@ function showAuthPanel(panel){
     const isLogin=panel==='login'; lp.classList.toggle('hidden',!isLogin); rp.classList.toggle('hidden',isLogin);
     lt.classList.toggle('active',isLogin); rt.classList.toggle('active',!isLogin);
 }
-async function handleRegister(){
-    const name=document.getElementById('register-name')?.value.trim(),email=document.getElementById('register-email')?.value.trim().toLowerCase();
-    const pass=document.getElementById('register-password')?.value||'',pass2=document.getElementById('register-password2')?.value||'';
-    if(!name||!email||!pass||!pass2)return showToast('Semua data registrasi wajib diisi.','warning');
-    if(!/^\S+@\S+\.\S+$/.test(email))return showToast('Format email tidak valid.','warning');
-    if(pass.length<8)return showToast('Kata sandi minimal 8 karakter.','warning');
-    if(pass!==pass2)return showToast('Konfirmasi kata sandi tidak sama.','warning');
-    toggleLoader(true);try{const r=await apiCall('POST',{action:'register',data:{fullName:name,email,password:pass,role:'Visitor'}});if(r.status==='success'){showToast(r.message||'Registrasi berhasil.','success');document.getElementById('login-email').value=email;showAuthPanel('login');}else showToast(r.message||'Registrasi gagal.','error');}catch(e){showToast('Koneksi bermasalah saat registrasi.','error')}finally{toggleLoader(false)}
-}
-function openRecoveryPanel(){document.getElementById('auth-recovery')?.classList.remove('hidden');}
-function closeRecoveryPanel(){document.getElementById('auth-recovery')?.classList.add('hidden');}
-async function handleRecovery(){
-    const email=document.getElementById('recovery-email')?.value.trim().toLowerCase();
-    if(!email)return showToast('Email wajib diisi.','warning');
-    try{
-    const r=await apiCall('POST',{action:'forgotPassword',data:{email}});
-    if(r.status==='success')showToast(r.message||'Permintaan pemulihan diproses.','success');
-    else showToast(r.message||'Endpoint pemulihan belum tersedia.','error');
-    }catch(e){showToast('Fitur pemulihan belum tersedia pada endpoint Apps Script saat ini.','warning')}
-}
-let faceStream=null,faceDataUrl='';
-function requestProtectedDocuments(){if(!currentUser){switchView('login');return;}openFaceVerification();}
-function openFaceVerification(){document.getElementById('face-verification-modal')?.classList.remove('hidden');document.getElementById('face-placeholder')?.classList.remove('hidden');document.getElementById('face-captured')?.classList.add('hidden');document.getElementById('face-confirm-btn')?.classList.add('hidden');}
-async function startFaceCamera(){
-    try{faceStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});const v=document.getElementById('face-camera');v.srcObject=faceStream;v.classList.remove('hidden');document.getElementById('face-placeholder')?.classList.add('hidden');document.getElementById('face-start-btn')?.classList.add('hidden');document.getElementById('face-capture-btn')?.classList.remove('hidden');}
-    catch(e){showToast('Kamera tidak dapat diakses. Izinkan kamera pada browser.','warning')}
-}
-function captureFace(){const v=document.getElementById('face-camera'),c=document.getElementById('face-canvas'),img=document.getElementById('face-captured');if(!v||!c||!img||!v.videoWidth)return showToast('Kamera belum siap.','warning');c.width=v.videoWidth;c.height=v.videoHeight;c.getContext('2d').drawImage(v,0,0,c.width,c.height);faceDataUrl=c.toDataURL('image/jpeg',0.82);img.src=faceDataUrl;img.classList.remove('hidden');v.classList.add('hidden');document.getElementById('face-capture-btn')?.classList.add('hidden');document.getElementById('face-confirm-btn')?.classList.remove('hidden');if(faceStream){faceStream.getTracks().forEach(t=>t.stop());faceStream=null;}}
-function closeFaceVerification(){if(faceStream){faceStream.getTracks().forEach(t=>t.stop());faceStream=null;}document.getElementById('face-verification-modal')?.classList.add('hidden');faceDataUrl='';}
-async function confirmFaceVerification(){if(!faceDataUrl)return showToast('Ambil foto terlebih dahulu.','warning');closeFaceVerification();await openProtectedDocuments();}
-async function openProtectedDocuments(){
-    const container=document.getElementById('public-documents-content');if(!container)return;
-    const res=await getCachedData('Documents',true);const rows=(res.data||[]).filter(x=>!x.Status||x.Status==='publish'||x.Status==='active').filter(x=>/cv|curriculum|lamaran|surat lamaran|resume|resume kerja/i.test(String(x.Title||'')+' '+String(x.Description||'')));
-    if(!rows.length){showToast('CV atau Lamaran Kerja belum tersedia.','info');return;}
-    container.innerHTML=`<div class="bg-white p-7 rounded-3xl border shadow-sm"><div class="flex items-center gap-3 mb-5"><div class="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center"><i class="fas fa-user-shield"></i></div><div><h2 class="font-black text-xl text-slate-900">Dokumen Terverifikasi</h2><p class="text-xs text-slate-500">Akses diberikan setelah konfirmasi selfie.</p></div></div><div class="grid sm:grid-cols-2 gap-4">${rows.map(x=>{const u=safeUrl(x.File_URL);return `<article class="p-5 bg-slate-50 rounded-2xl border"><div class="font-black">${escapeHtml(safeText(x.Title,'Dokumen'))}</div><p class="text-xs text-slate-500 mt-2">${escapeHtml(safeText(x.Description))}</p>${u?`<a href="${u}" target="_blank" rel="noopener" onclick="logProtectedAccess('${escapeHtml(safeText(x.Title))}')" class="inline-flex mt-4 bg-slate-900 text-white px-4 py-2 rounded-xl text-xs font-bold">Buka Dokumen</a>`:''}</article>`}).join('')}</div></div>`;
-}
-async function logProtectedAccess(title){try{await apiCall('POST',{action:'logActivity',user:currentUser?.UserID||currentUser?.Email||'Visitor',data:{action:'PROTECTED_DOCUMENT_ACCESS',description:'Akses '+title}})}catch(e){}}
 
-async function handleLogin() {
-    const email = document.getElementById('login-email').value;
-    const pass = document.getElementById('login-password').value;
-    if (!email || !pass) return showToast("Email dan Password wajib diisi!", "warning");
-    
-    toggleLoader(true);
-    const res = await apiCall('POST', { action: 'login', data: { email: email, password: pass } });
-    toggleLoader(false);
+/* ====================================================================
+   FUNGSI ADMIN & UI HELPERS
+   ==================================================================== */
+function escapeHtml(v){return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');}
 
-    if (res.status === 'success') {
-    currentUser = res.user;
-    showToast("Login Berhasil! Selamat datang.", "success");
-    if (currentUser.Role === 'SuperAdmin') { initAdminSidebar(); switchView('admin'); } 
-    else { switchView('visitor'); }
-    } else { showToast(res.message, "error"); }
-}
-
-function handleLogout() { 
-    currentUser = null; 
-    memoryCache = {}; 
-    showToast("Sesi berakhir.", "info");
-    switchView('attendance'); 
-}
 function initAdminSidebar() {
     const sbHTML=document.getElementById('sidebar-menus'); if(!sbHTML)return; sbHTML.innerHTML='';
     menuGroups.forEach(group=>{
@@ -720,6 +630,7 @@ function initAdminSidebar() {
     });
 }
 function toggleAdminSidebar(){ const sb=document.getElementById('adm-sidebar'); if(!sb)return; const open=sb.classList.contains('hidden'); sb.classList.toggle('hidden'); sb.classList.toggle('mobile-open',open); document.body.style.overflow=open?'hidden':''; }
+
 async function loadAdminModule(sheetName, force = false) {
     activeModule=sheetName;
     document.getElementById('welcome-panel').classList.add('hidden');
@@ -731,6 +642,7 @@ async function loadAdminModule(sheetName, force = false) {
     if(!force && memoryCache[sheetName]){renderAdminTable(memoryCache[sheetName].headers,memoryCache[sheetName].data);return;}
     const res=await getCachedData(sheetName,force); renderAdminTable(res.headers||[],res.data||[]);
 }
+
 function renderAdminTable(headers,rows){
     const thead=document.getElementById('admin-thead'),tbody=document.getElementById('admin-tbody'); thead.innerHTML='';tbody.innerHTML='';
     if(!headers.length){tbody.innerHTML='<tr><td class="empty-state">Sheet belum memiliki header.</td></tr>';return;}
@@ -739,14 +651,476 @@ function renderAdminTable(headers,rows){
     const ro=['System_Logs','Analytics','Visitor_Attendance'].includes(activeModule);
     tbody.innerHTML=rows.map(row=>{const id=String(row[headers[0]]||'').replace(/'/g,'\'');const trash=row.Status==='trash';const cells=headers.map(c=>{let v=row[c];if(v==null||v==='')v='-';if(c==='Status'){const cls=(v==='publish'||v==='active')?'bg-emerald-100 text-emerald-700':(v==='trash'?'bg-rose-100 text-rose-700':'bg-amber-100 text-amber-700');return `<td class="px-5 py-4 text-sm border-b whitespace-nowrap"><span class="px-3 py-1 text-xs font-bold rounded-full ${cls}">${escapeHtml(v)}</span></td>`;}if(c==='PasswordHash')v='••••••••';if(typeof v==='string'&&v.startsWith('data:image'))return `<td class="px-5 py-4 border-b"><img src="${v}" class="h-10 w-10 object-cover rounded-lg border"></td>`;let t=String(v);if(t.length>60)t=t.slice(0,60)+'...';return `<td class="px-5 py-4 text-sm text-slate-600 border-b whitespace-nowrap">${escapeHtml(t)}</td>`;}).join('');let act=ro?'<span class="text-xs font-bold text-slate-300">Read Only</span>':trash?`<button type="button" onclick="actionData('${id}','restore')" class="table-action-btn text-emerald-600 font-bold text-xs bg-emerald-50 px-3 py-1.5 rounded-lg">Restore</button>`:`<div class="flex justify-end gap-2"><button type="button" onclick="openEditById('${id}')" class="table-action-btn text-blue-600 font-bold text-xs bg-blue-50 px-3 py-1.5 rounded-lg">Edit</button><button type="button" onclick="actionData('${id}','softDelete')" class="table-action-btn text-rose-600 font-bold text-xs bg-rose-50 px-3 py-1.5 rounded-lg">Hapus</button></div>`;return `<tr class="hover:bg-blue-50/50 bg-white">${cells}<td class="px-5 py-4 text-right border-b sticky right-0 bg-white">${act}</td></tr>`;}).join('');
 }
+
 function filterAdminTable(query){const c=memoryCache[activeModule];if(!c)return;const q=String(query||'').toLowerCase().trim();const rows=q?c.data.filter(row=>Object.values(row).some(v=>String(v??'').toLowerCase().includes(q))):c.data;renderAdminTable(c.headers,rows);}
 async function refreshAdminModule(){if(!activeModule)return;invalidateCache(activeModule);const input=document.getElementById('admin-search');if(input)input.value='';await loadAdminModule(activeModule,true);}
-function escapeHtml(v){return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');}
 function openEditById(id){const c=memoryCache[activeModule];if(!c)return;const r=c.data.find(x=>String(x[c.headers[0]])===String(id));if(r)openModalInput(r);else showToast('Data tidak ditemukan.','error');}
 async function actionData(id,actionType){if(!confirm(actionType==='softDelete'?'Pindahkan data ini ke tempat sampah?':'Pulihkan data ini?'))return;toggleLoader(true);try{const r=await apiCall('POST',{action:actionType,sheet:activeModule,user:currentUser?currentUser.UserID:'System',data:{id:id}});if(r.status==='success'){invalidateCache(activeModule);await loadAdminModule(activeModule,true);showToast(r.message,'success')}else showToast(r.message||'Gagal memproses data.','error')}finally{toggleLoader(false)}}
 
+/* ====================================================================
+   WINDOW LOAD EVENT
+   ==================================================================== */
 window.addEventListener('load', () => {
     history.replaceState({ view: 'attendance', section: null }, '', '');
     renderView('attendance', null);
     startSplashTimer();
 }, { once: true });
+
+
+/* ====================================================================
+   FITUR LOGIN, REGISTRASI, PASSWORD, KAMERA WAJAH, DAN LUPA AKUN
+   ==================================================================== */
+
+let videoStream = null;
+let currentFaceMode = ''; // 'login', 'register', 'recovery', 'document'
+let faceCaptureStep = 1; 
+let tempFaceData = { front: '', right: '', left: '' }; 
+let isFaceVerified = false;
+let documentFaceDataUrl = ''; // Khusus untuk fitur CV/Dokumen
+let verifiedRecoveryUserId = '';
+
+/* --- 1. TOGGLE PASSWORD (MATA 👁️) --- */
+function togglePassword(inputId, btnEl) {
+    const input = document.getElementById(inputId);
+    const icon = btnEl.querySelector('i');
+    if (input.type === "password") {
+        input.type = "text";
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash', 'text-blue-600');
+    } else {
+        input.type = "password";
+        icon.classList.remove('fa-eye-slash', 'text-blue-600');
+        icon.classList.add('fa-eye');
+    }
+}
+
+/* --- 2. VALIDASI PASSWORD KEKUATAN & MATCH --- */
+let isPasswordStrong = false;
+let isPasswordMatch = false;
+
+function checkPasswordStrength() {
+    const pw = document.getElementById('reg-password').value;
+    const bar1 = document.getElementById('pw-bar-1');
+    const bar2 = document.getElementById('pw-bar-2');
+    const bar3 = document.getElementById('pw-bar-3');
+    const text = document.getElementById('pw-status-text');
+
+    bar1.className = 'h-full w-1/3 transition-all';
+    bar2.className = 'h-full w-1/3 transition-all';
+    bar3.className = 'h-full w-1/3 transition-all';
+
+    const hasUpper = /[A-Z]/.test(pw);
+    const hasLower = /[a-z]/.test(pw);
+    const hasNum = /\d/.test(pw);
+    const hasSym = /[\W_]/.test(pw);
+    const isLong = pw.length >= 8;
+
+    let strength = 0;
+    if(isLong) strength++;
+    if(hasUpper && hasLower) strength++;
+    if(hasNum && hasSym) strength++;
+
+    isPasswordStrong = false;
+
+    if (pw.length === 0) {
+        text.innerText = "Belum Diisi";
+        text.className = "text-[10px] font-bold mt-1 text-slate-500";
+    } else if (strength === 1 || !isLong) {
+        bar1.classList.add('pw-weak');
+        text.innerText = "Lemah (Belum Memenuhi Syarat)";
+        text.className = "text-[10px] font-bold mt-1 text-rose-500";
+    } else if (strength === 2) {
+        bar1.classList.add('pw-medium');
+        bar2.classList.add('pw-medium');
+        text.innerText = "Sedang (Gunakan Simbol/Angka)";
+        text.className = "text-[10px] font-bold mt-1 text-yellow-500";
+    } else if (strength === 3 && isLong) {
+        bar1.classList.add('pw-strong');
+        bar2.classList.add('pw-strong');
+        bar3.classList.add('pw-strong');
+        text.innerText = "Kuat (Memenuhi Syarat)";
+        text.className = "text-[10px] font-bold mt-1 text-emerald-600";
+        isPasswordStrong = true;
+    }
+    checkPasswordMatch();
+}
+
+function checkPasswordMatch() {
+    const pw = document.getElementById('reg-password').value;
+    const pw2 = document.getElementById('reg-password-confirm').value;
+    const btnSubmit = document.getElementById('btn-submit-reg');
+
+    isPasswordMatch = (pw === pw2 && pw.length > 0);
+
+    if (isPasswordStrong && isPasswordMatch && isFaceVerified) {
+        btnSubmit.disabled = false;
+        btnSubmit.classList.remove('opacity-50', 'cursor-not-allowed');
+    } else {
+        btnSubmit.disabled = true;
+        btnSubmit.classList.add('opacity-50', 'cursor-not-allowed');
+    }
+}
+
+/* --- 3. SISTEM KAMERA WAJAH TERPADU (UNIFIED) --- */
+async function startFaceCamera(mode) {
+    currentFaceMode = mode;
+    faceCaptureStep = 1;
+    isFaceVerified = false;
+    documentFaceDataUrl = '';
+    
+    document.getElementById('face-verification-modal')?.classList.remove('hidden');
+    document.getElementById('face-placeholder')?.classList.add('hidden');
+    document.getElementById('face-captured')?.classList.add('hidden');
+    document.getElementById('face-confirm-btn')?.classList.add('hidden');
+    document.getElementById('face-capture-btn')?.classList.remove('hidden');
+
+    const video = document.getElementById('face-camera');
+    if(video) video.classList.remove('hidden');
+    
+    const instr = document.getElementById('face-instruction');
+    const stepCount = document.getElementById('face-step-counter');
+
+    if(instr && stepCount) {
+        if(mode === 'register') {
+            instr.innerText = "Harap Hadap DEPAN";
+            stepCount.innerText = "1/3";
+        } else if (mode === 'document') {
+            instr.innerText = "Verifikasi Wajah Visitor";
+            stepCount.innerText = "1/1";
+        } else {
+            instr.innerText = "Verifikasi Wajah Anda";
+            stepCount.innerText = "1/1";
+        }
+    }
+
+    try {
+        videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
+        if(video) video.srcObject = videoStream;
+    } catch (err) {
+        showToast("Gagal mengakses kamera! Harap izinkan akses kamera di browser Anda.", "warning");
+        closeFaceVerification();
+    }
+}
+
+function captureFace() {
+    const video = document.getElementById('face-camera');
+    const canvas = document.getElementById('face-canvas');
+    if(!video || !canvas || !video.videoWidth) return showToast('Kamera belum siap.','warning');
+
+    const ctx = canvas.getContext('2d');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const base64Data = canvas.toDataURL('image/jpeg', 0.6); // Kompresi 60%
+
+    // LOGIKA A: JIKA SEDANG MEMBUKA DOKUMEN / CV
+    if (currentFaceMode === 'document') {
+        documentFaceDataUrl = base64Data;
+        const img = document.getElementById('face-captured');
+        if(img) { img.src = documentFaceDataUrl; img.classList.remove('hidden'); }
+        video.classList.add('hidden');
+        document.getElementById('face-capture-btn')?.classList.add('hidden');
+        document.getElementById('face-confirm-btn')?.classList.remove('hidden');
+        
+        if(videoStream){ videoStream.getTracks().forEach(t=>t.stop()); videoStream=null; }
+        return; 
+    }
+
+    // LOGIKA B: JIKA SEDANG REGISTRASI, LOGIN, LUPA AKUN
+    const instr = document.getElementById('face-instruction');
+    const stepCount = document.getElementById('face-step-counter');
+
+    if (currentFaceMode === 'register') {
+        if (faceCaptureStep === 1) {
+            tempFaceData.front = base64Data;
+            faceCaptureStep++;
+            if(instr) instr.innerText = "Tengok Sedikit ke KANAN";
+            if(stepCount) stepCount.innerText = "2/3";
+        } else if (faceCaptureStep === 2) {
+            tempFaceData.right = base64Data;
+            faceCaptureStep++;
+            if(instr) instr.innerText = "Tengok Sedikit ke KIRI";
+            if(stepCount) stepCount.innerText = "3/3";
+        } else if (faceCaptureStep === 3) {
+            tempFaceData.left = base64Data;
+            isFaceVerified = true;
+            document.getElementById('reg-face-status')?.classList.remove('hidden');
+            document.getElementById('btn-reg-face')?.classList.add('hidden');
+            closeFaceVerification();
+            checkPasswordMatch(); 
+            showToast("3 Foto wajah berhasil disimpan!", "success");
+        }
+    } else {
+        tempFaceData.front = base64Data;
+        isFaceVerified = true;
+        closeFaceVerification();
+        
+        if(currentFaceMode === 'login') {
+            document.getElementById('login-face-status')?.classList.remove('hidden');
+            document.getElementById('btn-login-face')?.classList.add('hidden');
+        } else if (currentFaceMode === 'recovery') {
+            document.getElementById('rec-face-status')?.classList.remove('hidden');
+            document.getElementById('btn-rec-face')?.classList.add('hidden');
+        }
+        showToast("Verifikasi wajah selesai!", "success");
+    }
+}
+
+function closeFaceVerification() {
+    document.getElementById('face-verification-modal')?.classList.add('hidden');
+    if (videoStream) {
+        videoStream.getTracks().forEach(track => track.stop());
+        videoStream = null;
+    }
+}
+
+/* --- 4. DEVICE INFO & GEOLOCATION --- */
+async function getDeviceAndLocation() {
+    let deviceInfo = navigator.userAgent;
+    let ip = "Tidak terdeteksi";
+    let geo = "Tidak diizinkan GPS";
+
+    try {
+        let res = await fetch('https://api.ipify.org?format=json');
+        let data = await res.json();
+        ip = data.ip;
+    } catch(e) {}
+
+    return new Promise(resolve => {
+        if(navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                pos => { geo = `${pos.coords.latitude}, ${pos.coords.longitude}`; resolve({deviceInfo, ip, geo}); },
+                err => { resolve({deviceInfo, ip, geo}); },
+                { timeout: 5000 }
+            );
+        } else {
+            resolve({deviceInfo, ip, geo});
+        }
+    });
+}
+
+/* --- 5. LOGIC REGISTRASI LENGKAP & OTP --- */
+async function sendRegisterOTP() {
+    const email = document.getElementById('reg-email').value;
+    const name = document.getElementById('reg-name').value;
+    if(!email || !name) return showToast("Isi Nama & Email terlebih dahulu!", "warning");
+    
+    toggleLoader(true); 
+    try {
+        const json = await apiCall('POST', { action: 'sendOTP', data: { email: email, fullName: name } });
+        toggleLoader(false);
+        if(json.status === 'success') {
+            document.getElementById('reg-otp-box').classList.remove('hidden');
+            showToast("OTP terkirim ke Email Anda!", "success");
+        } else showToast(json.message, "error");
+    } catch(e) { toggleLoader(false); showToast('Error jaringan', "error"); }
+}
+
+async function handleRegister() {
+    if (!isPasswordStrong || !isPasswordMatch || !isFaceVerified) return;
+    
+    const otp = document.getElementById('reg-otp').value;
+    const email = document.getElementById('reg-email').value;
+    if(!otp || otp.length !== 4) return showToast("Masukkan 4 digit OTP!", "warning");
+
+    toggleLoader(true); 
+    let otpJson = await apiCall('POST', { action: 'verifyOTP', data: { email, code: otp } });
+    if(otpJson.status !== 'success') {
+        toggleLoader(false);
+        return showToast(otpJson.message, "error");
+    }
+
+    const meta = await getDeviceAndLocation();
+    const payload = {
+        action: 'register',
+        data: {
+            fullName: document.getElementById('reg-name').value,
+            username: document.getElementById('reg-username').value,
+            birthInfo: document.getElementById('reg-birth').value,
+            company: document.getElementById('reg-company').value,
+            companyAddress: document.getElementById('reg-company-address').value,
+            position: document.getElementById('reg-position').value,
+            email: email,
+            whatsapp: document.getElementById('reg-wa').value,
+            password: document.getElementById('reg-password').value,
+            faceData: JSON.stringify(tempFaceData), 
+            deviceInfo: meta.deviceInfo,
+            locationIP: meta.ip,
+            geoLocation: meta.geo,
+            role: 'Visitor'
+        }
+    };
+
+    try {
+        const json = await apiCall('POST', payload);
+        toggleLoader(false);
+        if(json.status === 'success') {
+            showToast("Registrasi Berhasil! Silakan Login.", "success");
+            showAuthPanel('login');
+        } else {
+            showToast(json.message, "error");
+        }
+    } catch(e) { toggleLoader(false); showToast("Gagal Terhubung ke Server", "error"); }
+}
+
+/* --- 6. LOGIC LOGIN & LOGOUT --- */
+async function handleLogin() {
+    const identifier = document.getElementById('login-identifier')?.value || document.getElementById('login-email')?.value;
+    const password = document.getElementById('login-password')?.value;
+
+    if(!identifier || !password) return showToast("Isi semua data login!", "warning");
+    // if(!isFaceVerified) return showToast("Harap verifikasi wajah terlebih dahulu!", "warning"); // Uncomment jika wajah wajib saat login
+
+    toggleLoader(true);
+    const meta = await getDeviceAndLocation(); 
+    
+    const payload = {
+        action: 'login',
+        data: { email: identifier, password: password, faceVerified: isFaceVerified, deviceInfo: meta.deviceInfo }
+    };
+
+    try {
+        const json = await apiCall('POST', payload); 
+        toggleLoader(false);
+        if(json.status === 'success') {
+            currentUser = json.user;
+            showToast("Login Berhasil! Selamat datang.", "success");
+            
+            if (currentUser.Role === 'SuperAdmin') { 
+                initAdminSidebar(); 
+                switchView('admin'); 
+            } else { 
+                switchView('visitor'); 
+            }
+        } else {
+            showToast(json.message, "error");
+        }
+    } catch(e) { toggleLoader(false); showToast("Gagal Terhubung", "error"); }
+}
+
+function handleLogout() { 
+    currentUser = null; 
+    memoryCache = {}; 
+    showToast("Sesi berakhir.", "info");
+    switchView('attendance'); 
+}
+
+/* --- 7. LOGIC LUPA AKUN (5 OPSI) --- */
+function openRecoveryPanel() { document.getElementById('auth-recovery')?.classList.remove('hidden'); }
+function closeRecoveryPanel() { document.getElementById('auth-recovery')?.classList.add('hidden'); }
+
+function changeRecoveryForm() {
+    const type = document.getElementById('recovery-type').value;
+    const container = document.getElementById('recovery-dynamic-form');
+    container.innerHTML = ''; 
+    container.classList.remove('hidden');
+    document.getElementById('recovery-new-data-form').classList.add('hidden');
+    isFaceVerified = false; 
+
+    let html = '';
+    const createInput = (id, label, type, placeholder) => `<div><label class="text-xs font-bold text-slate-700 block mb-1">${label}</label><input id="${id}" type="${type}" placeholder="${placeholder}" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none"></div>`;
+    
+    const faceBtnHtml = `
+      <button type="button" onclick="startFaceCamera('recovery')" id="btn-rec-face" class="w-full border-2 border-dashed border-rose-300 text-rose-600 font-bold py-3.5 rounded-xl text-sm flex items-center justify-center gap-2 mt-2"><i class="fas fa-camera"></i> Verifikasi Wajah Wajib</button>
+      <div id="rec-face-status" class="hidden text-center text-xs font-bold text-emerald-600 mt-2"><i class="fas fa-check-circle"></i> Wajah Terverifikasi</div>
+      <button type="button" onclick="submitRecoveryCheck()" class="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl text-sm mt-3 shadow-md">Cek Kecocokan Data</button>
+    `;
+
+    if (type === '1') { html += createInput('rec-email', 'Email Terdaftar', 'email', 'nama@email.com') + createInput('rec-wa', 'Nomor WhatsApp', 'number', '08xxxxx') + createInput('rec-password', 'Password Akun', 'password', '••••••••'); }
+    else if (type === '2') { html += createInput('rec-wa', 'Nomor WhatsApp Terdaftar', 'number', '08xxxxx') + createInput('rec-password', 'Password Akun', 'password', '••••••••') + createInput('rec-new-email', 'Masukkan Email Baru Anda', 'email', 'emailbaru@domain.com'); }
+    else if (type === '3') { html += createInput('rec-email', 'Email Terdaftar', 'email', 'nama@email.com') + createInput('rec-password', 'Password Akun', 'password', '••••••••'); }
+    else if (type === '4') { html += createInput('rec-email', 'Email Terdaftar', 'email', 'nama@email.com') + createInput('rec-wa', 'Nomor WhatsApp', 'number', '08xxxxx'); }
+    else if (type === '5') { html += createInput('rec-fullname', 'Nama Lengkap (Sesuai KTP)', 'text', 'Nama Anda') + createInput('rec-birth', 'Tempat & Tgl Lahir', 'text', 'Sesuai data pendaftaran') + createInput('rec-new-email', 'Email Baru yang Aktif', 'email', 'emailbaru@domain.com'); }
+
+    container.innerHTML = html + faceBtnHtml;
+}
+
+async function submitRecoveryCheck() {
+    const type = document.getElementById('recovery-type').value;
+    if(!isFaceVerified) return showToast("Verifikasi wajah wajib dilakukan untuk Lupa Akun!", "warning");
+
+    const data = { recoveryType: type };
+    if(document.getElementById('rec-email')) data.email = document.getElementById('rec-email').value;
+    if(document.getElementById('rec-wa')) data.whatsapp = document.getElementById('rec-wa').value;
+    if(document.getElementById('rec-password')) data.password = document.getElementById('rec-password').value;
+    if(document.getElementById('rec-fullname')) data.fullName = document.getElementById('rec-fullname').value;
+    if(document.getElementById('rec-birth')) data.birthInfo = document.getElementById('rec-birth').value;
+    
+    toggleLoader(true);
+    try {
+        const json = await apiCall('POST', { action: 'validateRecovery', data: data });
+        toggleLoader(false);
+
+        if(json.status === 'success') {
+            verifiedRecoveryUserId = json.userId; 
+            showToast("Data Valid! Silakan buat data baru.", "success");
+            document.getElementById('recovery-dynamic-form').classList.add('hidden');
+            
+            const newInputs = document.getElementById('recovery-new-inputs');
+            newInputs.innerHTML = ''; 
+
+            const createInput = (id, label, type) => `<div><label class="text-[11px] font-bold text-slate-700 block mb-1">${label}</label><input id="${id}" type="${type}" class="w-full p-3 border border-emerald-300 rounded-xl text-sm outline-none"></div>`;
+
+            if(type === '1') newInputs.innerHTML = createInput('upd-username', 'Buat Username Baru', 'text');
+            if(type === '2') { newInputs.innerHTML = createInput('upd-email', 'Konfirmasi Email Baru', 'email'); document.getElementById('upd-email').value = document.getElementById('rec-new-email').value; }
+            if(type === '3') newInputs.innerHTML = createInput('upd-wa', 'Nomor WhatsApp Baru', 'number');
+            if(type === '4') newInputs.innerHTML = createInput('upd-password', 'Buat Password Baru', 'text');
+            if(type === '5') {
+                newInputs.innerHTML = createInput('upd-username', 'Username Baru', 'text') + createInput('upd-email', 'Email Baru', 'email') + createInput('upd-wa', 'WhatsApp Baru', 'number') + createInput('upd-password', 'Password Baru', 'text');
+                document.getElementById('upd-email').value = document.getElementById('rec-new-email').value;
+            }
+            document.getElementById('recovery-new-data-form').classList.remove('hidden');
+        } else {
+            showToast(json.message, "error");
+        }
+    } catch(e) { toggleLoader(false); showToast("Error pengecekan data.", "error"); }
+}
+
+async function submitNewRecoveryData() {
+    if(!verifiedRecoveryUserId) return;
+    
+    const updateData = { id: verifiedRecoveryUserId };
+    if(document.getElementById('upd-username')) updateData.newUsername = document.getElementById('upd-username').value;
+    if(document.getElementById('upd-email')) updateData.newEmail = document.getElementById('upd-email').value;
+    if(document.getElementById('upd-wa')) updateData.newWhatsapp = document.getElementById('upd-wa').value;
+    if(document.getElementById('upd-password')) updateData.newPassword = document.getElementById('upd-password').value;
+
+    toggleLoader(true);
+    try {
+        const json = await apiCall('POST', { action: 'updateRecoveryData', data: updateData });
+        toggleLoader(false);
+        if(json.status === 'success') {
+            showToast(json.message, "success");
+            closeRecoveryPanel();
+            showAuthPanel('login');
+        } else showToast(json.message, "error");
+    } catch(e) { toggleLoader(false); showToast("Error penyimpanan data", "error"); }
+}
+
+/* --- 8. LOGIC DOKUMEN CV PROTECTED --- */
+function requestProtectedDocuments(){
+    if(!currentUser){ switchView('login'); return; }
+    startFaceCamera('document');
+}
+
+async function confirmFaceVerification(){
+    if(!documentFaceDataUrl) return showToast('Ambil foto terlebih dahulu.','warning');
+    closeFaceVerification();
+    await openProtectedDocuments();
+}
+
+async function openProtectedDocuments(){
+    const container = document.getElementById('public-documents-content');
+    if(!container) return;
+    
+    const res = await getCachedData('Documents', true);
+    const rows = (res.data||[]).filter(x=>!x.Status||x.Status==='publish'||x.Status==='active')
+                               .filter(x=>/cv|curriculum|lamaran|surat lamaran|resume|resume kerja/i.test(String(x.Title||'')+' '+String(x.Description||'')));
+    if(!rows.length){showToast('CV atau Lamaran Kerja belum tersedia.','info'); return;}
+    
+    container.innerHTML=`<div class="bg-white p-7 rounded-3xl border shadow-sm"><div class="flex items-center gap-3 mb-5"><div class="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center"><i class="fas fa-user-shield"></i></div><div><h2 class="font-black text-xl text-slate-900">Dokumen Terverifikasi</h2><p class="text-xs text-slate-500">Akses diberikan setelah konfirmasi selfie.</p></div></div><div class="grid sm:grid-cols-2 gap-4">${rows.map(x=>{const u=safeUrl(x.File_URL);return `<article class="p-5 bg-slate-50 rounded-2xl border"><div class="font-black">${escapeHtml(safeText(x.Title,'Dokumen'))}</div><p class="text-xs text-slate-500 mt-2">${escapeHtml(safeText(x.Description))}</p>${u?`<a href="${u}" target="_blank" rel="noopener" onclick="logProtectedAccess('${escapeHtml(safeText(x.Title))}')" class="inline-flex mt-4 bg-slate-900 text-white px-4 py-2 rounded-xl text-xs font-bold">Buka Dokumen</a>`:''}</article>`}).join('')}</div></div>`;
+}
+
+async function logProtectedAccess(title){
+    try { await apiCall('POST', { action:'logActivity', user: currentUser?.UserID||currentUser?.Email||'Visitor', data: { action:'PROTECTED_DOCUMENT_ACCESS', description:'Akses '+title }}) } catch(e){}
+}
