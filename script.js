@@ -765,221 +765,244 @@ function checkPasswordMatch() {
 async function startFaceCamera(mode) {
     currentFaceMode = mode;
     faceCaptureStep = 1;
+
     isFaceVerified = false;
     documentFaceDataUrl = '';
-    
-    document.getElementById('face-capture-btn')?.classList.remove('hidden');
 
+    /* Reset data wajah jika mulai registrasi */
+    if (mode === 'register') {
+        tempFaceData = {
+            front: '',
+            right: '',
+            left: ''
+        };
+    }
+
+    const modal = document.getElementById('face-verification-modal');
     const video = document.getElementById('face-camera');
-    if(video) video.classList.remove('hidden');
-    
+    const captureBtn = document.getElementById('face-capture-btn');
     const instr = document.getElementById('face-instruction');
     const stepCount = document.getElementById('face-step-counter');
 
-    if(instr && stepCount) {
-        if(mode === 'register') {
-            instr.innerText = "Harap Hadap DEPAN";
-            stepCount.innerText = "1/3";
-        } else if (mode === 'document') {
-            instr.innerText = "Verifikasi Wajah Visitor";
-            stepCount.innerText = "1/1";
-        } else {
-            instr.innerText = "Verifikasi Wajah Anda";
-            stepCount.innerText = "1/1";
+    if (!modal || !video || !captureBtn) {
+        showToast(
+            'Komponen kamera tidak ditemukan.',
+            'error'
+        );
+        return;
+    }
+
+    /* ================================================================
+       RESET UI KAMERA
+       ================================================================ */
+
+    modal.classList.remove('hidden');
+
+    video.classList.remove('hidden');
+
+    captureBtn.classList.remove('hidden');
+
+    captureBtn.disabled = false;
+
+    captureBtn.innerHTML =
+        '📸 Ambil Foto (<span id="face-step-counter">1/1</span>)';
+
+    /* Ambil kembali elemen counter setelah innerHTML berubah */
+    const counter =
+        document.getElementById('face-step-counter');
+
+    /* ================================================================
+       ATUR INSTRUKSI BERDASARKAN MODE
+       ================================================================ */
+
+    if (mode === 'register') {
+
+        if (instr) {
+            instr.innerText =
+                'Harap Hadap DEPAN';
+        }
+
+        if (counter) {
+            counter.innerText = '1/3';
+        }
+
+    } else if (mode === 'document') {
+
+        if (instr) {
+            instr.innerText =
+                'Verifikasi Wajah Visitor';
+        }
+
+        if (counter) {
+            counter.innerText = '1/1';
+        }
+
+    } else if (mode === 'recovery') {
+
+        if (instr) {
+            instr.innerText =
+                'Verifikasi Wajah untuk Pemulihan Akun';
+        }
+
+        if (counter) {
+            counter.innerText = '1/1';
+        }
+
+    } else if (mode === 'login') {
+
+        if (instr) {
+            instr.innerText =
+                'Verifikasi Wajah Login';
+        }
+
+        if (counter) {
+            counter.innerText = '1/1';
+        }
+
+    } else {
+
+        if (instr) {
+            instr.innerText =
+                'Verifikasi Wajah Anda';
+        }
+
+        if (counter) {
+            counter.innerText = '1/1';
         }
     }
 
-    try {
-        videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
-        if(video) video.srcObject = videoStream;
-    } catch (err) {
-        showToast("Gagal mengakses kamera! Harap izinkan akses kamera di browser Anda.", "warning");
-        closeFaceVerification();
-    }
-}
+    /* ================================================================
+       HENTIKAN STREAM KAMERA LAMA
+       ================================================================ */
 
-function captureFace() {
-    const video = document.getElementById('face-camera');
-    const canvas = document.getElementById('face-canvas');
+    if (videoStream) {
+        videoStream.getTracks().forEach(track => {
+            try {
+                track.stop();
+            } catch (e) {}
+        });
 
-    if (!video || !canvas || !video.videoWidth) {
-        return showToast('Kamera belum siap.', 'warning');
+        videoStream = null;
     }
 
-    const ctx = canvas.getContext('2d');
-
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-
-    ctx.drawImage(
-        video,
-        0,
-        0,
-        canvas.width,
-        canvas.height
-    );
-
-    const base64Data = canvas.toDataURL('image/jpeg', 0.6);
+    video.srcObject = null;
 
     /* ================================================================
-       MODE DOKUMEN / CV
+       MINTA AKSES KAMERA
        ================================================================ */
-    if (currentFaceMode === 'document') {
 
-        documentFaceDataUrl = base64Data;
+    if (
+        !navigator.mediaDevices ||
+        !navigator.mediaDevices.getUserMedia
+    ) {
+        showToast(
+            'Browser ini tidak mendukung akses kamera.',
+            'error'
+        );
+
+        modal.classList.add('hidden');
+        return;
+    }
+
+    try {
+
+        videoStream =
+            await navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: 'user',
+                    width: {
+                        ideal: 1280
+                    },
+                    height: {
+                        ideal: 720
+                    }
+                },
+                audio: false
+            });
+
+        video.srcObject = videoStream;
 
         /*
-         * Simpan hasil foto.
-         * Tidak lagi mencari elemen face-captured / face-confirm-btn
-         * karena elemen tersebut memang tidak ada di index.html.
+         * Tunggu video benar-benar siap.
          */
-        isFaceVerified = true;
+        await new Promise(resolve => {
+            if (video.readyState >= 2) {
+                resolve();
+                return;
+            }
+
+            const onReady = () => {
+                video.removeEventListener(
+                    'loadedmetadata',
+                    onReady
+                );
+                resolve();
+            };
+
+            video.addEventListener(
+                'loadedmetadata',
+                onReady,
+                {
+                    once: true
+                }
+            );
+        });
+
+        try {
+            await video.play();
+        } catch (playError) {
+            console.warn(
+                'Video autoplay tidak berhasil:',
+                playError
+            );
+        }
+
+        /*
+         * Pastikan tombol aktif setelah kamera siap.
+         */
+        captureBtn.disabled = false;
+
+    } catch (err) {
+
+        console.error(
+            'Camera error:',
+            err
+        );
 
         if (videoStream) {
-            videoStream.getTracks().forEach(track => track.stop());
+            videoStream.getTracks().forEach(track => {
+                try {
+                    track.stop();
+                } catch (e) {}
+            });
+
             videoStream = null;
         }
 
         video.srcObject = null;
 
-        document.getElementById('face-capture-btn')?.classList.add('hidden');
+        modal.classList.add('hidden');
 
-        closeFaceVerification();
+        let message =
+            'Gagal mengakses kamera.';
 
-        showToast(
-            'Verifikasi wajah berhasil. Dokumen siap dibuka.',
-            'success'
-        );
-
-        return;
-    }
-
-    /* ================================================================
-       ELEMEN INFORMASI KAMERA
-       ================================================================ */
-    const instr =
-        document.getElementById('face-instruction');
-
-    const stepCount =
-        document.getElementById('face-step-counter');
-
-    /* ================================================================
-       MODE REGISTRASI
-       ================================================================ */
-    if (currentFaceMode === 'register') {
-
-        if (faceCaptureStep === 1) {
-
-            tempFaceData.front = base64Data;
-
-            faceCaptureStep++;
-
-            if (instr) {
-                instr.innerText =
-                    'Tengok Sedikit ke KANAN';
-            }
-
-            if (stepCount) {
-                stepCount.innerText = '2/3';
-            }
-
-            showToast(
-                'Foto depan berhasil. Sekarang arahkan wajah sedikit ke kanan.',
-                'info'
-            );
-
-        } else if (faceCaptureStep === 2) {
-
-            tempFaceData.right = base64Data;
-
-            faceCaptureStep++;
-
-            if (instr) {
-                instr.innerText =
-                    'Tengok Sedikit ke KIRI';
-            }
-
-            if (stepCount) {
-                stepCount.innerText = '3/3';
-            }
-
-            showToast(
-                'Foto kanan berhasil. Sekarang arahkan wajah sedikit ke kiri.',
-                'info'
-            );
-
-        } else if (faceCaptureStep === 3) {
-
-            tempFaceData.left = base64Data;
-
-            isFaceVerified = true;
-
-            document
-                .getElementById('reg-face-status')
-                ?.classList.remove('hidden');
-
-            document
-                .getElementById('btn-reg-face')
-                ?.classList.add('hidden');
-
-            closeFaceVerification();
-
-            checkPasswordMatch();
-
-            showToast(
-                '3 foto wajah berhasil disimpan!',
-                'success'
-            );
+        if (err && err.name === 'NotAllowedError') {
+            message =
+                'Akses kamera ditolak. Izinkan kamera pada browser kemudian coba lagi.';
+        } else if (err && err.name === 'NotFoundError') {
+            message =
+                'Kamera tidak ditemukan pada perangkat.';
+        } else if (err && err.name === 'NotReadableError') {
+            message =
+                'Kamera sedang digunakan aplikasi lain.';
+        } else if (err && err.name === 'SecurityError') {
+            message =
+                'Browser memblokir akses kamera karena alasan keamanan.';
         }
 
-        return;
-    }
-
-    /* ================================================================
-       MODE LOGIN / RECOVERY
-       ================================================================ */
-
-    tempFaceData.front = base64Data;
-
-    isFaceVerified = true;
-
-    closeFaceVerification();
-
-    if (currentFaceMode === 'login') {
-
-        document
-            .getElementById('login-face-status')
-            ?.classList.remove('hidden');
-
-        document
-            .getElementById('btn-login-face')
-            ?.classList.add('hidden');
-
         showToast(
-            'Verifikasi wajah login selesai!',
-            'success'
-        );
-
-    } else if (currentFaceMode === 'recovery') {
-
-        document
-            .getElementById('rec-face-status')
-            ?.classList.remove('hidden');
-
-        document
-            .getElementById('btn-rec-face')
-            ?.classList.add('hidden');
-
-        showToast(
-            'Verifikasi wajah recovery selesai!',
-            'success'
-        );
-
-    } else {
-
-        showToast(
-            'Foto wajah berhasil diambil.',
-            'success'
+            message,
+            'warning'
         );
     }
 }
