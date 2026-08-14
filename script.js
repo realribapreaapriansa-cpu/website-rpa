@@ -15,6 +15,17 @@ let otpTimerInterval = null;
 let otpExpiresAt = null;
 let splashAutoTimer = null;
 
+/* ================================================================
+   FACE DETECTION / AUTO CAPTURE
+   ================================================================ */
+let faceDetectionReady = false;
+let faceDetectionTimer = null;
+let faceStableCount = 0;
+let faceAutoCaptureRunning = false;
+
+const FACE_MODEL_URL =
+    'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@0.22.2/weights';
+
 const menuGroups = [
   { title: "Dashboard & Profil", icon: 'fa-house', items: [
     {sheet:'Home',label:'Home'}, {sheet:'Profile',label:'Profile'}, {sheet:'Contact',label:'Contact'}
@@ -156,6 +167,146 @@ document.addEventListener('input', function(e) {
         e.target.value = e.target.value.replace(/\D/g, '').slice(0, 4);
     }
 });
+
+/* ================================================================
+   LOAD FACE DETECTION MODEL
+   ================================================================ */
+async function loadFaceDetectionModel() {
+    if (faceDetectionReady) return true;
+
+    if (typeof faceapi === 'undefined') {
+        console.error('face-api.js belum tersedia.');
+        showToast(
+            'Modul pemindaian wajah belum siap.',
+            'error'
+        );
+        return false;
+    }
+
+    try {
+        await faceapi.nets.tinyFaceDetector.loadFromUri(
+            FACE_MODEL_URL
+        );
+
+        faceDetectionReady = true;
+
+        console.log('Face detection model berhasil dimuat.');
+
+        return true;
+    } catch (error) {
+        console.error(
+            'Gagal memuat model face detection:',
+            error
+        );
+
+        showToast(
+            'Model pemindaian wajah gagal dimuat.',
+            'error'
+        );
+
+        return false;
+    }
+}
+
+/* ================================================================
+   AUTO DETECT WAJAH + AUTO CAPTURE
+   ================================================================ */
+function startAutomaticFaceDetection() {
+    if (faceDetectionTimer) {
+        clearInterval(faceDetectionTimer);
+        faceDetectionTimer = null;
+    }
+
+    faceStableCount = 0;
+    faceAutoCaptureRunning = false;
+
+    const video =
+        document.getElementById('face-camera');
+
+    const instruction =
+        document.getElementById('face-instruction');
+
+    if (!video) return;
+
+    faceDetectionTimer = setInterval(async () => {
+
+        if (faceAutoCaptureRunning) return;
+
+        if (
+            !faceDetectionReady ||
+            video.readyState < 2 ||
+            !video.videoWidth
+        ) {
+            return;
+        }
+
+        try {
+            const detection =
+                await faceapi.detectSingleFace(
+                    video,
+                    new faceapi.TinyFaceDetectorOptions({
+                        inputSize: 320,
+                        scoreThreshold: 0.55
+                    })
+                );
+
+            if (detection) {
+
+                faceStableCount++;
+
+                if (instruction) {
+                    instruction.innerText =
+                        'Wajah terdeteksi — tahan posisi...';
+                }
+
+                /*
+                 * Wajah harus terdeteksi beberapa kali
+                 * agar tidak langsung mengambil gambar
+                 * karena deteksi sesaat.
+                 */
+                if (faceStableCount >= 8) {
+
+                    faceAutoCaptureRunning = true;
+
+                    if (instruction) {
+                        instruction.innerText =
+                            'Wajah terdeteksi — mengambil foto...';
+                    }
+
+                    clearInterval(faceDetectionTimer);
+                    faceDetectionTimer = null;
+
+                    setTimeout(() => {
+
+                        if (
+                            typeof captureFace ===
+                            'function'
+                        ) {
+                            captureFace();
+                        }
+
+                    }, 500);
+                }
+
+            } else {
+
+                faceStableCount = 0;
+
+                if (instruction) {
+                    instruction.innerText =
+                        'Posisikan wajah di depan kamera';
+                }
+            }
+
+        } catch (error) {
+            console.warn(
+                'Face detection error:',
+                error
+            );
+        }
+
+    }, 250);
+}
 
 /* REQUEST OTP */
 async function requestEmailOTP() {
@@ -778,11 +929,19 @@ async function startFaceCamera(mode) {
         };
     }
 
+    /* Hentikan deteksi sebelumnya */
+    if (faceDetectionTimer) {
+        clearInterval(faceDetectionTimer);
+        faceDetectionTimer = null;
+    }
+
+    faceStableCount = 0;
+    faceAutoCaptureRunning = false;
+
     const modal = document.getElementById('face-verification-modal');
     const video = document.getElementById('face-camera');
     const captureBtn = document.getElementById('face-capture-btn');
     const instr = document.getElementById('face-instruction');
-    const stepCount = document.getElementById('face-step-counter');
 
     if (!modal || !video || !captureBtn) {
         showToast(
@@ -793,7 +952,7 @@ async function startFaceCamera(mode) {
     }
 
     /* ================================================================
-       RESET UI KAMERA
+       RESET UI
        ================================================================ */
 
     modal.classList.remove('hidden');
@@ -801,25 +960,23 @@ async function startFaceCamera(mode) {
     video.classList.remove('hidden');
 
     captureBtn.classList.remove('hidden');
-
     captureBtn.disabled = false;
 
+    /* Pastikan tombol tetap memiliki counter */
     captureBtn.innerHTML =
         '📸 Ambil Foto (<span id="face-step-counter">1/1</span>)';
 
-    /* Ambil kembali elemen counter setelah innerHTML berubah */
     const counter =
         document.getElementById('face-step-counter');
 
     /* ================================================================
-       ATUR INSTRUKSI BERDASARKAN MODE
+       INSTRUKSI MODE
        ================================================================ */
 
     if (mode === 'register') {
 
         if (instr) {
-            instr.innerText =
-                'Harap Hadap DEPAN';
+            instr.innerText = 'Harap Hadap DEPAN';
         }
 
         if (counter) {
@@ -829,8 +986,7 @@ async function startFaceCamera(mode) {
     } else if (mode === 'document') {
 
         if (instr) {
-            instr.innerText =
-                'Verifikasi Wajah Visitor';
+            instr.innerText = 'Posisikan wajah di depan kamera';
         }
 
         if (counter) {
@@ -841,7 +997,7 @@ async function startFaceCamera(mode) {
 
         if (instr) {
             instr.innerText =
-                'Verifikasi Wajah untuk Pemulihan Akun';
+                'Posisikan wajah di depan kamera';
         }
 
         if (counter) {
@@ -852,7 +1008,7 @@ async function startFaceCamera(mode) {
 
         if (instr) {
             instr.innerText =
-                'Verifikasi Wajah Login';
+                'Posisikan wajah di depan kamera';
         }
 
         if (counter) {
@@ -863,7 +1019,7 @@ async function startFaceCamera(mode) {
 
         if (instr) {
             instr.innerText =
-                'Verifikasi Wajah Anda';
+                'Posisikan wajah di depan kamera';
         }
 
         if (counter) {
@@ -872,7 +1028,7 @@ async function startFaceCamera(mode) {
     }
 
     /* ================================================================
-       HENTIKAN STREAM KAMERA LAMA
+       HENTIKAN KAMERA LAMA
        ================================================================ */
 
     if (videoStream) {
@@ -888,28 +1044,35 @@ async function startFaceCamera(mode) {
     video.srcObject = null;
 
     /* ================================================================
-       MINTA AKSES KAMERA
+       CEK SUPPORT KAMERA
        ================================================================ */
 
     if (
         !navigator.mediaDevices ||
         !navigator.mediaDevices.getUserMedia
     ) {
+        modal.classList.add('hidden');
+
         showToast(
             'Browser ini tidak mendukung akses kamera.',
             'error'
         );
 
-        modal.classList.add('hidden');
         return;
     }
+
+    /* ================================================================
+       BUKA KAMERA
+       ================================================================ */
 
     try {
 
         videoStream =
             await navigator.mediaDevices.getUserMedia({
                 video: {
-                    facingMode: 'user',
+                    facingMode: {
+                        ideal: 'user'
+                    },
                     width: {
                         ideal: 1280
                     },
@@ -922,11 +1085,14 @@ async function startFaceCamera(mode) {
 
         video.srcObject = videoStream;
 
-        /*
-         * Tunggu video benar-benar siap.
-         */
+        /* ============================================================
+           TUNGGU VIDEO SIAP
+           ============================================================ */
+
         await new Promise(resolve => {
-            if (video.readyState >= 2) {
+
+            if (video.readyState >= 2 &&
+                video.videoWidth > 0) {
                 resolve();
                 return;
             }
@@ -936,6 +1102,7 @@ async function startFaceCamera(mode) {
                     'loadedmetadata',
                     onReady
                 );
+
                 resolve();
             };
 
@@ -948,19 +1115,56 @@ async function startFaceCamera(mode) {
             );
         });
 
+        /* ============================================================
+           PLAY VIDEO
+           ============================================================ */
+
         try {
             await video.play();
         } catch (playError) {
             console.warn(
-                'Video autoplay tidak berhasil:',
+                'Video play warning:',
                 playError
             );
         }
 
-        /*
-         * Pastikan tombol aktif setelah kamera siap.
-         */
+        /* ============================================================
+           LOAD MODEL FACE DETECTION
+           ============================================================ */
+
+        const modelReady =
+            await loadFaceDetectionModel();
+
+        if (!modelReady) {
+
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => {
+                    try {
+                        track.stop();
+                    } catch (e) {}
+                });
+
+                videoStream = null;
+            }
+
+            video.srcObject = null;
+            modal.classList.add('hidden');
+
+            return;
+        }
+
+        /* ============================================================
+           MULAI AUTO FACE DETECTION
+           ============================================================ */
+
+        startAutomaticFaceDetection();
+
         captureBtn.disabled = false;
+
+        if (instr) {
+            instr.innerText =
+                'Posisikan wajah di depan kamera';
+        }
 
     } catch (err) {
 
@@ -980,22 +1184,28 @@ async function startFaceCamera(mode) {
         }
 
         video.srcObject = null;
-
         modal.classList.add('hidden');
 
         let message =
             'Gagal mengakses kamera.';
 
         if (err && err.name === 'NotAllowedError') {
+
             message =
                 'Akses kamera ditolak. Izinkan kamera pada browser kemudian coba lagi.';
+
         } else if (err && err.name === 'NotFoundError') {
+
             message =
                 'Kamera tidak ditemukan pada perangkat.';
+
         } else if (err && err.name === 'NotReadableError') {
+
             message =
                 'Kamera sedang digunakan aplikasi lain.';
+
         } else if (err && err.name === 'SecurityError') {
+
             message =
                 'Browser memblokir akses kamera karena alasan keamanan.';
         }
@@ -1008,9 +1218,33 @@ async function startFaceCamera(mode) {
 }
 
 function closeFaceVerification() {
-    document.getElementById('face-verification-modal')?.classList.add('hidden');
+    if (faceDetectionTimer) {
+        clearInterval(faceDetectionTimer);
+        faceDetectionTimer = null;
+    }
+
+    faceStableCount = 0;
+    faceAutoCaptureRunning = false;
+
+    document
+        .getElementById('face-verification-modal')
+        ?.classList.add('hidden');
+
+    const video =
+        document.getElementById('face-camera');
+
+    if (video) {
+        video.pause();
+        video.srcObject = null;
+    }
+
     if (videoStream) {
-        videoStream.getTracks().forEach(track => track.stop());
+        videoStream.getTracks().forEach(track => {
+            try {
+                track.stop();
+            } catch (e) {}
+        });
+
         videoStream = null;
     }
 }
