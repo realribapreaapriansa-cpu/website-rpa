@@ -768,10 +768,6 @@ async function startFaceCamera(mode) {
     isFaceVerified = false;
     documentFaceDataUrl = '';
     
-    document.getElementById('face-verification-modal')?.classList.remove('hidden');
-    document.getElementById('face-placeholder')?.classList.add('hidden');
-    document.getElementById('face-captured')?.classList.add('hidden');
-    document.getElementById('face-confirm-btn')?.classList.add('hidden');
     document.getElementById('face-capture-btn')?.classList.remove('hidden');
 
     const video = document.getElementById('face-camera');
@@ -805,64 +801,186 @@ async function startFaceCamera(mode) {
 function captureFace() {
     const video = document.getElementById('face-camera');
     const canvas = document.getElementById('face-canvas');
-    if(!video || !canvas || !video.videoWidth) return showToast('Kamera belum siap.','warning');
 
-    const ctx = canvas.getContext('2d');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const base64Data = canvas.toDataURL('image/jpeg', 0.6); // Kompresi 60%
-
-    // LOGIKA A: JIKA SEDANG MEMBUKA DOKUMEN / CV
-    if (currentFaceMode === 'document') {
-        documentFaceDataUrl = base64Data;
-        const img = document.getElementById('face-captured');
-        if(img) { img.src = documentFaceDataUrl; img.classList.remove('hidden'); }
-        video.classList.add('hidden');
-        document.getElementById('face-capture-btn')?.classList.add('hidden');
-        document.getElementById('face-confirm-btn')?.classList.remove('hidden');
-        
-        if(videoStream){ videoStream.getTracks().forEach(t=>t.stop()); videoStream=null; }
-        return; 
+    if (!video || !canvas || !video.videoWidth) {
+        return showToast('Kamera belum siap.', 'warning');
     }
 
-    // LOGIKA B: JIKA SEDANG REGISTRASI, LOGIN, LUPA AKUN
-    const instr = document.getElementById('face-instruction');
-    const stepCount = document.getElementById('face-step-counter');
+    const ctx = canvas.getContext('2d');
 
-    if (currentFaceMode === 'register') {
-        if (faceCaptureStep === 1) {
-            tempFaceData.front = base64Data;
-            faceCaptureStep++;
-            if(instr) instr.innerText = "Tengok Sedikit ke KANAN";
-            if(stepCount) stepCount.innerText = "2/3";
-        } else if (faceCaptureStep === 2) {
-            tempFaceData.right = base64Data;
-            faceCaptureStep++;
-            if(instr) instr.innerText = "Tengok Sedikit ke KIRI";
-            if(stepCount) stepCount.innerText = "3/3";
-        } else if (faceCaptureStep === 3) {
-            tempFaceData.left = base64Data;
-            isFaceVerified = true;
-            document.getElementById('reg-face-status')?.classList.remove('hidden');
-            document.getElementById('btn-reg-face')?.classList.add('hidden');
-            closeFaceVerification();
-            checkPasswordMatch(); 
-            showToast("3 Foto wajah berhasil disimpan!", "success");
-        }
-    } else {
-        tempFaceData.front = base64Data;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    ctx.drawImage(
+        video,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+    const base64Data = canvas.toDataURL('image/jpeg', 0.6);
+
+    /* ================================================================
+       MODE DOKUMEN / CV
+       ================================================================ */
+    if (currentFaceMode === 'document') {
+
+        documentFaceDataUrl = base64Data;
+
+        /*
+         * Simpan hasil foto.
+         * Tidak lagi mencari elemen face-captured / face-confirm-btn
+         * karena elemen tersebut memang tidak ada di index.html.
+         */
         isFaceVerified = true;
-        closeFaceVerification();
-        
-        if(currentFaceMode === 'login') {
-            document.getElementById('login-face-status')?.classList.remove('hidden');
-            document.getElementById('btn-login-face')?.classList.add('hidden');
-        } else if (currentFaceMode === 'recovery') {
-            document.getElementById('rec-face-status')?.classList.remove('hidden');
-            document.getElementById('btn-rec-face')?.classList.add('hidden');
+
+        if (videoStream) {
+            videoStream.getTracks().forEach(track => track.stop());
+            videoStream = null;
         }
-        showToast("Verifikasi wajah selesai!", "success");
+
+        video.srcObject = null;
+
+        document.getElementById('face-capture-btn')?.classList.add('hidden');
+
+        closeFaceVerification();
+
+        showToast(
+            'Verifikasi wajah berhasil. Dokumen siap dibuka.',
+            'success'
+        );
+
+        return;
+    }
+
+    /* ================================================================
+       ELEMEN INFORMASI KAMERA
+       ================================================================ */
+    const instr =
+        document.getElementById('face-instruction');
+
+    const stepCount =
+        document.getElementById('face-step-counter');
+
+    /* ================================================================
+       MODE REGISTRASI
+       ================================================================ */
+    if (currentFaceMode === 'register') {
+
+        if (faceCaptureStep === 1) {
+
+            tempFaceData.front = base64Data;
+
+            faceCaptureStep++;
+
+            if (instr) {
+                instr.innerText =
+                    'Tengok Sedikit ke KANAN';
+            }
+
+            if (stepCount) {
+                stepCount.innerText = '2/3';
+            }
+
+            showToast(
+                'Foto depan berhasil. Sekarang arahkan wajah sedikit ke kanan.',
+                'info'
+            );
+
+        } else if (faceCaptureStep === 2) {
+
+            tempFaceData.right = base64Data;
+
+            faceCaptureStep++;
+
+            if (instr) {
+                instr.innerText =
+                    'Tengok Sedikit ke KIRI';
+            }
+
+            if (stepCount) {
+                stepCount.innerText = '3/3';
+            }
+
+            showToast(
+                'Foto kanan berhasil. Sekarang arahkan wajah sedikit ke kiri.',
+                'info'
+            );
+
+        } else if (faceCaptureStep === 3) {
+
+            tempFaceData.left = base64Data;
+
+            isFaceVerified = true;
+
+            document
+                .getElementById('reg-face-status')
+                ?.classList.remove('hidden');
+
+            document
+                .getElementById('btn-reg-face')
+                ?.classList.add('hidden');
+
+            closeFaceVerification();
+
+            checkPasswordMatch();
+
+            showToast(
+                '3 foto wajah berhasil disimpan!',
+                'success'
+            );
+        }
+
+        return;
+    }
+
+    /* ================================================================
+       MODE LOGIN / RECOVERY
+       ================================================================ */
+
+    tempFaceData.front = base64Data;
+
+    isFaceVerified = true;
+
+    closeFaceVerification();
+
+    if (currentFaceMode === 'login') {
+
+        document
+            .getElementById('login-face-status')
+            ?.classList.remove('hidden');
+
+        document
+            .getElementById('btn-login-face')
+            ?.classList.add('hidden');
+
+        showToast(
+            'Verifikasi wajah login selesai!',
+            'success'
+        );
+
+    } else if (currentFaceMode === 'recovery') {
+
+        document
+            .getElementById('rec-face-status')
+            ?.classList.remove('hidden');
+
+        document
+            .getElementById('btn-rec-face')
+            ?.classList.add('hidden');
+
+        showToast(
+            'Verifikasi wajah recovery selesai!',
+            'success'
+        );
+
+    } else {
+
+        showToast(
+            'Foto wajah berhasil diambil.',
+            'success'
+        );
     }
 }
 
