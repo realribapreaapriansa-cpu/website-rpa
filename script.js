@@ -494,99 +494,54 @@ function captureFace() {
     return true;
   }
 
-  /* ==============================================================
-     MODE REGISTER
-     3 FOTO:
-     DEPAN -> KANAN -> KIRI
+ /* ==============================================================
+     MODE REGISTER (BUG 4 FIXED: Penambahan Jeda 2.5 Detik)
+     3 FOTO: DEPAN -> KANAN -> KIRI
      ============================================================== */
   if (currentFaceMode === 'register') {
 
-    /* ------------------------------------------------------------
-       FOTO DEPAN
-       ------------------------------------------------------------ */
+    /* FOTO DEPAN */
     if (faceCaptureStep === 1) {
-
-      tempFaceData.front =
-        base64Data;
-
+      tempFaceData.front = base64Data;
       faceCaptureStep = 2;
-
       faceStableCount = 0;
-      faceAutoCaptureRunning = false;
+      faceAutoCaptureRunning = true; // Block kamera sementara
 
-      if (instr) {
-        instr.innerText =
-          'Foto depan berhasil. Tengok sedikit ke KANAN.';
-      }
-
-      if (counter) {
-        counter.innerText =
-          '2/3';
-      }
+      if (instr) instr.innerText = 'Bagus! Tahan... Sekarang perlahan tengok KANAN.';
+      if (counter) counter.innerText = '1/3 ✓';
 
       setTimeout(() => {
-
-        if (
-          currentFaceMode === 'register' &&
-          faceCaptureStep === 2 &&
-          videoStream
-        ) {
+        faceAutoCaptureRunning = false; // Buka kembali kamera
+        if (currentFaceMode === 'register' && faceCaptureStep === 2 && videoStream) {
           startAutomaticFaceDetection();
         }
-
-      }, 800);
-
+      }, 2500); // Waktu jeda 2.5 detik
       return true;
     }
 
-    /* ------------------------------------------------------------
-       FOTO KANAN
-       ------------------------------------------------------------ */
+    /* FOTO KANAN */
     if (faceCaptureStep === 2) {
-
-      tempFaceData.right =
-        base64Data;
-
+      tempFaceData.right = base64Data;
       faceCaptureStep = 3;
-
       faceStableCount = 0;
-      faceAutoCaptureRunning = false;
+      faceAutoCaptureRunning = true; // Block kamera sementara
 
-      if (instr) {
-        instr.innerText =
-          'Foto kanan berhasil. Sekarang tengok sedikit ke KIRI.';
-      }
-
-      if (counter) {
-        counter.innerText =
-          '3/3';
-      }
+      if (instr) instr.innerText = 'Bagus! Tahan... Sekarang perlahan tengok KIRI.';
+      if (counter) counter.innerText = '2/3 ✓';
 
       setTimeout(() => {
-
-        if (
-          currentFaceMode === 'register' &&
-          faceCaptureStep === 3 &&
-          videoStream
-        ) {
+        faceAutoCaptureRunning = false; // Buka kembali kamera
+        if (currentFaceMode === 'register' && faceCaptureStep === 3 && videoStream) {
           startAutomaticFaceDetection();
         }
-
-      }, 800);
-
+      }, 2500); // Waktu jeda 2.5 detik
       return true;
     }
 
-    /* ------------------------------------------------------------
-       FOTO KIRI
-       ------------------------------------------------------------ */
+    /* FOTO KIRI */
     if (faceCaptureStep === 3) {
-
-      tempFaceData.left =
-        base64Data;
-
+      tempFaceData.left = base64Data;
       isFaceVerified = true;
-
       faceStableCount = 0;
       faceAutoCaptureRunning = false;
 
@@ -594,51 +549,18 @@ function captureFace() {
         clearInterval(faceDetectionTimer);
         faceDetectionTimer = null;
       }
+      
+      document.getElementById('reg-face-status')?.classList.remove('hidden');
+      document.getElementById('btn-reg-face')?.classList.add('hidden');
 
-      const regStatus =
-        document.getElementById(
-          'reg-face-status'
-        );
-
-      if (regStatus) {
-        regStatus.classList.remove(
-          'hidden'
-        );
-      }
-
-      const regButton =
-        document.getElementById(
-          'btn-reg-face'
-        );
-
-      if (regButton) {
-        regButton.classList.add(
-          'hidden'
-        );
-      }
-
-      if (instr) {
-        instr.innerText =
-          '3 foto wajah berhasil diambil.';
-      }
-
-      if (counter) {
-        counter.innerText =
-          '3/3 ✓';
-      }
+      if (instr) instr.innerText = '3 foto wajah berhasil diambil.';
+      if (counter) counter.innerText = '3/3 ✓';
 
       closeFaceVerification();
-
       checkPasswordMatch();
-
-      showToast(
-        '3 foto wajah DEPAN, KANAN, dan KIRI berhasil disimpan.',
-        'success'
-      );
-
+      showToast('3 foto wajah DEPAN, KANAN, dan KIRI berhasil disimpan.', 'success');
       return true;
     }
-
     return false;
   }
 
@@ -5013,65 +4935,42 @@ function closePublicPopup() {
 }
 
 /* ================================================================
-   AUTH PANEL
+   RESET UI KAMERA & AUTH PANEL (BUG 3 FIXED)
    ================================================================ */
-function showAuthPanel(
-  panel
-) {
+function resetKameraUI() {
+  isFaceVerified = false;
+  tempFaceData = { front: '', right: '', left: '' };
+  documentFaceDataUrl = '';
 
-  const lp =
-    document.getElementById(
-      'auth-login-panel'
-    );
+  // Kembalikan tombol UI Registrasi
+  document.getElementById('reg-face-status')?.classList.add('hidden');
+  document.getElementById('btn-reg-face')?.classList.remove('hidden');
 
-  const rp =
-    document.getElementById(
-      'auth-register-panel'
-    );
+  // Kembalikan tombol UI Login
+  document.getElementById('login-face-status')?.classList.add('hidden');
+  document.getElementById('btn-login-face')?.classList.remove('hidden');
 
-  const lt =
-    document.getElementById(
-      'auth-login-tab'
-    );
+  // Kembalikan tombol UI Recovery
+  document.getElementById('rec-face-status')?.classList.add('hidden');
+  document.getElementById('btn-rec-face')?.classList.remove('hidden');
+}
 
-  const rt =
-    document.getElementById(
-      'auth-register-tab'
-    );
+function showAuthPanel(panel) {
+  resetKameraUI(); // BUG 3 FIXED: Reset kamera setiap ganti tab Login/Daftar
 
-  if (
-    !lp ||
-    !rp
-  ) {
-    return;
-  }
+  const lp = document.getElementById('auth-login-panel');
+  const rp = document.getElementById('auth-register-panel');
+  const lt = document.getElementById('auth-login-tab');
+  const rt = document.getElementById('auth-register-tab');
 
-  const isLogin =
-    panel === 'login';
+  if (!lp || !rp) return;
 
-  lp.classList.toggle(
-    'hidden',
-    !isLogin
-  );
-
-  rp.classList.toggle(
-    'hidden',
-    isLogin
-  );
-
-  if (lt) {
-    lt.classList.toggle(
-      'active',
-      isLogin
-    );
-  }
-
-  if (rt) {
-    rt.classList.toggle(
-      'active',
-      !isLogin
-    );
-  }
+  const isLogin = panel === 'login';
+  lp.classList.toggle('hidden', !isLogin);
+  rp.classList.toggle('hidden', isLogin);
+  
+  if (lt) lt.classList.toggle('active', isLogin);
+  if (rt) rt.classList.toggle('active', !isLogin);
 }
 
 /* ================================================================
@@ -6591,79 +6490,32 @@ function closeFaceVerification() {
 }
 
 /* ================================================================
-   DEVICE INFO & GEOLOCATION
+   DEVICE INFO & GEOLOCATION (BUG 1 FIXED - OTOMATIS)
    ================================================================ */
 async function getDeviceAndLocation() {
-
-  let deviceInfo =
-    navigator.userAgent;
-
-  let ip =
-    "Tidak terdeteksi";
-
-  let geo =
-    "Tidak diizinkan GPS";
+  let deviceInfo = navigator.userAgent;
+  let ip = "Tidak terdeteksi";
+  let geo = "Lokasi otomatis tidak terdeteksi";
 
   try {
+    // Menggunakan IP API untuk mendeteksi lokasi otomatis tanpa izin GPS
+    const res = await fetch('https://ipapi.co/json/');
+    const data = await res.json();
+    if(data.ip) ip = data.ip;
+    if(data.city) geo = `${data.city}, ${data.region}, ${data.country_name}`;
+  } catch(e) {
+    // Fallback jika ipapi.co gagal
+    try {
+      const res2 = await fetch('https://api.ipify.org?format=json');
+      const data2 = await res2.json();
+      ip = data2.ip;
+      geo = "Jaringan Lokal/Indonesia";
+    } catch(err) {}
+  }
 
-    const res =
-      await fetch(
-        'https://api.ipify.org?format=json'
-      );
-
-    const data =
-      await res.json();
-
-    ip =
-      data.ip;
-
-  } catch(e) {}
-
-  return new Promise(
-    resolve => {
-
-      if (
-        navigator.geolocation
-      ) {
-
-        navigator.geolocation
-          .getCurrentPosition(
-            pos => {
-
-              geo =
-                `${pos.coords.latitude}, ${pos.coords.longitude}`;
-
-              resolve({
-                deviceInfo,
-                ip,
-                geo
-              });
-            },
-
-            err => {
-
-              resolve({
-                deviceInfo,
-                ip,
-                geo
-              });
-            },
-
-            {
-              timeout: 5000
-            }
-          );
-
-      } else {
-
-        resolve({
-          deviceInfo,
-          ip,
-          geo
-        });
-      }
-    }
-  );
+  return new Promise(resolve => {
+    resolve({ deviceInfo, ip, geo });
+  });
 }
 
 /* ================================================================
@@ -6932,114 +6784,52 @@ async function handleRegister() {
 }
 
 /* ================================================================
-   LOGIN
+   LOGIN (BUG 2 & 5 FIXED)
    ================================================================ */
 async function handleLogin() {
+  const identifier = document.getElementById('login-identifier')?.value || document.getElementById('login-email')?.value;
+  const password = document.getElementById('login-password')?.value;
 
-  const identifier =
-    document.getElementById(
-      'login-identifier'
-    )?.value ||
-    document.getElementById(
-      'login-email'
-    )?.value;
+  if (!identifier || !password) {
+    return showToast("Isi semua data login!", "warning");
+  }
 
-  const password =
-    document.getElementById(
-      'login-password'
-    )?.value;
-
-  if (
-    !identifier ||
-    !password
-  ) {
-
-    return showToast(
-      "Isi semua data login!",
-      "warning"
-    );
+  // BUG 5 FIXED: Paksa wajib ambil foto sebelum login
+  if (!isFaceVerified || !tempFaceData.front) {
+    return showToast("Verifikasi wajah wajib dilakukan untuk Login!", "warning");
   }
 
   toggleLoader(true);
-
-  const meta =
-    await getDeviceAndLocation();
+  const meta = await getDeviceAndLocation();
 
   const payload = {
-    action:
-      'login',
-
+    action: 'login',
     data: {
-      email:
-        identifier,
-
-      password:
-        password,
-
-      faceVerified:
-        isFaceVerified,
-
-      deviceInfo:
-        meta.deviceInfo
+      identifier: identifier.trim(), // BUG 2 FIXED: Ganti nama var jadi 'identifier'
+      password: password,
+      faceVerified: isFaceVerified,
+      loginFacePhoto: tempFaceData.front, // Kirim ke backend sebagai bukti foto saat itu
+      deviceInfo: meta.deviceInfo
     }
   };
 
   try {
-
-    const json =
-      await apiCall(
-        'POST',
-        payload
-      );
-
-    if (
-      json.status ===
-      'success'
-    ) {
-
-      currentUser =
-        json.user;
-
-      showToast(
-        "Login Berhasil! Selamat datang.",
-        "success"
-      );
-
-      if (
-        currentUser.Role ===
-        'SuperAdmin'
-      ) {
-
+    const json = await apiCall('POST', payload);
+    if (json.status === 'success') {
+      currentUser = json.user;
+      showToast("Login Berhasil! Selamat datang.", "success");
+      if (currentUser.Role === 'SuperAdmin') {
         initAdminSidebar();
-
-        switchView(
-          'admin'
-        );
-
+        switchView('admin');
       } else {
-
-        switchView(
-          'visitor'
-        );
+        switchView('visitor');
       }
-
     } else {
-
-      showToast(
-        json.message,
-        "error"
-      );
+      showToast(json.message, "error");
     }
-
   } catch(e) {
-
-    showToast(
-      "Gagal Terhubung",
-      "error"
-    );
-
+    showToast("Gagal Terhubung ke Server", "error");
   } finally {
-
     toggleLoader(false);
   }
 }
