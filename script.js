@@ -2951,28 +2951,37 @@ function renderView(
   }
 }
 
+/* ================================================================
+   RESET FORM & AUTO LOGOUT (BUG FIXED)
+   ================================================================ */
+function resetAuthForms() {
+  const inputs = ['reg-name', 'reg-username', 'reg-email', 'reg-wa', 'reg-password', 'reg-password-confirm', 'reg-birth', 'reg-company', 'reg-company-address', 'reg-position', 'login-identifier', 'login-password'];
+  inputs.forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.value = '';
+  });
+  resetKameraUI();
+}
+
 window.addEventListener(
   'popstate',
   e => {
-
     isNavigatingHistory = true;
 
-    if (
-      e.state &&
-      e.state.view
-    ) {
-
-      renderView(
-        e.state.view,
-        e.state.section
-      );
-
+    if (e.state && e.state.view) {
+      // CEK: Jika user kembali ke halaman portal (attendance) atau home, paksa LOGOUT
+      if ((e.state.view === 'attendance' || e.state.view === 'public') && currentUser) {
+        handleLogout(); 
+      }
+      // CEK: Jika user kembali ke portal akses, bersihkan form pendaftaran
+      if (e.state.view === 'attendance') {
+        resetAuthForms();
+      }
+      renderView(e.state.view, e.state.section);
     } else {
-
-      renderView(
-        'attendance',
-        null
-      );
+      if (currentUser) handleLogout();
+      resetAuthForms();
+      renderView('attendance', null);
     }
 
     isNavigatingHistory = false;
@@ -6669,76 +6678,27 @@ async function handleRegister() {
       await getDeviceAndLocation();
 
     const payload = {
-      action:
-        'register',
-
+      action: 'register',
       data: {
-
-        fullName:
-          document.getElementById(
-            'reg-name'
-          ).value,
-
-        username:
-          document.getElementById(
-            'reg-username'
-          ).value,
-
-        birthInfo:
-          document.getElementById(
-            'reg-birth'
-          ).value,
-
-        company:
-          document.getElementById(
-            'reg-company'
-          ).value,
-
-        companyAddress:
-          document.getElementById(
-            'reg-company-address'
-          ).value,
-
-        position:
-          document.getElementById(
-            'reg-position'
-          ).value,
-
-        email:
-          email,
-
-        whatsapp:
-          document.getElementById(
-            'reg-wa'
-          ).value,
-
-        password:
-          document.getElementById(
-            'reg-password'
-          ).value,
-
-        /*
-         * 3 foto wajah:
-         * front
-         * right
-         * left
-         */
-        faceData:
-          JSON.stringify(
-            tempFaceData
-          ),
-
-        deviceInfo:
-          meta.deviceInfo,
-
-        locationIP:
-          meta.ip,
-
-        geoLocation:
-          meta.geo,
-
-        role:
-          'Visitor'
+        fullName: document.getElementById('reg-name').value,
+        username: document.getElementById('reg-username').value,
+        birthInfo: document.getElementById('reg-birth').value,
+        company: document.getElementById('reg-company').value,
+        companyAddress: document.getElementById('reg-company-address').value,
+        position: document.getElementById('reg-position').value,
+        email: email,
+        whatsapp: document.getElementById('reg-wa').value,
+        password: document.getElementById('reg-password').value,
+        
+        // BUG FIXED: Jangan di-stringify jadi satu, pecah jadi 3 agar Backend mudah membaca dan menyimpannya ke Sheet!
+        faceFront: tempFaceData.front,
+        faceRight: tempFaceData.right,
+        faceLeft: tempFaceData.left,
+        
+        deviceInfo: meta.deviceInfo,
+        locationIP: meta.ip,
+        geoLocation: meta.geo,
+        role: 'Visitor'
       }
     };
 
