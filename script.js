@@ -364,8 +364,9 @@ async function loadFaceDetectionModel() {
 
   try {
 
-    await faceapi.nets.tinyFaceDetector
-      .loadFromUri(FACE_MODEL_URL);
+    await faceapi.nets.tinyFaceDetector.loadFromUri(FACE_MODEL_URL);
+    await faceapi.nets.faceLandmark68Net.loadFromUri(FACE_MODEL_URL);
+    await faceapi.nets.faceRecognitionNet.loadFromUri(FACE_MODEL_URL);
 
     faceDetectionReady = true;
 
@@ -395,7 +396,7 @@ async function loadFaceDetectionModel() {
    CAPTURE FACE
    FUNGSI GLOBAL - BISA DIPANGGIL AUTO CAPTURE DAN TOMBOL
    ================================================================ */
-function captureFace() {
+async function captureFace() {
 
   const video =
     document.getElementById('face-camera');
@@ -445,6 +446,25 @@ function captureFace() {
       'image/jpeg',
       0.6
     );
+
+  /* --- EKSTRAKSI 128 TITIK WAJAH --- */
+  let descriptorArr = [];
+  try {
+    const detection = await faceapi.detectSingleFace(canvas, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.45 }))
+      .withFaceLandmarks()
+      .withFaceDescriptor();
+
+    if (detection) {
+      // Ubah Float32Array menjadi standar Array Javascript agar bisa di-JSON
+      descriptorArr = Array.from(detection.descriptor); 
+    } else {
+      showToast('Wajah terlalu buram/gelap untuk diekstrak. Coba lagi.', 'warning');
+      return false;
+    }
+  } catch (e) {
+    console.error('Descriptor error:', e);
+  }
+  /* --------------------------------- */
 
   const instr =
     document.getElementById(
@@ -503,6 +523,7 @@ function captureFace() {
     /* FOTO DEPAN */
     if (faceCaptureStep === 1) {
       tempFaceData.front = base64Data;
+      tempFaceData.descriptor = descriptorArr; // Simpan 128 titik
       faceCaptureStep = 2;
       faceStableCount = 0;
       faceAutoCaptureRunning = true; // Block kamera sementara
@@ -571,6 +592,7 @@ function captureFace() {
 
   tempFaceData.front =
     base64Data;
+  tempFaceData.descriptor = descriptorArr; // Simpan 128 titik
 
   isFaceVerified = true;
 
@@ -785,7 +807,7 @@ function startAutomaticFaceDetection() {
 
             faceDetectionTimer = null;
 
-            setTimeout(() => {
+            setTimeout(async () => { // Tambahkan async
 
               if (
                 typeof captureFace ===
@@ -793,7 +815,7 @@ function startAutomaticFaceDetection() {
               ) {
 
                 const success =
-                  captureFace();
+                  await captureFace(); // Tambahkan await
 
                 if (!success) {
 
@@ -4948,7 +4970,7 @@ function closePublicPopup() {
    ================================================================ */
 function resetKameraUI() {
   isFaceVerified = false;
-  tempFaceData = { front: '', right: '', left: '' };
+  tempFaceData = { front: '', right: '', left: '', descriptor: [] };
   documentFaceDataUrl = '';
 
   // Kembalikan tombol UI Registrasi
@@ -5717,7 +5739,8 @@ let faceCaptureStep = 1;
 let tempFaceData = {
   front: '',
   right: '',
-  left: ''
+  left: '',
+  descriptor: []
 };
 
 let isFaceVerified =
@@ -6694,6 +6717,7 @@ async function handleRegister() {
         faceFront: tempFaceData.front,
         faceRight: tempFaceData.right,
         faceLeft: tempFaceData.left,
+        faceDescriptor: JSON.stringify(tempFaceData.descriptor || []), // Kirim 128 titik biometrik ke server
         
         deviceInfo: meta.deviceInfo,
         locationIP: meta.ip,
@@ -6769,6 +6793,7 @@ async function handleLogin() {
       password: password,
       faceVerified: isFaceVerified,
       loginFacePhoto: tempFaceData.front, // Kirim ke backend sebagai bukti foto saat itu
+      loginFaceDescriptor: JSON.stringify(tempFaceData.descriptor || []), // Wajib untuk pencocokan Euclidean Distance
       deviceInfo: meta.deviceInfo
     }
   };
