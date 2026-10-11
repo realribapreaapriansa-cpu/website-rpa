@@ -7657,68 +7657,93 @@ async function logProtectedAccess(
 }
 
 /* ================================================================
-   PUSAT PANDUAN (HELP CENTER)
+   PUSAT PANDUAN (HELP CENTER) - INTERNASIONAL
    ================================================================ */
+let globalHelpData = [];
+
 async function openHelpCenter() {
    const modal = document.getElementById('help-modal');
    const content = document.getElementById('help-modal-content');
    const body = document.getElementById('help-body');
+   const searchInput = document.getElementById('help-search');
 
    if (!modal || !body) return;
 
-   // Tampilkan Modal
+   // Reset pencarian saat dibuka
+   if(searchInput) searchInput.value = '';
+
    modal.classList.remove('hidden');
    setTimeout(() => {
       modal.classList.remove('opacity-0');
       content.classList.remove('scale-95');
    }, 10);
 
-   body.innerHTML = '<div class="text-center text-slate-500 py-10"><i class="fas fa-spinner fa-spin text-3xl mb-3"></i><p class="font-semibold">Memuat panduan...</p></div>';
+   body.innerHTML = '<div class="col-span-1 md:col-span-3 text-center text-slate-500 py-12"><i class="fas fa-spinner fa-spin text-4xl mb-3 text-blue-500"></i><p class="font-semibold text-sm">Menyinkronkan data panduan...</p></div>';
 
    try {
-      // Panggil data dari Sheet Bantuan
       const res = await getCachedData('Bantuan');
       
-      // Ambil data (Filter jika ada yang di-trash)
-      const rows = (res.data || []).filter(x => !x.Status || x.Status === 'publish' || x.Status === 'active');
+      // Filter hanya yang berstatus aktif/publish
+      globalHelpData = (res.data || []).filter(x => !x.Status || x.Status === 'publish' || x.Status === 'active');
 
-      if (rows.length === 0) {
-         body.innerHTML = '<div class="text-center text-slate-500 py-10"><i class="fas fa-box-open text-4xl mb-3 text-slate-300"></i><p class="font-semibold">Belum ada panduan yang tersedia.</p></div>';
-         return;
-      }
-
-      // Cetak data ke HTML
-      let html = '';
-      rows.forEach((item, index) => {
-         html += `
-            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm mb-4">
-               <h3 class="font-black text-blue-600 text-lg mb-3 flex items-start gap-3">
-                  <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-xl text-sm">${index + 1}</span>
-                  ${escapeHtml(safeText(item.Judul, 'Panduan'))}
-               </h3>
-               <div class="text-sm text-slate-600 leading-relaxed whitespace-pre-line pl-12">
-                  ${escapeHtml(safeText(item.Konten, ''))}
-               </div>
-            </div>
-         `;
-      });
-      body.innerHTML = html;
+      renderHelpItems(globalHelpData);
 
    } catch (error) {
-      body.innerHTML = '<div class="text-center text-rose-500 py-10"><i class="fas fa-triangle-exclamation text-4xl mb-3 text-rose-300"></i><p class="font-semibold">Gagal memuat panduan. Periksa koneksi Anda.</p></div>';
+      body.innerHTML = '<div class="col-span-1 md:col-span-3 text-center text-rose-500 py-12"><i class="fas fa-wifi text-4xl mb-3 text-rose-300"></i><p class="font-semibold text-sm">Koneksi terputus. Gagal memuat panduan.</p></div>';
    }
+}
+
+function renderHelpItems(data) {
+   const body = document.getElementById('help-body');
+   if (!body) return;
+
+   if (data.length === 0) {
+      body.innerHTML = '<div class="col-span-1 md:col-span-3 text-center text-slate-400 py-12"><i class="fas fa-box-open text-5xl mb-4 text-slate-300"></i><p class="font-semibold">Panduan tidak ditemukan.</p></div>';
+      return;
+   }
+
+   let html = '';
+   data.forEach((item) => {
+      const imgUrl = safeUrl(item.Image_URL);
+      const kategori = safeText(item.Kategori, 'Umum');
+      const judul = safeText(item.Judul, 'Panduan');
+      const konten = safeText(item.Konten, '');
+
+      html += `
+         <div class="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col group h-full">
+            ${imgUrl ? `<div class="h-40 w-full overflow-hidden bg-slate-100 shrink-0 border-b border-slate-100"><img src="${imgUrl}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"></div>` : ''}
+            <div class="p-5 flex-1 flex flex-col">
+               <div class="inline-block px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-black tracking-wider uppercase mb-3 self-start border border-blue-100">${escapeHtml(kategori)}</div>
+               <h3 class="font-extrabold text-slate-900 text-lg mb-3 leading-tight group-hover:text-blue-600 transition-colors">${escapeHtml(judul)}</h3>
+               <div class="text-sm text-slate-600 leading-relaxed whitespace-pre-line flex-1">
+                  ${escapeHtml(konten)}
+               </div>
+            </div>
+         </div>
+      `;
+   });
+   body.innerHTML = html;
+}
+
+// Fungsi Pencarian Real-time
+function searchHelp(query) {
+   if(!globalHelpData) return;
+   const q = query.toLowerCase().trim();
+   const filtered = globalHelpData.filter(item => 
+      (item.Judul && item.Judul.toLowerCase().includes(q)) || 
+      (item.Konten && item.Konten.toLowerCase().includes(q)) ||
+      (item.Kategori && item.Kategori.toLowerCase().includes(q))
+   );
+   renderHelpItems(filtered);
 }
 
 function closeHelpCenter() {
    const modal = document.getElementById('help-modal');
    const content = document.getElementById('help-modal-content');
-
    if (!modal) return;
 
-   // Efek animasi tutup
    modal.classList.add('opacity-0');
    content.classList.add('scale-95');
-
    setTimeout(() => {
       modal.classList.add('hidden');
    }, 300);

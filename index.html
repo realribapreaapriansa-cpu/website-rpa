@@ -54,24 +54,35 @@
       </div>
   </div>
 
-  <!-- FLOATING TOMBOL BANTUAN GLOBAL -->
-  <button onclick="openHelpCenter()" class="fixed bottom-6 right-6 z-[90] bg-blue-600 hover:bg-blue-700 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-2xl transition-transform hover:scale-110 border-2 border-white/20">
-     <i class="fas fa-question text-xl"></i>
-  </button>
-
-  <!-- MODAL BANTUAN (PUSAT PANDUAN) -->
-  <div id="help-modal" class="hidden fixed inset-0 bg-slate-900/60 z-[9999] flex items-center justify-center p-4 backdrop-blur-sm opacity-0 transition-opacity duration-300">
-     <div class="bg-white rounded-3xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden transform scale-95 transition-transform duration-300 relative" id="help-modal-content">
-        <div class="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 shrink-0 text-white flex justify-between items-center">
-           <div>
-              <h2 class="text-xl font-black flex items-center gap-2"><i class="fas fa-life-ring"></i> Pusat Panduan</h2>
-              <p class="text-blue-100 text-xs mt-1">Panduan penggunaan website untuk pengunjung.</p>
+  <!-- MODAL PUSAT BANTUAN (STANDAR INTERNASIONAL) -->
+  <div id="help-modal" class="hidden fixed inset-0 bg-slate-900/70 z-[99999] flex items-center justify-center p-4 backdrop-blur-md opacity-0 transition-opacity duration-300">
+     <div class="bg-white rounded-[2rem] w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden transform scale-95 transition-transform duration-300 relative" id="help-modal-content">
+        
+        <!-- Header Modal & Search Bar -->
+        <div class="bg-slate-900 p-8 shrink-0 text-white relative overflow-hidden">
+           <div class="absolute -top-20 -right-20 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl"></div>
+           <button onclick="closeHelpCenter()" class="absolute top-6 right-6 text-slate-400 hover:text-white text-3xl leading-none font-bold z-10">&times;</button>
+           
+           <div class="relative z-10">
+              <h2 class="text-3xl font-black flex items-center gap-3">
+                 <i class="fas fa-book-open text-blue-400"></i> Help Center
+              </h2>
+              <p class="text-slate-400 text-sm mt-2 max-w-lg">Pusat panduan interaktif. Gunakan kotak pencarian di bawah untuk menemukan solusi secara instan.</p>
+              
+              <div class="mt-6 relative max-w-xl">
+                 <i class="fas fa-search absolute left-4 top-3.5 text-slate-400"></i>
+                 <input type="text" id="help-search" oninput="searchHelp(this.value)" placeholder="Ketik kata kunci (contoh: cara login, lupa password, error)..." class="w-full pl-11 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-slate-400 text-sm outline-none focus:border-blue-400 focus:bg-white/20 transition-all">
+              </div>
            </div>
-           <button onclick="closeHelpCenter()" class="text-white/70 hover:text-white text-3xl leading-none font-bold">&times;</button>
         </div>
-        <div id="help-body" class="p-6 overflow-y-auto flex-1 bg-slate-50 space-y-4">
-           <!-- Konten bantuan akan dimuat di sini oleh JS -->
+
+        <!-- Body Modal (Grid Layout) -->
+        <div class="flex-1 overflow-y-auto bg-slate-50 p-6 md:p-8">
+           <div id="help-body" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <!-- Konten bantuan dimuat di sini -->
+           </div>
         </div>
+        
      </div>
   </div>
   
@@ -160,9 +171,12 @@
        <div class="flex justify-between items-center mb-6">
           <div>
              <h2 class="text-2xl font-black text-slate-900 tracking-tight">Buku Tamu</h2>
-             <p class="text-xs text-slate-500 font-medium mt-0.5">Verifikasi identitas Anda untuk akses portal.</p>
+             <p class="text-xs text-slate-500 font-medium mt-0.5">Verifikasi identitas untuk akses portal.</p>
           </div>
-          <div class="h-10 w-10 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center font-black">📝</div>
+          <div class="flex items-center gap-2">
+             <button onclick="openHelpCenter()" class="h-10 w-10 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center font-black transition-colors" title="Bantuan Pengguna"><i class="fas fa-life-ring"></i></button>
+             <div class="h-10 w-10 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center font-black">📝</div>
+          </div>
        </div>
 
        <div class="space-y-4">
@@ -225,7 +239,8 @@
         <button onclick="switchPublicSection('contact')" class="nav-btn relative text-sm font-semibold text-slate-600 hover:text-blue-600 pb-1" data-sec="contact">Contact</button>
       </nav>
 
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2 sm:gap-3">
+         <button onclick="openHelpCenter()" class="hidden sm:flex items-center justify-center h-10 w-10 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-xl transition-colors font-bold"><i class="fas fa-question"></i></button>
          <button onclick="switchView('login')" class="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm shadow-md transition-transform hover:-translate-y-0.5">Portal Akses</button>
          <button onclick="document.getElementById('mobile-menu').classList.toggle('hidden')" class="md:hidden p-2 text-slate-600 bg-slate-100 rounded-lg">☰</button>
       </div>
@@ -440,6 +455,8 @@
            <button onclick="switchVisitorTab('settings')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50 transition-all" data-vtab="settings">⚙️ Pengaturan Akun</button>
            <button onclick="switchVisitorTab('security')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50 transition-all" data-vtab="security">🔒 Keamanan Akun</button>
            <button onclick="switchVisitorTab('password')" class="v-btn w-full text-left p-3 rounded-xl hover:bg-slate-50 transition-all" data-vtab="password">🔑 Ganti Password</button>
+           <div class="my-2 border-t border-slate-100"></div>
+           <button onclick="openHelpCenter()" class="w-full text-left p-3 rounded-xl hover:bg-blue-50 text-blue-600 font-bold transition-all"><i class="fas fa-book-open mr-2"></i> Pusat Panduan</button>
         </div>
         <div class="p-4 border-t shrink-0"><button onclick="handleLogout()" class="w-full bg-rose-50 text-rose-600 p-3 rounded-xl font-bold text-sm">Logout Sesi</button></div>
      </aside>
