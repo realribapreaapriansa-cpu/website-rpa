@@ -34,7 +34,7 @@ const menuGroups = [
     {sheet:'Portfolio',label:'Portfolio'}, {sheet:'Blog',label:'Blog'}, {sheet:'Career_Timeline',label:'Career Timeline'}, {sheet:'Documents',label:'Documents'}, {sheet:'Gallery',label:'Gallery'}
   ]},
   { title: "Website & Tampilan", icon: 'fa-palette', items: [
-    {sheet:'Web_Branding',label:'Web Branding'}, {sheet:'Dynamic_Menu',label:'Dynamic Menu'}, {sheet:'Banners',label:'Banners'}, {sheet:'Popups',label:'Popups'}
+    {sheet:'Web_Branding',label:'Web Branding'}, {sheet:'Dynamic_Menu',label:'Dynamic Menu'}, {sheet:'Banners',label:'Banners'}, {sheet:'Popups',label:'Popups'}, {sheet:'Bantuan',label:'Pusat Panduan'}
   ]},
   { title: "Legal", icon: 'fa-scale-balanced', items: [
     {sheet:'Privacy_Policy',label:'Privacy Policy'}, {sheet:'Terms_Conditions',label:'Terms Conditions'}

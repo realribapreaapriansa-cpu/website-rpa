@@ -9,7 +9,7 @@
   <meta name="description" content="Laman resmi Riba Prea Apriansa. Menyajikan perjalanan karir, portofolio, project, blog, CV, dll yang dikemas secara digital terintegrasi.">
   <link rel="icon" type="image/png" href="https://lh3.googleusercontent.com/d/1sin-Y_JJauT9u7hodhP2kNi9wslNL42_">
   
-  <!-- CDN Links (Biarkan di sini) -->
+  <!-- CDN Links -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -18,10 +18,10 @@
   <link rel="stylesheet" href="style.css">
 </head>
 
-<!-- REVISI: h-[100dvh] menangani address bar HP agar tidak terpotong ke bawah -->
+<!-- address bar HP agar tidak terpotong ke bawah -->
 <body class="w-full h-[100dvh] flex flex-col bg-slate-900 overflow-hidden">
 
-  <!-- MURNI SPINNER LOADING TANPA TEKS -->
+  <!-- SPINNER LOADING -->
   <div id="loader" class="hidden fixed inset-0 bg-slate-950/60 backdrop-blur-md z-[99999] flex items-center justify-center">
     <div class="bg-white/10 p-5 rounded-3xl border border-white/20 shadow-2xl flex items-center justify-center">
        <div class="animate-spin rounded-full h-11 w-11 border-4 border-white/20 border-t-blue-500"></div>
@@ -54,6 +54,27 @@
       </div>
   </div>
 
+  <!-- FLOATING TOMBOL BANTUAN GLOBAL -->
+  <button onclick="openHelpCenter()" class="fixed bottom-6 right-6 z-[90] bg-blue-600 hover:bg-blue-700 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-2xl transition-transform hover:scale-110 border-2 border-white/20">
+     <i class="fas fa-question text-xl"></i>
+  </button>
+
+  <!-- MODAL BANTUAN (PUSAT PANDUAN) -->
+  <div id="help-modal" class="hidden fixed inset-0 bg-slate-900/60 z-[9999] flex items-center justify-center p-4 backdrop-blur-sm opacity-0 transition-opacity duration-300">
+     <div class="bg-white rounded-3xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden transform scale-95 transition-transform duration-300 relative" id="help-modal-content">
+        <div class="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 shrink-0 text-white flex justify-between items-center">
+           <div>
+              <h2 class="text-xl font-black flex items-center gap-2"><i class="fas fa-life-ring"></i> Pusat Panduan</h2>
+              <p class="text-blue-100 text-xs mt-1">Panduan penggunaan website untuk pengunjung.</p>
+           </div>
+           <button onclick="closeHelpCenter()" class="text-white/70 hover:text-white text-3xl leading-none font-bold">&times;</button>
+        </div>
+        <div id="help-body" class="p-6 overflow-y-auto flex-1 bg-slate-50 space-y-4">
+           <!-- Konten bantuan akan dimuat di sini oleh JS -->
+        </div>
+     </div>
+  </div>
+  
   <!-- ================================================================= -->
   <!-- 0. HALAMAN 1: SPLASH INTRO & BUKU TAMU MODERN                     -->
   <!-- ================================================================= -->
