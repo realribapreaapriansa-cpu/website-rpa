@@ -7655,3 +7655,71 @@ async function logProtectedAccess(
 
   } catch(e) {}
 }
+
+/* ================================================================
+   PUSAT PANDUAN (HELP CENTER)
+   ================================================================ */
+async function openHelpCenter() {
+   const modal = document.getElementById('help-modal');
+   const content = document.getElementById('help-modal-content');
+   const body = document.getElementById('help-body');
+
+   if (!modal || !body) return;
+
+   // Tampilkan Modal
+   modal.classList.remove('hidden');
+   setTimeout(() => {
+      modal.classList.remove('opacity-0');
+      content.classList.remove('scale-95');
+   }, 10);
+
+   body.innerHTML = '<div class="text-center text-slate-500 py-10"><i class="fas fa-spinner fa-spin text-3xl mb-3"></i><p class="font-semibold">Memuat panduan...</p></div>';
+
+   try {
+      // Panggil data dari Sheet Bantuan
+      const res = await getCachedData('Bantuan');
+      
+      // Ambil data (Filter jika ada yang di-trash)
+      const rows = (res.data || []).filter(x => !x.Status || x.Status === 'publish' || x.Status === 'active');
+
+      if (rows.length === 0) {
+         body.innerHTML = '<div class="text-center text-slate-500 py-10"><i class="fas fa-box-open text-4xl mb-3 text-slate-300"></i><p class="font-semibold">Belum ada panduan yang tersedia.</p></div>';
+         return;
+      }
+
+      // Cetak data ke HTML
+      let html = '';
+      rows.forEach((item, index) => {
+         html += `
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm mb-4">
+               <h3 class="font-black text-blue-600 text-lg mb-3 flex items-start gap-3">
+                  <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-xl text-sm">${index + 1}</span>
+                  ${escapeHtml(safeText(item.Judul, 'Panduan'))}
+               </h3>
+               <div class="text-sm text-slate-600 leading-relaxed whitespace-pre-line pl-12">
+                  ${escapeHtml(safeText(item.Konten, ''))}
+               </div>
+            </div>
+         `;
+      });
+      body.innerHTML = html;
+
+   } catch (error) {
+      body.innerHTML = '<div class="text-center text-rose-500 py-10"><i class="fas fa-triangle-exclamation text-4xl mb-3 text-rose-300"></i><p class="font-semibold">Gagal memuat panduan. Periksa koneksi Anda.</p></div>';
+   }
+}
+
+function closeHelpCenter() {
+   const modal = document.getElementById('help-modal');
+   const content = document.getElementById('help-modal-content');
+
+   if (!modal) return;
+
+   // Efek animasi tutup
+   modal.classList.add('opacity-0');
+   content.classList.add('scale-95');
+
+   setTimeout(() => {
+      modal.classList.add('hidden');
+   }, 300);
+}
