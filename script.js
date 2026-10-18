@@ -7766,12 +7766,15 @@ window.addEventListener('DOMContentLoaded', () => {
     ptrText = document.getElementById('ptr-text');
 });
 
-// 1. Logika Sensor Sentuh (Pull-to-Refresh) - BUG FIXED
+// 1. Logika Sensor Sentuh (Pull-to-Refresh) - SUPER STABIL
 document.addEventListener('touchstart', (e) => {
-    const scrollContainer = e.target.closest('.overflow-y-auto') || document.documentElement;
-    if (scrollContainer.scrollTop === 0) {
+    // Cari kontainer utama yang sedang digulir (scroll)
+    const scrollContainer = e.target.closest('.overflow-y-auto, .overflow-auto') || document.documentElement;
+    
+    // Aktifkan mode tarik HANYA jika benar-benar berada di titik paling atas
+    if (scrollContainer.scrollTop <= 0) {
         pStart.y = e.touches[0].screenY;
-        pCurrent.y = pStart.y; // Reset posisi agar tidak melompat
+        pCurrent.y = pStart.y;
         isPulling = true;
     }
 }, { passive: true });
@@ -7781,17 +7784,28 @@ document.addEventListener('touchmove', (e) => {
     pCurrent.y = e.touches[0].screenY;
     let pullDistance = pCurrent.y - pStart.y;
 
-    if (pullDistance > 0) {
-        ptrElement.style.transition = 'none';
-        ptrElement.style.transform = `translateY(${Math.min(pullDistance - 64, 25)}px)`;
+    // Jika jari bergerak KE ATAS (untuk membaca ke bawah), batalkan mode refresh seketika!
+    if (pullDistance < 0) {
+        isPulling = false;
+        return;
+    }
+
+    // Jika jari benar-benar menarik ke BAWAH
+    if (pullDistance > 0 && isPulling) {
+        // Efek resistensi (makin ditarik makin berat, gerakannya lebih lambat dari jari)
+        let visualDistance = Math.min(pullDistance * 0.3, 65); 
         
-        if (pullDistance > PTR_THRESHOLD) {
+        ptrElement.style.transition = 'none';
+        ptrElement.style.transform = `translateY(${visualDistance}px)`;
+        
+        // Jarak tarikan WAJIB melewati 150px agar tidak gampang kepencet
+        if (pullDistance > 150) { 
             ptrIcon.className = 'fas fa-spinner fa-spin text-indigo-600';
             ptrText.innerText = 'Lepas untuk memuat...';
             ptrText.className = 'text-indigo-600';
         } else {
             ptrIcon.className = 'fas fa-arrow-down text-blue-600';
-            ptrText.innerText = 'Tarik untuk memuat ulang';
+            ptrText.innerText = 'Tarik ke bawah memuat ulang';
             ptrText.className = 'text-blue-600';
         }
     }
@@ -7802,22 +7816,22 @@ document.addEventListener('touchend', (e) => {
     isPulling = false;
     let pullDistance = pCurrent.y - pStart.y;
     
-    if (pullDistance > PTR_THRESHOLD) {
-        // Eksekusi pembaruan data
-        refreshCurrentData(false);
+    // Jika tarikan benar-benar panjang (sengaja)
+    if (pullDistance > 150) {
+        refreshCurrentData(false); // Proses sinkronisasi data
         
         ptrIcon.className = 'fas fa-circle-notch fa-spin text-emerald-600';
         ptrText.innerText = 'Memperbarui data...';
         ptrText.className = 'text-emerald-600';
 
-        // Tahan sebentar lalu otomatis sembunyikan ke atas
+        // Tahan 2,5 detik agar notifikasi terbaca lalu sembunyikan dengan mulus
         setTimeout(() => {
             ptrElement.style.transition = 'transform 0.4s ease';
             ptrElement.style.transform = 'translateY(-100%)'; 
-        }, 3500);
+        }, 2500);
 
     } else {
-        // Jika tarikan kurang jauh, langsung sembunyikan
+        // Jika tarikan pendek/tidak sengaja, langsung sembunyikan tanpa memuat data
         ptrElement.style.transition = 'transform 0.3s ease';
         ptrElement.style.transform = 'translateY(-100%)';
     }
