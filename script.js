@@ -7766,12 +7766,12 @@ window.addEventListener('DOMContentLoaded', () => {
     ptrText = document.getElementById('ptr-text');
 });
 
-// 1. Logika Sensor Sentuh (Pull-to-Refresh)
+// 1. Logika Sensor Sentuh (Pull-to-Refresh) - BUG FIXED
 document.addEventListener('touchstart', (e) => {
-    // Hanya aktif jika layar berada di posisi paling atas
     const scrollContainer = e.target.closest('.overflow-y-auto') || document.documentElement;
     if (scrollContainer.scrollTop === 0) {
         pStart.y = e.touches[0].screenY;
+        pCurrent.y = pStart.y; // Reset posisi agar tidak melompat
         isPulling = true;
     }
 }, { passive: true });
@@ -7781,7 +7781,6 @@ document.addEventListener('touchmove', (e) => {
     pCurrent.y = e.touches[0].screenY;
     let pullDistance = pCurrent.y - pStart.y;
 
-    // Jika ditarik ke bawah
     if (pullDistance > 0) {
         ptrElement.style.transition = 'none';
         ptrElement.style.transform = `translateY(${Math.min(pullDistance - 64, 25)}px)`;
@@ -7803,22 +7802,25 @@ document.addEventListener('touchend', (e) => {
     isPulling = false;
     let pullDistance = pCurrent.y - pStart.y;
     
-    // Kembalikan indikator ke atas
-    ptrElement.style.transition = 'transform 0.3s ease';
-    ptrElement.style.transform = '-translate-y-full';
-    
-    // Jika tarikan cukup jauh, jalankan refresh
     if (pullDistance > PTR_THRESHOLD) {
-        refreshCurrentData(false); // Munculkan notifikasi toast
+        // Eksekusi pembaruan data
+        refreshCurrentData(false);
+        
+        ptrIcon.className = 'fas fa-circle-notch fa-spin text-emerald-600';
+        ptrText.innerText = 'Memperbarui data...';
+        ptrText.className = 'text-emerald-600';
+
+        // Tahan sebentar lalu otomatis sembunyikan ke atas
+        setTimeout(() => {
+            ptrElement.style.transition = 'transform 0.4s ease';
+            ptrElement.style.transform = 'translateY(-100%)'; 
+        }, 3500);
+
+    } else {
+        // Jika tarikan kurang jauh, langsung sembunyikan
+        ptrElement.style.transition = 'transform 0.3s ease';
+        ptrElement.style.transform = 'translateY(-100%)';
     }
-    
-    setTimeout(() => {
-        if (ptrIcon) ptrIcon.className = 'fas fa-arrow-down text-blue-600';
-        if (ptrText) {
-            ptrText.innerText = 'Tarik untuk memuat ulang';
-            ptrText.className = 'text-blue-600';
-        }
-    }, 300);
 });
 
 // 2. Logika Pembaruan Otomatis (Real-time Sync) Setiap 60 Detik
