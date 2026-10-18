@@ -468,11 +468,6 @@
   <!-- 4. SUPER ADMIN DASHBOARD                                          -->
   <!-- ================================================================= -->
   <div id="view-admin" class="hidden h-full flex flex-col md:flex-row bg-[#f0f2f5] w-full relative">
-     <div class="md:hidden bg-[#1e293b] text-white p-4 flex justify-between items-center shadow-md z-50 shrink-0">
-        <h2 class="font-black tracking-widest text-sm">ADMIN PANEL</h2>
-        <button onclick="toggleAdminSidebar()" class="bg-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold">Menu</button>
-     </div>
-
      <!-- BAGIAN TOMBOL REFRESH & LOGOUT -->
             <div class="flex items-center gap-2 sm:gap-3">
                <button onclick="refreshManual(this)" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-600 px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition-colors shadow-sm" title="Refresh Data">
@@ -483,6 +478,10 @@
                   <i class="fas fa-sign-out-alt sm:mr-2"></i> <span class="hidden sm:inline">Logout</span>
                </button>
             </div>
+     <div class="md:hidden bg-[#1e293b] text-white p-4 flex justify-between items-center shadow-md z-50 shrink-0">
+        <h2 class="font-black tracking-widest text-sm">ADMIN PANEL</h2>
+        <button onclick="toggleAdminSidebar()" class="bg-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold">Menu</button>
+     </div>
      
      <!-- REVISI BUG SCROLL ADMIN MOBILE: height diset 100dvh agar menu di bawah tidak tertutup oleh navigasi HP -->
      <aside id="adm-sidebar" class="hidden md:flex flex-col w-72 md:w-64 lg:w-72 bg-[#1e293b] text-slate-300 fixed md:relative top-0 bottom-0 left-0 z-[60] shadow-2xl md:shadow-none h-[100dvh] md:h-full overflow-hidden">
