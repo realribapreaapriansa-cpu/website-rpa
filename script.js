@@ -7766,92 +7766,18 @@ window.addEventListener('DOMContentLoaded', () => {
     ptrText = document.getElementById('ptr-text');
 });
 
-// 1. Logika Sensor Sentuh (Pull-to-Refresh) - DEADZONE 10px (SUPER MULUS)
-let startY = 0;
-let isPulling = false;
-let isDragCommitted = false; // Penanda apakah tarikan sudah sah melewati deadzone
-
-document.addEventListener('touchstart', (e) => {
-    const scrollContainer = e.target.closest('.overflow-y-auto, .overflow-auto, main') || document.documentElement;
+// 1. Fungsi Tombol Refresh Manual (Pengganti Tarik Layar)
+async function refreshManual(btnElement) {
+    // Putar ikon berputar saat diklik
+    const icon = btnElement.querySelector('.fa-sync-alt');
+    if (icon) icon.classList.add('fa-spin');
     
-    // Hanya bersiap jika posisi scroll paling mentok di atas (angka 0)
-    if (scrollContainer.scrollTop <= 0) {
-        startY = e.touches[0].clientY;
-        isPulling = true;
-        isDragCommitted = false; // Reset status tarikan
-    } else {
-        isPulling = false;
-    }
-}, { passive: true });
-
-document.addEventListener('touchmove', (e) => {
-    if (!isPulling || !ptrElement) return;
-
-    let currentY = e.touches[0].clientY;
-    let pullDistance = currentY - startY;
-
-    // Jika jari bergerak ke ATAS (berniat scroll ke bawah membaca konten), 
-    // langsung batalkan refresh seketika agar scroll lancar.
-    if (pullDistance < 0) {
-        isPulling = false;
-        return;
-    }
-
-    // DEADZONE: Jika tarikan masih di bawah 10px, biarkan dulu (jangan kunci scroll)
-    // Ini mencegah getaran kecil pada jari yang merusak fungsi scroll
-    if (!isDragCommitted && pullDistance < 10) {
-        return; 
-    }
-
-    // Jika sudah lewat 10px lurus ke bawah, SAHKAN tarikan refresh!
-    isDragCommitted = true;
-
-    // Kunci scroll bawaan HP khusus untuk mode tarik ini agar tidak memantul
-    if (e.cancelable) e.preventDefault(); 
-
-    let visualDistance = Math.min((pullDistance - 10) * 0.4, 75);
-    ptrElement.style.transition = 'none';
-    ptrElement.style.transform = `translateY(${visualDistance}px)`;
-
-    // Ambang batas tarikan diturunkan ke 120px agar jari lebih nyaman
-    if (pullDistance > 120) { 
-        ptrIcon.className = 'fas fa-spinner fa-spin text-indigo-600';
-        ptrText.innerText = 'Lepas untuk memuat...';
-        ptrText.className = 'text-indigo-600';
-    } else {
-        ptrIcon.className = 'fas fa-arrow-down text-blue-600';
-        ptrText.innerText = 'Tarik untuk memuat ulang';
-        ptrText.className = 'text-blue-600';
-    }
-}, { passive: false }); // WAJIB false agar preventDefault bekerja saat isDragCommitted aktif
-
-document.addEventListener('touchend', (e) => {
-    // Jika tidak sedang menarik, atau batal sebelum melewati deadzone, abaikan
-    if (!isPulling || !isDragCommitted || !ptrElement) {
-        isPulling = false;
-        return;
-    }
+    // Panggil fungsi mesin refresh bawaan Anda
+    await refreshCurrentData(false);
     
-    isPulling = false;
-    isDragCommitted = false;
-    
-    let pullDistance = e.changedTouches[0].clientY - startY;
-
-    if (pullDistance > 120) {
-        refreshCurrentData(false);
-        ptrIcon.className = 'fas fa-circle-notch fa-spin text-emerald-600';
-        ptrText.innerText = 'Memperbarui data...';
-        ptrText.className = 'text-emerald-600';
-
-        setTimeout(() => {
-            ptrElement.style.transition = 'transform 0.4s ease';
-            ptrElement.style.transform = 'translateY(-100%)';
-        }, 2000);
-    } else {
-        ptrElement.style.transition = 'transform 0.3s ease';
-        ptrElement.style.transform = 'translateY(-100%)';
-    }
-});
+    // Matikan putaran ikon setelah selesai refresh
+    if (icon) icon.classList.remove('fa-spin');
+}
 
 // 2. Logika Pembaruan Otomatis (Real-time Sync) Setiap 60 Detik
 setInterval(() => {

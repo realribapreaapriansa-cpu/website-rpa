@@ -21,14 +21,6 @@
 <!-- address bar HP agar tidak terpotong ke bawah -->
 <body class="w-full h-[100dvh] flex flex-col bg-slate-900 overflow-hidden">
 
-   <!-- PULL TO REFRESH INDICATOR -->
-  <div id="ptr-indicator" class="fixed top-0 left-0 w-full h-16 flex items-center justify-center -translate-y-full transition-transform duration-300 z-[999999] pointer-events-none">
-      <div class="bg-white px-4 py-2.5 rounded-full shadow-xl border border-slate-200 flex items-center gap-3 text-blue-600 text-sm font-black tracking-wide">
-          <i id="ptr-icon" class="fas fa-arrow-down"></i>
-          <span id="ptr-text">Tarik untuk memuat ulang</span>
-      </div>
-  </div>
-
   <!-- SPINNER LOADING -->
   <div id="loader" class="hidden fixed inset-0 bg-slate-950/60 backdrop-blur-md z-[99999] flex items-center justify-center">
     <div class="bg-white/10 p-5 rounded-3xl border border-white/20 shadow-2xl flex items-center justify-center">
@@ -182,6 +174,7 @@
              <p class="text-xs text-slate-500 font-medium mt-0.5">Verifikasi identitas untuk akses portal.</p>
           </div>
           <div class="flex items-center gap-2">
+             <button onclick="refreshManual(this)" class="flex shrink-0 items-center justify-center h-10 w-10 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-2xl font-black transition-colors shadow-sm" title="Refresh Data"><i class="fas fa-sync-alt"></i></button>
              <button onclick="openHelpCenter()" class="flex shrink-0 items-center justify-center h-10 w-10 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-2xl font-black transition-colors shadow-sm" title="Pusat Panduan"><i class="fas fa-question"></i></button>
           </div>
        </div>
@@ -247,6 +240,7 @@
       </nav>
 
       <div class="flex items-center gap-2 sm:gap-3">
+         <button onclick="refreshManual(this)" class="flex shrink-0 items-center justify-center h-10 w-10 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-xl transition-colors font-bold shadow-sm" title="Refresh Data"><i class="fas fa-sync-alt"></i></button>
          <button onclick="openHelpCenter()" class="flex shrink-0 items-center justify-center h-10 w-10 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-xl transition-colors font-bold"><i class="fas fa-question"></i></button>
          <button onclick="switchView('login')" class="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm shadow-md transition-transform hover:-translate-y-0.5">Portal Akses</button>
          <button onclick="document.getElementById('mobile-menu').classList.toggle('hidden')" class="md:hidden p-2 text-slate-600 bg-slate-100 rounded-lg">☰</button>
@@ -478,6 +472,17 @@
         <h2 class="font-black tracking-widest text-sm">ADMIN PANEL</h2>
         <button onclick="toggleAdminSidebar()" class="bg-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold">Menu</button>
      </div>
+
+     <!-- BAGIAN TOMBOL REFRESH & LOGOUT -->
+            <div class="flex items-center gap-2 sm:gap-3">
+               <button onclick="refreshManual(this)" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-600 px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition-colors shadow-sm" title="Refresh Data">
+                  <i class="fas fa-sync-alt"></i> <span class="hidden sm:inline">Refresh</span>
+               </button>
+               
+               <button onclick="logout()" class="bg-rose-50 hover:bg-rose-100 text-rose-600 px-4 py-2 rounded-xl font-bold text-sm transition-colors">
+                  <i class="fas fa-sign-out-alt sm:mr-2"></i> <span class="hidden sm:inline">Logout</span>
+               </button>
+            </div>
      
      <!-- REVISI BUG SCROLL ADMIN MOBILE: height diset 100dvh agar menu di bawah tidak tertutup oleh navigasi HP -->
      <aside id="adm-sidebar" class="hidden md:flex flex-col w-72 md:w-64 lg:w-72 bg-[#1e293b] text-slate-300 fixed md:relative top-0 bottom-0 left-0 z-[60] shadow-2xl md:shadow-none h-[100dvh] md:h-full overflow-hidden">
