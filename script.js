@@ -7748,3 +7748,119 @@ function closeHelpCenter() {
       modal.classList.add('hidden');
    }, 300);
 }
+
+/* ================================================================
+   PULL-TO-REFRESH & AUTO REAL-TIME SYNC
+   ================================================================ */
+let pStart = { x: 0, y: 0 };
+let pCurrent = { x: 0, y: 0 };
+let isPulling = false;
+let ptrElement = null;
+let ptrIcon = null;
+let ptrText = null;
+const PTR_THRESHOLD = 80;
+
+window.addEventListener('DOMContentLoaded', () => {
+    ptrElement = document.getElementById('ptr-indicator');
+    ptrIcon = document.getElementById('ptr-icon');
+    ptrText = document.getElementById('ptr-text');
+});
+
+// 1. Logika Sensor Sentuh (Pull-to-Refresh)
+document.addEventListener('touchstart', (e) => {
+    // Hanya aktif jika layar berada di posisi paling atas
+    const scrollContainer = e.target.closest('.overflow-y-auto') || document.documentElement;
+    if (scrollContainer.scrollTop === 0) {
+        pStart.y = e.touches[0].screenY;
+        isPulling = true;
+    }
+}, { passive: true });
+
+document.addEventListener('touchmove', (e) => {
+    if (!isPulling || !ptrElement) return;
+    pCurrent.y = e.touches[0].screenY;
+    let pullDistance = pCurrent.y - pStart.y;
+
+    // Jika ditarik ke bawah
+    if (pullDistance > 0) {
+        ptrElement.style.transition = 'none';
+        ptrElement.style.transform = `translateY(${Math.min(pullDistance - 64, 25)}px)`;
+        
+        if (pullDistance > PTR_THRESHOLD) {
+            ptrIcon.className = 'fas fa-spinner fa-spin text-indigo-600';
+            ptrText.innerText = 'Lepas untuk memuat...';
+            ptrText.className = 'text-indigo-600';
+        } else {
+            ptrIcon.className = 'fas fa-arrow-down text-blue-600';
+            ptrText.innerText = 'Tarik untuk memuat ulang';
+            ptrText.className = 'text-blue-600';
+        }
+    }
+}, { passive: true });
+
+document.addEventListener('touchend', (e) => {
+    if (!isPulling || !ptrElement) return;
+    isPulling = false;
+    let pullDistance = pCurrent.y - pStart.y;
+    
+    // Kembalikan indikator ke atas
+    ptrElement.style.transition = 'transform 0.3s ease';
+    ptrElement.style.transform = '-translate-y-full';
+    
+    // Jika tarikan cukup jauh, jalankan refresh
+    if (pullDistance > PTR_THRESHOLD) {
+        refreshCurrentData(false); // Munculkan notifikasi toast
+    }
+    
+    setTimeout(() => {
+        if (ptrIcon) ptrIcon.className = 'fas fa-arrow-down text-blue-600';
+        if (ptrText) {
+            ptrText.innerText = 'Tarik untuk memuat ulang';
+            ptrText.className = 'text-blue-600';
+        }
+    }, 300);
+});
+
+// 2. Logika Pembaruan Otomatis (Real-time Sync) Setiap 60 Detik
+setInterval(() => {
+    // Mode "Silent" (true) agar tidak muncul notifikasi toast terus-menerus
+    refreshCurrentData(true); 
+}, 60000); 
+
+// 3. Mesin Utama Refresh Data
+async function refreshCurrentData(isSilent = false) {
+    if (!isSilent) showToast("Mensinkronkan data terbaru...", "info");
+    
+    try {
+        const vAdmin = document.getElementById('view-admin');
+        const vVisitor = document.getElementById('view-visitor');
+        const vPublic = document.getElementById('view-public');
+        
+        if (vAdmin && !vAdmin.classList.contains('hidden')) {
+            // Jika sedang di Dashboard Admin
+            if (activeModule) {
+                invalidateCache(activeModule);
+                await loadAdminModule(activeModule, true);
+            }
+        } else if (vVisitor && !vVisitor.classList.contains('hidden')) {
+            // Jika sedang di Dashboard Visitor
+            const activeBtn = document.querySelector('.v-btn.bg-blue-50');
+            if (activeBtn) {
+                const tab = activeBtn.getAttribute('data-vtab');
+                memoryCache = {}; // Kosongkan cache
+                await switchVisitorTab(tab);
+            }
+        } else if (vPublic && !vPublic.classList.contains('hidden')) {
+            // Jika sedang di Halaman Publik
+            const activeBtn = document.querySelector('.nav-btn.active');
+            let sec = 'home';
+            if (activeBtn) sec = activeBtn.getAttribute('data-sec');
+            memoryCache = {}; // Kosongkan cache
+            await renderPublicContent(true, sec);
+        }
+        
+        if (!isSilent) showToast("Data berhasil diperbarui!", "success");
+    } catch (err) {
+        if (!isSilent) showToast("Gagal memuat ulang data. Cek koneksi Anda.", "error");
+    }
+}

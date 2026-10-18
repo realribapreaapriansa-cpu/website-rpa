@@ -21,6 +21,14 @@
 <!-- address bar HP agar tidak terpotong ke bawah -->
 <body class="w-full h-[100dvh] flex flex-col bg-slate-900 overflow-hidden">
 
+   <!-- PULL TO REFRESH INDICATOR -->
+  <div id="ptr-indicator" class="fixed top-0 left-0 w-full h-16 flex items-center justify-center -translate-y-full transition-transform duration-300 z-[999999] pointer-events-none">
+      <div class="bg-white px-4 py-2.5 rounded-full shadow-xl border border-slate-200 flex items-center gap-3 text-blue-600 text-sm font-black tracking-wide">
+          <i id="ptr-icon" class="fas fa-arrow-down"></i>
+          <span id="ptr-text">Tarik untuk memuat ulang</span>
+      </div>
+  </div>
+
   <!-- SPINNER LOADING -->
   <div id="loader" class="hidden fixed inset-0 bg-slate-950/60 backdrop-blur-md z-[99999] flex items-center justify-center">
     <div class="bg-white/10 p-5 rounded-3xl border border-white/20 shadow-2xl flex items-center justify-center">
