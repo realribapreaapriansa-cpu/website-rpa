@@ -7766,40 +7766,54 @@ window.addEventListener('DOMContentLoaded', () => {
     ptrText = document.getElementById('ptr-text');
 });
 
-// 1. Logika Sensor Sentuh (Pull-to-Refresh) - SUPER STABIL
+// 1. Logika Sensor Sentuh (Pull-to-Refresh) - KETAT & BEBAS PANTULAN
+let startY = 0;
+let startX = 0;
+let startScrollTop = 0;
+
 document.addEventListener('touchstart', (e) => {
-    // Cari kontainer utama yang sedang digulir (scroll)
-    const scrollContainer = e.target.closest('.overflow-y-auto, .overflow-auto') || document.documentElement;
+    // Cari elemen yang sedang digulir
+    const scrollContainer = e.target.closest('.overflow-y-auto, .overflow-auto, main') || document.documentElement;
+    startScrollTop = scrollContainer.scrollTop || window.scrollY || 0;
     
-    // Aktifkan mode tarik HANYA jika benar-benar berada di titik paling atas
-    if (scrollContainer.scrollTop <= 0) {
-        pStart.y = e.touches[0].screenY;
-        pCurrent.y = pStart.y;
+    // HANYA aktif jika layar diam persis di angka 0 (tidak minus akibat pantulan)
+    if (startScrollTop === 0) {
+        startY = e.touches[0].clientY;
+        startX = e.touches[0].clientX;
         isPulling = true;
+    } else {
+        isPulling = false;
     }
 }, { passive: true });
 
 document.addEventListener('touchmove', (e) => {
     if (!isPulling || !ptrElement) return;
-    pCurrent.y = e.touches[0].screenY;
-    let pullDistance = pCurrent.y - pStart.y;
+    
+    let currentY = e.touches[0].clientY;
+    let currentX = e.touches[0].clientX;
+    let pullDistanceY = currentY - startY;
+    let pullDistanceX = Math.abs(currentX - startX);
 
-    // Jika jari bergerak KE ATAS (untuk membaca ke bawah), batalkan mode refresh seketika!
-    if (pullDistance < 0) {
+    // BATALKAN JIKA:
+    // 1. Posisi scroll tidak di ujung atas
+    // 2. Jari bergerak ke atas (membaca konten bawah)
+    // 3. Jari bergerak miring/horizontal (mencegah salah pencet)
+    if (startScrollTop > 0 || pullDistanceY <= 0 || pullDistanceX > pullDistanceY) {
         isPulling = false;
+        ptrElement.style.transform = 'translateY(-100%)';
         return;
     }
 
-    // Jika jari benar-benar menarik ke BAWAH
-    if (pullDistance > 0 && isPulling) {
-        // Efek resistensi (makin ditarik makin berat, gerakannya lebih lambat dari jari)
-        let visualDistance = Math.min(pullDistance * 0.3, 65); 
+    // Jika ini murni tarikan lurus ke bawah
+    if (isPulling) {
+        // BLOKIR pantulan bawaan browser HP agar stabil
+        if (e.cancelable) e.preventDefault();
         
+        let visualDistance = Math.min(pullDistanceY * 0.4, 75); 
         ptrElement.style.transition = 'none';
         ptrElement.style.transform = `translateY(${visualDistance}px)`;
         
-        // Jarak tarikan WAJIB melewati 150px agar tidak gampang kepencet
-        if (pullDistance > 150) { 
+        if (pullDistanceY > 150) { 
             ptrIcon.className = 'fas fa-spinner fa-spin text-indigo-600';
             ptrText.innerText = 'Lepas untuk memuat...';
             ptrText.className = 'text-indigo-600';
@@ -7809,29 +7823,28 @@ document.addEventListener('touchmove', (e) => {
             ptrText.className = 'text-blue-600';
         }
     }
-}, { passive: true });
+}, { passive: false }); // PENTING: passive 'false' wajib ada untuk memblokir pantulan
 
 document.addEventListener('touchend', (e) => {
     if (!isPulling || !ptrElement) return;
     isPulling = false;
-    let pullDistance = pCurrent.y - pStart.y;
     
-    // Jika tarikan benar-benar panjang (sengaja)
-    if (pullDistance > 150) {
-        refreshCurrentData(false); // Proses sinkronisasi data
-        
+    // Ambil titik terakhir jari dilepas
+    let endY = e.changedTouches[0].clientY;
+    let pullDistanceY = endY - startY;
+    
+    if (pullDistanceY > 150) {
+        refreshCurrentData(false);
         ptrIcon.className = 'fas fa-circle-notch fa-spin text-emerald-600';
         ptrText.innerText = 'Memperbarui data...';
         ptrText.className = 'text-emerald-600';
 
-        // Tahan 2,5 detik agar notifikasi terbaca lalu sembunyikan dengan mulus
+        // Sembunyikan lebih cepat agar tidak mengganggu (2 detik)
         setTimeout(() => {
             ptrElement.style.transition = 'transform 0.4s ease';
             ptrElement.style.transform = 'translateY(-100%)'; 
-        }, 2500);
-
+        }, 2000);
     } else {
-        // Jika tarikan pendek/tidak sengaja, langsung sembunyikan tanpa memuat data
         ptrElement.style.transition = 'transform 0.3s ease';
         ptrElement.style.transform = 'translateY(-100%)';
     }
