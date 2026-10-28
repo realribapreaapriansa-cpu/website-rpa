@@ -7530,55 +7530,57 @@ function closeHelpCenter() {
 }
 
 /* ================================================================
-   MESIN REFRESH & SINKRONISASI (SMART LOADING & ANIMASI URUT)
+   MESIN REFRESH & SINKRONISASI (TERPERBAIKI & TERINTEGRASI TOTAL)
    ================================================================ */
 
 // 1. Fungsi Klik Refresh Manual
-async function refreshManual() {
-    // A. Paksa SEMUA ikon refresh di layar berputar tanpa perlu edit HTML
+async function refreshManual(btnEl) {
     const icons = document.querySelectorAll('.fa-sync-alt, .fa-sync, .fa-rotate');
     icons.forEach(i => i.classList.add('fa-spin'));
 
-    // B. Munculkan Notifikasi Tahap 1
     showToast("Mensinkronkan data terbaru...", "info");
 
     try {
-        // C. Hilangkan data sementara & munculkan animasi loading, lalu ambil data baru
         await refreshCurrentData(false); 
-        
-        // D. Jika proses selesai dan sukses, munculkan Notifikasi Tahap 2
         showToast("Data berhasil diperbarui!", "success");
-
     } catch (error) {
-        // E. Jika proses gagal (tidak ada internet), munculkan Notifikasi Gagal
-        showToast("Gagal memuat data. Silahkan cek internet Anda.", "error");
-        
-        // Kembalikan data lama dari memori agar layar tidak nyangkut di animasi loading
+        console.error("Refresh error:", error);
+        showToast("Gagal memuat data. Silakan cek koneksi internet Anda.", "error");
         restoreFailedUI();
     } finally {
-        // F. Setelah semua selesai (baik sukses maupun gagal), matikan putaran ikon
         icons.forEach(i => i.classList.remove('fa-spin'));
     }
 }
 
-// 2. Refresh Otomatis setiap 60 Detik (100% DI LATAR BELAKANG / TANPA NOTIF)
+// 2. Refresh Otomatis Latar Belakang Setiap 60 Detik
 setInterval(() => {
-    refreshCurrentData(true).catch(() => {}); // Abaikan error agar tidak mengganggu
+    refreshCurrentData(true).catch(() => {});
 }, 60000); 
 
-// 3. Mesin Pemroses Data & Animasi Transisi
+// 3. Mesin Pemroses Data Refresh Berdasarkan View Aktif
 async function refreshCurrentData(isSilent = false) {
-    // Cek internet sungguhan
     if (!navigator.onLine && !isSilent) {
-        throw new Error("Offline"); // Lempar ke catch di refreshManual
+        throw new Error("Offline");
     }
 
+    const vAttendance = document.getElementById('view-attendance');
     const vAdmin = document.getElementById('view-admin');
     const vVisitor = document.getElementById('view-visitor');
     const vPublic = document.getElementById('view-public');
     
-    // --- EFEK LOADING DASHBOARD ADMIN ---
-    if (vAdmin && !vAdmin.classList.contains('hidden')) {
+    // A. VIEW ATTENDANCE / BUKU TAMU / SPLASH
+    if (vAttendance && !vAttendance.classList.contains('hidden')) {
+        invalidateCache('Web_Branding');
+        invalidateCache('Visitor_Attendance');
+        invalidateCache('Users');
+        
+        const brandingRes = await getCachedData('Web_Branding', true);
+        if (brandingRes && brandingRes.data) {
+            applyWebBranding(brandingRes.data);
+        }
+    } 
+    // B. VIEW ADMIN
+    else if (vAdmin && !vAdmin.classList.contains('hidden')) {
         if (!isSilent) {
             const welcome = document.getElementById('welcome-panel');
             const tbody = document.getElementById('admin-tbody');
@@ -7591,15 +7593,16 @@ async function refreshCurrentData(isSilent = false) {
         }
 
         if (activeModule === 'admin-dash') {
-            invalidateCache('Visitor_Attendance'); invalidateCache('Users'); invalidateCache('System_Logs');
+            invalidateCache('Visitor_Attendance'); 
+            invalidateCache('Users'); 
+            invalidateCache('System_Logs');
             await renderAdminDashboardStats();
         } else if (activeModule) {
             invalidateCache(activeModule);
             await loadAdminModule(activeModule, true);
         }
     } 
-    
-    // --- EFEK LOADING DASHBOARD VISITOR (BUKU TAMU, DLL) ---
+    // C. VIEW VISITOR
     else if (vVisitor && !vVisitor.classList.contains('hidden')) {
         const activeBtn = document.querySelector('.v-btn.bg-blue-50');
         const tab = activeBtn ? activeBtn.getAttribute('data-vtab') : 'dash';
@@ -7611,103 +7614,90 @@ async function refreshCurrentData(isSilent = false) {
             }
         }
 
-        if (tab === 'dash') { invalidateCache('Visitor_Attendance'); invalidateCache('Users'); }
-        else if (tab === 'notif' || tab === 'message') { invalidateCache('Notifications'); }
-        else if (tab === 'activity') { invalidateCache('System_Logs'); }
-        else if (tab === 'download' || tab === 'documents') { invalidateCache('Documents'); }
-        else if (tab === 'bookmark' || tab === 'favorite') { invalidateCache('Bookmarks'); }
+        if (tab === 'dash') { 
+            invalidateCache('Visitor_Attendance'); 
+            invalidateCache('Users'); 
+        } else if (tab === 'notif' || tab === 'message') { 
+            invalidateCache('Notifications'); 
+        } else if (tab === 'activity') { 
+            invalidateCache('System_Logs'); 
+        } else if (tab === 'download' || tab === 'documents') { 
+            invalidateCache('Documents'); 
+        } else if (tab === 'bookmark' || tab === 'favorite') { 
+            invalidateCache('Bookmarks'); 
+            invalidateCache('Portfolio'); 
+            invalidateCache('Blog'); 
+            invalidateCache('Gallery'); 
+        }
 
-        await switchVisitorTab(tab);
+        await switchVisitorTab(tab, isSilent);
     } 
-    
-    // --- EFEK LOADING HALAMAN PUBLIK ---
+    // D. VIEW PUBLIC
     else if (vPublic && !vPublic.classList.contains('hidden')) {
         const activeBtn = document.querySelector('.nav-btn.active');
         let sec = 'home';
         if (activeBtn) sec = activeBtn.getAttribute('data-sec');
         
+        const containerMap = {
+            home: 'public-home-content',
+            profil: 'public-profile-content',
+            profile: 'public-profile-content',
+            portfolio: 'public-portfolio-list',
+            career: 'public-career-content',
+            gallery: 'public-gallery-content',
+            blog: 'public-blog-content',
+            documents: 'public-documents-content',
+            contact: 'public-contact-content'
+        };
+
         if (!isSilent) {
-            const el = document.getElementById(`public-${sec}-content`) || document.getElementById('public-home-content');
+            const el = document.getElementById(containerMap[sec] || 'public-home-content');
             if (el) {
                 el.innerHTML = '<div class="w-full py-32 flex flex-col items-center justify-center text-slate-400 animate-pulse bg-white rounded-3xl border shadow-sm"><i class="fas fa-spinner fa-spin text-6xl text-blue-500 mb-6"></i><p class="font-black text-2xl tracking-wide text-slate-600">Memuat Data Terbaru...</p></div>';
             }
         }
 
-        const sheetMap = { home: 'Home', profil: 'Profile', profile: 'Profile', portfolio: 'Portfolio', career: 'Career_Timeline', gallery: 'Gallery', blog: 'Blog', documents: 'Documents', contact: 'Contact' };
-        invalidateCache(sheetMap[sec] || 'Home');
+        const sheetMap = { 
+            home: 'Home', 
+            profil: 'Profile', 
+            profile: 'Profile', 
+            portfolio: 'Portfolio', 
+            career: 'Career_Timeline', 
+            gallery: 'Gallery', 
+            blog: 'Blog', 
+            documents: 'Documents', 
+            contact: 'Contact' 
+        };
+        
+        if (sec === 'home') {
+            invalidateCache('Home');
+            invalidateCache('Visitor_Attendance');
+            invalidateCache('Users');
+        } else {
+            invalidateCache(sheetMap[sec] || 'Home');
+        }
         
         await renderPublicContent(true, sec);
     }
 }
 
-// 4. Pemulihan Tampilan Jika Internet Putus
-function restoreFailedUI() {
-    const vAdmin = document.getElementById('view-admin');
-    const vVisitor = document.getElementById('view-visitor');
-    const vPublic = document.getElementById('view-public');
+// 4. Perbaikan `refreshAdminModule` untuk Membedakan Module Sheet & Module Dash
+async function refreshAdminModule() {
+    if (!activeModule) return;
     
-    if (vAdmin && !vAdmin.classList.contains('hidden') && activeModule) {
-        if (activeModule === 'admin-dash') renderAdminDashboardStats();
-        else loadAdminModule(activeModule, false); 
-    } else if (vVisitor && !vVisitor.classList.contains('hidden')) {
-        const activeBtn = document.querySelector('.v-btn.bg-blue-50');
-        const tab = activeBtn ? activeBtn.getAttribute('data-vtab') : 'dash';
-        switchVisitorTab(tab); 
-    } else if (vPublic && !vPublic.classList.contains('hidden')) {
-        const activeBtn = document.querySelector('.nav-btn.active');
-        let sec = 'home';
-        if (activeBtn) sec = activeBtn.getAttribute('data-sec');
-        renderPublicContent(false, sec);
+    const input = document.getElementById('admin-search');
+    if (input) input.value = '';
+
+    if (activeModule === 'admin-dash') {
+        invalidateCache('Visitor_Attendance');
+        invalidateCache('Users');
+        invalidateCache('System_Logs');
+        await renderAdminDashboardStats();
+    } else {
+        invalidateCache(activeModule);
+        await loadAdminModule(activeModule, true);
     }
 }
-
-/* ================================================================
-   ADMIN DASHBOARD STATS (DENGAN SISTEM ACCORDION)
-   ================================================================ */
-async function renderAdminDashboardStats() {
-    activeModule = 'admin-dash'; 
-    const welcomePanel = document.getElementById('welcome-panel');
-    const tablePanel = document.getElementById('table-panel');
-    if (tablePanel) tablePanel.classList.add('hidden');
-    if (welcomePanel) {
-        welcomePanel.classList.remove('hidden', 'flex-col', 'items-center', 'justify-center', 'text-center');
-        welcomePanel.classList.add('block', 'w-full', 'overflow-y-auto', 'animate-fade-in');
-    }
-
-    document.querySelectorAll('.mod-btn').forEach(b => {
-        const isDash = b.dataset.mod === 'admin-dash';
-        b.classList.toggle('bg-indigo-600', isDash); b.classList.toggle('text-white', isDash); b.classList.toggle('shadow-md', isDash); b.classList.toggle('text-slate-300', !isDash);
-    });
-
-    welcomePanel.innerHTML = '<div class="text-center py-32"><i class="fas fa-sync-alt fa-spin text-5xl text-indigo-500 mb-4"></i><p class="text-slate-500 font-bold text-lg">Mengumpulkan Analitik Sistem...</p></div>';
-
-    try {
-        const [att, usersRes, logsRes] = await Promise.all([getCachedData('Visitor_Attendance'), getCachedData('Users'), getCachedData('System_Logs')]);
-        const dataTamu = (att.data || []).reverse();
-        const dataUsers = (usersRes.data || []).reverse();
-        const dataLogs = (logsRes.data || []).reverse();
-
-        const htmlLogs = buildAccordionList(dataLogs, 'log');
-
-        welcomePanel.innerHTML = `
-          <div class="p-8 max-w-7xl mx-auto space-y-6">
-             <div class="bg-gradient-to-r from-slate-800 to-slate-900 rounded-3xl p-8 text-white shadow-xl flex justify-between items-center">
-                <div><h2 class="text-3xl font-black mb-2">SuperAdmin Dashboard</h2><p class="text-slate-400">Ringkasan aktivitas seluruh sistem secara real-time.</p></div>
-                <div class="h-16 w-16 bg-white/10 rounded-2xl flex items-center justify-center text-3xl"><i class="fas fa-shield-halved text-emerald-400"></i></div>
-             </div>
-             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="bg-white rounded-2xl p-6 border shadow-sm"><div class="p-3 bg-emerald-50 text-emerald-600 rounded-xl inline-block mb-4"><i class="fas fa-book-open text-xl"></i></div><h4 class="text-3xl font-black text-slate-900">${dataTamu.length}</h4><p class="text-sm font-bold text-slate-500 mt-1">Total Buku Tamu</p></div>
-                <div class="bg-white rounded-2xl p-6 border shadow-sm"><div class="p-3 bg-blue-50 text-blue-600 rounded-xl inline-block mb-4"><i class="fas fa-users text-xl"></i></div><h4 class="text-3xl font-black text-slate-900">${dataUsers.length}</h4><p class="text-sm font-bold text-slate-500 mt-1">Total Akun Pengguna</p></div>
-                <div class="bg-white rounded-2xl p-6 border shadow-sm"><div class="p-3 bg-indigo-50 text-indigo-600 rounded-xl inline-block mb-4"><i class="fas fa-server text-xl"></i></div><h4 class="text-3xl font-black text-slate-900">${dataLogs.length}</h4><p class="text-sm font-bold text-slate-500 mt-1">Total Log Sistem</p></div>
-             </div>
-             <div class="bg-white rounded-2xl border shadow-sm overflow-hidden h-[500px] flex flex-col mt-6">
-                <div class="p-5 bg-slate-50 border-b shrink-0"><h3 class="font-extrabold text-slate-800"><i class="fas fa-satellite-dish text-indigo-500 mr-2"></i> Seluruh Log Aktivitas Sistem</h3></div>
-                <div class="overflow-y-auto">${htmlLogs}</div>
-             </div>
-          </div>`;
-    } catch (err) { welcomePanel.innerHTML = '<div class="p-8 text-center text-rose-500">Gagal memuat Dashboard Admin.</div>'; }
-
-  }
 
   /* ================================================================
    HELPER STATISTIK KOMUNITAS (PENGELOMPOKAN TANGGAL OTOMATIS)
