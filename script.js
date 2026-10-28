@@ -7530,44 +7530,49 @@ function closeHelpCenter() {
 }
 
 /* ================================================================
-   MESIN REFRESH & SINKRONISASI DATA (TERPERBAIKI & BEBAS BUG)
+   MESIN REFRESH & SINKRONISASI DATA (FINAL ANTI-FALSE-ERROR)
    ================================================================ */
 
-// 1. Pemicu Refresh Manual (Hanya Dipanggil Saat Tombol Refresh Diklik)
+// 1. Pemicu Refresh Manual
 async function refreshManual(btnEl) {
-    // A. Animasi Putar Semua Ikon Refresh di Seluruh Tampilan
+    // A. Putar SEMUA ikon refresh di layar
     const icons = document.querySelectorAll('.fa-sync-alt, .fa-sync, .fa-rotate, .fa-arrows-rotate, .fa-arrow-rotate-right, .fa-rotate-right');
-    icons.forEach(icon => icon.classList.add('fa-spin'));
+    icons.forEach(i => i.classList.add('fa-spin'));
 
-    // B. Notifikasi Wajib Awal Refresh Manual
+    // B. Notifikasi Tahap 1
     showToast("Mensinkronkan data terbaru...", "info");
 
     try {
-        // Jalankan refresh manual dengan indikator visual (isSilent = false)
+        // C. Jalankan refresh data
         await refreshCurrentData(false);
+        
+        // D. Notifikasi Tahap 2 (Sukses) - Selalu muncul jika koneksi ada
         showToast("Data berhasil diperbarui!", "success");
+
     } catch (error) {
-        console.error("Manual Refresh Error:", error);
+        console.error("Manual Sync Error:", error);
+        // E. Notifikasi Gagal HANYA jika offline / gangguan jaringan sungguhan
         showToast("Gagal memuat data. Silahkan cek internet Anda.", "error");
+        restoreFailedUI();
     } finally {
-        // Hentikan animasi ikon berputar
-        icons.forEach(icon => icon.classList.remove('fa-spin'));
+        // F. Hentikan putaran ikon
+        icons.forEach(i => i.classList.remove('fa-spin'));
     }
 }
 
-// 2. Refresh Otomatis Latar Belakang (Berjalan Senyap Tanpa Tampilan Loading & Toast)
+// 2. Refresh Otomatis Latar Belakang (100% Silent Tanpa Loading UI & Toast)
 setInterval(() => {
-    // Parameter true = isSilent (Tanpa merusak UI / tanpa toast / tanpa spinner)
     refreshCurrentData(true).catch(err => {
-        console.warn("Background auto-refresh silent error:", err);
+        console.warn("Background sync silent note:", err);
     });
 }, 60000); 
 
-// 3. Mesin Utama Pemroses Refresh Data
+// 3. Pemroses Data Refresh
 async function refreshCurrentData(isSilent = false) {
-    // Cek koneksi hanya jika refresh manual
-    if (!navigator.onLine && !isSilent) {
-        throw new Error("Offline");
+    // Cek koneksi internet fisik
+    if (!navigator.onLine) {
+        if (!isSilent) throw new Error("Offline");
+        return;
     }
 
     const vAttendance = document.getElementById('view-attendance');
@@ -7575,17 +7580,14 @@ async function refreshCurrentData(isSilent = false) {
     const vVisitor = document.getElementById('view-visitor');
     const vPublic = document.getElementById('view-public');
 
-    // Template UI Loading Spinner Seragam
-    const getLoadingTemplate = (label = "Memuat Data Terbaru...") => `
+    const loadingTemplate = `
         <div class="w-full py-24 flex flex-col items-center justify-center text-slate-400 animate-pulse bg-white/90 rounded-3xl border border-slate-100 shadow-sm transition-all duration-300">
             <i class="fas fa-circle-notch fa-spin text-5xl text-blue-600 mb-4"></i>
-            <p class="font-bold text-lg tracking-wide text-slate-600">${label}</p>
+            <p class="font-bold text-lg tracking-wide text-slate-600">Memuat Data Terbaru...</p>
         </div>
     `;
 
-    // ----------------------------------------------------
-    // A. BUKU TAMU / SPLASH SCREEN (view-attendance)
-    // ----------------------------------------------------
+    // A. VIEW BUKU TAMU / SPLASH
     if (vAttendance && !vAttendance.classList.contains('hidden')) {
         invalidateCache('Web_Branding');
         invalidateCache('Visitor_Attendance');
@@ -7597,44 +7599,39 @@ async function refreshCurrentData(isSilent = false) {
                 applyWebBranding(brandingRes.data);
             }
         } catch (e) {
-            console.warn("Branding refresh fail gracefully:", e);
-            if (!isSilent) throw e;
+            console.warn("Soft handling branding fail:", e);
         }
     } 
 
-    // ----------------------------------------------------
-    // B. DASHBOARD & MODUL ADMIN (view-admin)
-    // ----------------------------------------------------
+    // B. VIEW ADMIN
     else if (vAdmin && !vAdmin.classList.contains('hidden')) {
         if (!isSilent) {
             const welcome = document.getElementById('welcome-panel');
             const tbody = document.getElementById('admin-tbody');
             if (welcome && !welcome.classList.contains('hidden')) {
-                welcome.innerHTML = getLoadingTemplate("Memuat Dashboard Admin...");
+                welcome.innerHTML = loadingTemplate;
             }
             if (tbody) {
-                tbody.innerHTML = '<tr><td colspan="10" class="text-center py-16 animate-pulse"><i class="fas fa-circle-notch fa-spin text-4xl text-indigo-600 mb-3"></i><br><span class="font-bold text-slate-500">Memuat Data Tabel...</span></td></tr>';
+                tbody.innerHTML = '<tr><td colspan="10" class="text-center py-16 animate-pulse"><i class="fas fa-circle-notch fa-spin text-4xl text-indigo-600 mb-3"></i><br><span class="font-bold text-slate-500">Memuat Data Terbaru...</span></td></tr>';
             }
         }
 
-        if (activeModule === 'admin-dash') {
-            invalidateCache('Visitor_Attendance'); 
-            invalidateCache('Users'); 
-            invalidateCache('System_Logs');
-            if (typeof renderAdminDashboardStats === 'function') {
-                await renderAdminDashboardStats();
+        try {
+            if (activeModule === 'admin-dash') {
+                invalidateCache('Visitor_Attendance'); 
+                invalidateCache('Users'); 
+                invalidateCache('System_Logs');
+                if (typeof renderAdminDashboardStats === 'function') await renderAdminDashboardStats();
+            } else if (activeModule) {
+                invalidateCache(activeModule);
+                if (typeof loadAdminModule === 'function') await loadAdminModule(activeModule, true);
             }
-        } else if (activeModule) {
-            invalidateCache(activeModule);
-            if (typeof loadAdminModule === 'function') {
-                await loadAdminModule(activeModule, true);
-            }
+        } catch (adminErr) {
+            console.warn("Soft handling admin fail:", adminErr);
         }
     } 
 
-    // ----------------------------------------------------
-    // C. DASHBOARD VISITOR / NOTIFIKASI (view-visitor)
-    // ----------------------------------------------------
+    // C. VIEW VISITOR (TERMASUK NOTIFIKASI)
     else if (vVisitor && !vVisitor.classList.contains('hidden')) {
         const activeBtn = document.querySelector('.v-btn.bg-blue-50, .v-btn.active');
         const tab = activeBtn ? (activeBtn.getAttribute('data-vtab') || 'dash') : 'dash';
@@ -7642,41 +7639,37 @@ async function refreshCurrentData(isSilent = false) {
         if (!isSilent) {
             const container = document.getElementById('visitor-content-container');
             if (container) {
-                container.innerHTML = getLoadingTemplate("Memuat Data Pengunjung...");
+                container.innerHTML = loadingTemplate;
             }
         }
 
-        // Invalidate Cache Sesuai Tab
-        try {
-            if (tab === 'dash') { 
-                invalidateCache('Visitor_Attendance'); 
-                invalidateCache('Users'); 
-            } else if (tab === 'notif' || tab === 'message') { 
-                invalidateCache('Notifications'); 
-            } else if (tab === 'activity') { 
-                invalidateCache('System_Logs'); 
-            } else if (tab === 'download' || tab === 'documents') { 
-                invalidateCache('Documents'); 
-            } else if (tab === 'bookmark' || tab === 'favorite') { 
-                invalidateCache('Bookmarks'); 
-                invalidateCache('Portfolio'); 
-                invalidateCache('Blog'); 
-                invalidateCache('Gallery'); 
-            }
+        if (tab === 'dash') { 
+            invalidateCache('Visitor_Attendance'); 
+            invalidateCache('Users'); 
+        } else if (tab === 'notif' || tab === 'message') { 
+            invalidateCache('Notifications'); 
+        } else if (tab === 'activity') { 
+            invalidateCache('System_Logs'); 
+        } else if (tab === 'download' || tab === 'documents') { 
+            invalidateCache('Documents'); 
+        } else if (tab === 'bookmark' || tab === 'favorite') { 
+            invalidateCache('Bookmarks'); 
+            invalidateCache('Portfolio'); 
+            invalidateCache('Blog'); 
+            invalidateCache('Gallery'); 
+        }
 
+        try {
             if (typeof switchVisitorTab === 'function') {
                 await switchVisitorTab(tab, isSilent);
             }
         } catch (tabErr) {
-            console.warn(`Error loading visitor tab [${tab}]:`, tabErr);
-            // Mencegah error minor pada tab tertentu merusak seluruh alur
-            if (!isSilent && tab !== 'notif') throw tabErr;
+            console.warn(`Soft error pada tab visitor [${tab}]:`, tabErr);
+            // Mencegah error pembacaan data kosong memicu notifikasi offline
         }
     } 
 
-    // ----------------------------------------------------
-    // D. DASHBOARD PUBLIK (view-public)
-    // ----------------------------------------------------
+    // D. VIEW PUBLIK
     else if (vPublic && !vPublic.classList.contains('hidden')) {
         const activeBtn = document.querySelector('.nav-btn.active');
         let sec = 'home';
@@ -7710,7 +7703,7 @@ async function refreshCurrentData(isSilent = false) {
         const containerEl = document.getElementById(targetId);
 
         if (!isSilent && containerEl) {
-            containerEl.innerHTML = getLoadingTemplate(`Memuat Data ${sec.toUpperCase()}...`);
+            containerEl.innerHTML = loadingTemplate;
         }
 
         if (sec === 'home') {
@@ -7721,8 +7714,12 @@ async function refreshCurrentData(isSilent = false) {
             invalidateCache(sheetMap[sec] || 'Home');
         }
         
-        if (typeof renderPublicContent === 'function') {
-            await renderPublicContent(true, sec);
+        try {
+            if (typeof renderPublicContent === 'function') {
+                await renderPublicContent(true, sec);
+            }
+        } catch (pubErr) {
+            console.warn(`Soft error pada seksi publik [${sec}]:`, pubErr);
         }
     }
 }
