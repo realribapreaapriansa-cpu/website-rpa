@@ -3458,6 +3458,34 @@ async function renderPublicContent(
   prioritySection = 'home'
 ) {
 
+  // === TAMBAHAN KODE PROFIL ===
+    const sec = section.toLowerCase();
+    if (sec === 'profil' || sec === 'profile') {
+        const container = document.getElementById('public-profile-content');
+        if (container) {
+            if (forceRefresh || container.innerHTML.trim() === '') {
+                container.innerHTML = `
+                    <div class="w-full py-24 flex flex-col items-center justify-center text-slate-400 animate-pulse bg-white rounded-3xl border border-slate-100 shadow-sm">
+                        <i class="fas fa-circle-notch fa-spin text-5xl text-blue-600 mb-4"></i>
+                        <p class="font-bold text-lg tracking-wide text-slate-600">Memuat Profil...</p>
+                    </div>
+                `;
+            }
+            try {
+                const res = await getCachedData('Profile', forceRefresh);
+                const data = (res && res.data) ? res.data : [];
+                if (typeof renderPublicProfile === 'function') {
+                    renderPublicProfile(data);
+                }
+            } catch (err) {
+                console.error("Gagal memuat profil:", err);
+                if (typeof renderPublicProfile === 'function') renderPublicProfile([]); 
+            }
+        }
+        return; // Menghentikan proses agar tidak bentrok dengan kode lama
+    }
+    // === AKHIR TAMBAHAN KODE PROFIL ===
+    
   const names = [
     'Home',
     'Profile',
@@ -7794,3 +7822,77 @@ function buildAccordionList(dataArray, type) {
    });
    return html;
   }
+
+  // === TAMBAHKAN KODE INI DI PALING BAWAH SCRIPT.JS ===
+function renderPublicProfile(profileData) {
+    const container = document.getElementById('public-profile-content');
+    if (!container) return;
+
+    let profile = {};
+    if (Array.isArray(profileData)) {
+        profileData.forEach(row => {
+            if (Array.isArray(row) && row.length >= 2) {
+                profile[String(row[0]).trim().toLowerCase()] = row[1];
+            } else if (typeof row === 'object' && row !== null) {
+                if (row.key && row.value !== undefined) {
+                    profile[String(row.key).trim().toLowerCase()] = row.value;
+                } else {
+                    Object.assign(profile, row);
+                }
+            }
+        });
+    } else if (typeof profileData === 'object' && profileData !== null) {
+        profile = profileData;
+    }
+
+    const name = profile.name || profile.nama || profile.full_name || 'Nama Belum Diatur';
+    const title = profile.title || profile.jabatan || profile.role || 'Pengguna';
+    const bio = profile.bio || profile.deskripsi || profile.about || 'Belum ada deskripsi profil.';
+    const email = profile.email || '-';
+    const phone = profile.phone || profile.telepon || profile.hp || '-';
+    const address = profile.address || profile.alamat || '-';
+    const avatar = profile.avatar || profile.foto || profile.image || 'https://via.placeholder.com/150?text=Profile';
+
+    container.innerHTML = `
+        <div class="bg-white rounded-3xl p-6 sm:p-10 border border-slate-100 shadow-sm transition-all duration-300">
+            <div class="flex flex-col md:flex-row items-center md:items-start gap-8">
+                <div class="relative shrink-0">
+                    <img src="${avatar}" alt="${name}" 
+                         class="w-32 h-32 md:w-40 md:h-40 rounded-2xl object-cover shadow-md border-4 border-slate-50"
+                         onerror="this.src='https://via.placeholder.com/150?text=User'">
+                </div>
+                <div class="flex-1 text-center md:text-left space-y-4">
+                    <div>
+                        <h2 class="text-2xl md:text-3xl font-black text-slate-800 tracking-tight">${name}</h2>
+                        <p class="text-blue-600 font-bold text-base md:text-lg mt-1">${title}</p>
+                    </div>
+                    <p class="text-slate-600 leading-relaxed text-sm md:text-base">${bio}</p>
+                    <hr class="border-slate-100 my-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-left pt-2">
+                        <div class="flex items-center gap-3 p-3 rounded-xl bg-slate-50">
+                            <i class="fas fa-envelope text-blue-500 text-lg"></i>
+                            <div class="overflow-hidden">
+                                <p class="text-xs text-slate-400 font-bold uppercase">Email</p>
+                                <p class="text-xs md:text-sm font-semibold text-slate-700 truncate">${email}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 p-3 rounded-xl bg-slate-50">
+                            <i class="fas fa-phone text-emerald-500 text-lg"></i>
+                            <div class="overflow-hidden">
+                                <p class="text-xs text-slate-400 font-bold uppercase">Telepon</p>
+                                <p class="text-xs md:text-sm font-semibold text-slate-700 truncate">${phone}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 p-3 rounded-xl bg-slate-50">
+                            <i class="fas fa-map-marker-alt text-rose-500 text-lg"></i>
+                            <div class="overflow-hidden">
+                                <p class="text-xs text-slate-400 font-bold uppercase">Alamat</p>
+                                <p class="text-xs md:text-sm font-semibold text-slate-700 truncate">${address}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
