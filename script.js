@@ -7530,35 +7530,42 @@ function closeHelpCenter() {
 }
 
 /* ================================================================
-   MESIN REFRESH & SINKRONISASI (TERPERBAIKI & TERINTEGRASI TOTAL)
+   MESIN REFRESH & SINKRONISASI DATA (TERPERBAIKI & BEBAS BUG)
    ================================================================ */
 
-// 1. Fungsi Klik Refresh Manual
+// 1. Pemicu Refresh Manual (Hanya Dipanggil Saat Tombol Refresh Diklik)
 async function refreshManual(btnEl) {
-    const icons = document.querySelectorAll('.fa-sync-alt, .fa-sync, .fa-rotate');
-    icons.forEach(i => i.classList.add('fa-spin'));
+    // A. Animasi Putar Semua Ikon Refresh di Seluruh Tampilan
+    const icons = document.querySelectorAll('.fa-sync-alt, .fa-sync, .fa-rotate, .fa-arrows-rotate, .fa-arrow-rotate-right, .fa-rotate-right');
+    icons.forEach(icon => icon.classList.add('fa-spin'));
 
+    // B. Notifikasi Wajib Awal Refresh Manual
     showToast("Mensinkronkan data terbaru...", "info");
 
     try {
-        await refreshCurrentData(false); 
+        // Jalankan refresh manual dengan indikator visual (isSilent = false)
+        await refreshCurrentData(false);
         showToast("Data berhasil diperbarui!", "success");
     } catch (error) {
-        console.error("Refresh error:", error);
-        showToast("Gagal memuat data. Silakan cek koneksi internet Anda.", "error");
-        restoreFailedUI();
+        console.error("Manual Refresh Error:", error);
+        showToast("Gagal memuat data. Silahkan cek internet Anda.", "error");
     } finally {
-        icons.forEach(i => i.classList.remove('fa-spin'));
+        // Hentikan animasi ikon berputar
+        icons.forEach(icon => icon.classList.remove('fa-spin'));
     }
 }
 
-// 2. Refresh Otomatis Latar Belakang Setiap 60 Detik
+// 2. Refresh Otomatis Latar Belakang (Berjalan Senyap Tanpa Tampilan Loading & Toast)
 setInterval(() => {
-    refreshCurrentData(true).catch(() => {});
+    // Parameter true = isSilent (Tanpa merusak UI / tanpa toast / tanpa spinner)
+    refreshCurrentData(true).catch(err => {
+        console.warn("Background auto-refresh silent error:", err);
+    });
 }, 60000); 
 
-// 3. Mesin Pemroses Data Refresh Berdasarkan View Aktif
+// 3. Mesin Utama Pemroses Refresh Data
 async function refreshCurrentData(isSilent = false) {
+    // Cek koneksi hanya jika refresh manual
     if (!navigator.onLine && !isSilent) {
         throw new Error("Offline");
     }
@@ -7567,28 +7574,46 @@ async function refreshCurrentData(isSilent = false) {
     const vAdmin = document.getElementById('view-admin');
     const vVisitor = document.getElementById('view-visitor');
     const vPublic = document.getElementById('view-public');
-    
-    // A. VIEW ATTENDANCE / BUKU TAMU / SPLASH
+
+    // Template UI Loading Spinner Seragam
+    const getLoadingTemplate = (label = "Memuat Data Terbaru...") => `
+        <div class="w-full py-24 flex flex-col items-center justify-center text-slate-400 animate-pulse bg-white/90 rounded-3xl border border-slate-100 shadow-sm transition-all duration-300">
+            <i class="fas fa-circle-notch fa-spin text-5xl text-blue-600 mb-4"></i>
+            <p class="font-bold text-lg tracking-wide text-slate-600">${label}</p>
+        </div>
+    `;
+
+    // ----------------------------------------------------
+    // A. BUKU TAMU / SPLASH SCREEN (view-attendance)
+    // ----------------------------------------------------
     if (vAttendance && !vAttendance.classList.contains('hidden')) {
         invalidateCache('Web_Branding');
         invalidateCache('Visitor_Attendance');
         invalidateCache('Users');
-        
-        const brandingRes = await getCachedData('Web_Branding', true);
-        if (brandingRes && brandingRes.data) {
-            applyWebBranding(brandingRes.data);
+
+        try {
+            const brandingRes = await getCachedData('Web_Branding', true);
+            if (brandingRes && brandingRes.data && typeof applyWebBranding === 'function') {
+                applyWebBranding(brandingRes.data);
+            }
+        } catch (e) {
+            console.warn("Branding refresh fail gracefully:", e);
+            if (!isSilent) throw e;
         }
     } 
-    // B. VIEW ADMIN
+
+    // ----------------------------------------------------
+    // B. DASHBOARD & MODUL ADMIN (view-admin)
+    // ----------------------------------------------------
     else if (vAdmin && !vAdmin.classList.contains('hidden')) {
         if (!isSilent) {
             const welcome = document.getElementById('welcome-panel');
             const tbody = document.getElementById('admin-tbody');
             if (welcome && !welcome.classList.contains('hidden')) {
-                welcome.innerHTML = '<div class="flex flex-col items-center justify-center py-40 text-slate-400 animate-pulse"><i class="fas fa-spinner fa-spin text-7xl text-indigo-500 mb-6"></i><p class="font-black text-2xl tracking-wide text-slate-600">Memuat Data Terbaru...</p></div>';
+                welcome.innerHTML = getLoadingTemplate("Memuat Dashboard Admin...");
             }
             if (tbody) {
-                tbody.innerHTML = '<tr><td colspan="10" class="text-center py-20 animate-pulse"><i class="fas fa-spinner fa-spin text-5xl text-blue-500 mb-4"></i><br><span class="font-black text-lg text-slate-500">Memuat Data Terbaru...</span></td></tr>';
+                tbody.innerHTML = '<tr><td colspan="10" class="text-center py-16 animate-pulse"><i class="fas fa-circle-notch fa-spin text-4xl text-indigo-600 mb-3"></i><br><span class="font-bold text-slate-500">Memuat Data Tabel...</span></td></tr>';
             }
         }
 
@@ -7596,47 +7621,66 @@ async function refreshCurrentData(isSilent = false) {
             invalidateCache('Visitor_Attendance'); 
             invalidateCache('Users'); 
             invalidateCache('System_Logs');
-            await renderAdminDashboardStats();
+            if (typeof renderAdminDashboardStats === 'function') {
+                await renderAdminDashboardStats();
+            }
         } else if (activeModule) {
             invalidateCache(activeModule);
-            await loadAdminModule(activeModule, true);
+            if (typeof loadAdminModule === 'function') {
+                await loadAdminModule(activeModule, true);
+            }
         }
     } 
-    // C. VIEW VISITOR
+
+    // ----------------------------------------------------
+    // C. DASHBOARD VISITOR / NOTIFIKASI (view-visitor)
+    // ----------------------------------------------------
     else if (vVisitor && !vVisitor.classList.contains('hidden')) {
-        const activeBtn = document.querySelector('.v-btn.bg-blue-50');
-        const tab = activeBtn ? activeBtn.getAttribute('data-vtab') : 'dash';
+        const activeBtn = document.querySelector('.v-btn.bg-blue-50, .v-btn.active');
+        const tab = activeBtn ? (activeBtn.getAttribute('data-vtab') || 'dash') : 'dash';
         
         if (!isSilent) {
             const container = document.getElementById('visitor-content-container');
             if (container) {
-                container.innerHTML = '<div class="bg-white p-16 rounded-3xl border shadow-sm flex flex-col items-center justify-center text-slate-400 animate-pulse min-h-[400px]"><i class="fas fa-spinner fa-spin text-6xl text-blue-600 mb-6"></i><p class="font-black text-2xl tracking-wide text-slate-600">Memuat Data Terbaru...</p></div>';
+                container.innerHTML = getLoadingTemplate("Memuat Data Pengunjung...");
             }
         }
 
-        if (tab === 'dash') { 
-            invalidateCache('Visitor_Attendance'); 
-            invalidateCache('Users'); 
-        } else if (tab === 'notif' || tab === 'message') { 
-            invalidateCache('Notifications'); 
-        } else if (tab === 'activity') { 
-            invalidateCache('System_Logs'); 
-        } else if (tab === 'download' || tab === 'documents') { 
-            invalidateCache('Documents'); 
-        } else if (tab === 'bookmark' || tab === 'favorite') { 
-            invalidateCache('Bookmarks'); 
-            invalidateCache('Portfolio'); 
-            invalidateCache('Blog'); 
-            invalidateCache('Gallery'); 
-        }
+        // Invalidate Cache Sesuai Tab
+        try {
+            if (tab === 'dash') { 
+                invalidateCache('Visitor_Attendance'); 
+                invalidateCache('Users'); 
+            } else if (tab === 'notif' || tab === 'message') { 
+                invalidateCache('Notifications'); 
+            } else if (tab === 'activity') { 
+                invalidateCache('System_Logs'); 
+            } else if (tab === 'download' || tab === 'documents') { 
+                invalidateCache('Documents'); 
+            } else if (tab === 'bookmark' || tab === 'favorite') { 
+                invalidateCache('Bookmarks'); 
+                invalidateCache('Portfolio'); 
+                invalidateCache('Blog'); 
+                invalidateCache('Gallery'); 
+            }
 
-        await switchVisitorTab(tab, isSilent);
+            if (typeof switchVisitorTab === 'function') {
+                await switchVisitorTab(tab, isSilent);
+            }
+        } catch (tabErr) {
+            console.warn(`Error loading visitor tab [${tab}]:`, tabErr);
+            // Mencegah error minor pada tab tertentu merusak seluruh alur
+            if (!isSilent && tab !== 'notif') throw tabErr;
+        }
     } 
-    // D. VIEW PUBLIC
+
+    // ----------------------------------------------------
+    // D. DASHBOARD PUBLIK (view-public)
+    // ----------------------------------------------------
     else if (vPublic && !vPublic.classList.contains('hidden')) {
         const activeBtn = document.querySelector('.nav-btn.active');
         let sec = 'home';
-        if (activeBtn) sec = activeBtn.getAttribute('data-sec');
+        if (activeBtn) sec = activeBtn.getAttribute('data-sec') || 'home';
         
         const containerMap = {
             home: 'public-home-content',
@@ -7650,13 +7694,6 @@ async function refreshCurrentData(isSilent = false) {
             contact: 'public-contact-content'
         };
 
-        if (!isSilent) {
-            const el = document.getElementById(containerMap[sec] || 'public-home-content');
-            if (el) {
-                el.innerHTML = '<div class="w-full py-32 flex flex-col items-center justify-center text-slate-400 animate-pulse bg-white rounded-3xl border shadow-sm"><i class="fas fa-spinner fa-spin text-6xl text-blue-500 mb-6"></i><p class="font-black text-2xl tracking-wide text-slate-600">Memuat Data Terbaru...</p></div>';
-            }
-        }
-
         const sheetMap = { 
             home: 'Home', 
             profil: 'Profile', 
@@ -7668,7 +7705,14 @@ async function refreshCurrentData(isSilent = false) {
             documents: 'Documents', 
             contact: 'Contact' 
         };
-        
+
+        const targetId = containerMap[sec] || 'public-home-content';
+        const containerEl = document.getElementById(targetId);
+
+        if (!isSilent && containerEl) {
+            containerEl.innerHTML = getLoadingTemplate(`Memuat Data ${sec.toUpperCase()}...`);
+        }
+
         if (sec === 'home') {
             invalidateCache('Home');
             invalidateCache('Visitor_Attendance');
@@ -7677,25 +7721,9 @@ async function refreshCurrentData(isSilent = false) {
             invalidateCache(sheetMap[sec] || 'Home');
         }
         
-        await renderPublicContent(true, sec);
-    }
-}
-
-// 4. Perbaikan `refreshAdminModule` untuk Membedakan Module Sheet & Module Dash
-async function refreshAdminModule() {
-    if (!activeModule) return;
-    
-    const input = document.getElementById('admin-search');
-    if (input) input.value = '';
-
-    if (activeModule === 'admin-dash') {
-        invalidateCache('Visitor_Attendance');
-        invalidateCache('Users');
-        invalidateCache('System_Logs');
-        await renderAdminDashboardStats();
-    } else {
-        invalidateCache(activeModule);
-        await loadAdminModule(activeModule, true);
+        if (typeof renderPublicContent === 'function') {
+            await renderPublicContent(true, sec);
+        }
     }
 }
 
