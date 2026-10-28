@@ -7530,118 +7530,134 @@ function closeHelpCenter() {
 }
 
 /* ================================================================
-   MESIN REFRESH & SINKRONISASI (SMART LOADING & ANIMASI)
+   MESIN REFRESH & SINKRONISASI (SMART LOADING & ANIMASI URUT)
    ================================================================ */
+
+// 1. Fungsi Klik Refresh Manual
 async function refreshManual() {
-    // 1. Deteksi otomatis tombol yang diklik tanpa perlu mengedit HTML
-    let icon = null;
-    if (window.event && window.event.target) {
-        let el = window.event.target;
-        if (el.tagName !== 'BUTTON' && el.closest('button')) el = el.closest('button');
-        icon = el.tagName === 'I' ? el : el.querySelector('.fa-sync-alt, .fa-sync, .fa-rotate');
-    }
-    
-    // 2. Putar ikon saat diklik
-    if (icon) {
-        icon.classList.add('fa-spin');
-    } else {
-        document.querySelectorAll('.fa-sync-alt, .fa-sync, .fa-rotate').forEach(i => i.classList.add('fa-spin'));
-    }
-    
+    // A. Paksa SEMUA ikon refresh di layar berputar tanpa perlu edit HTML
+    const icons = document.querySelectorAll('.fa-sync-alt, .fa-sync, .fa-rotate');
+    icons.forEach(i => i.classList.add('fa-spin'));
+
+    // B. Munculkan Notifikasi Tahap 1
+    showToast("Mensinkronkan data terbaru...", "info");
+
     try {
-        await refreshCurrentData(false); // False = Refresh Manual (Tampilkan Notifikasi)
+        // C. Hilangkan data sementara & munculkan animasi loading, lalu ambil data baru
+        await refreshCurrentData(false); 
+        
+        // D. Jika proses selesai dan sukses, munculkan Notifikasi Tahap 2
+        showToast("Data berhasil diperbarui!", "success");
+
+    } catch (error) {
+        // E. Jika proses gagal (tidak ada internet), munculkan Notifikasi Gagal
+        showToast("Gagal memuat data. Silahkan cek internet Anda.", "error");
+        
+        // Kembalikan data lama dari memori agar layar tidak nyangkut di animasi loading
+        restoreFailedUI();
     } finally {
-        // 3. Matikan putaran ikon saat selesai
-        if (icon) {
-            icon.classList.remove('fa-spin');
-        } else {
-            document.querySelectorAll('.fa-sync-alt, .fa-sync, .fa-rotate').forEach(i => i.classList.remove('fa-spin'));
-        }
+        // F. Setelah semua selesai (baik sukses maupun gagal), matikan putaran ikon
+        icons.forEach(i => i.classList.remove('fa-spin'));
     }
 }
 
-// 4. Refresh Otomatis setiap 60 Detik (100% DI LATAR BELAKANG / TANPA GANGGUAN NOTIFIKASI)
+// 2. Refresh Otomatis setiap 60 Detik (100% DI LATAR BELAKANG / TANPA NOTIF)
 setInterval(() => {
-    refreshCurrentData(true); 
+    refreshCurrentData(true).catch(() => {}); // Abaikan error agar tidak mengganggu
 }, 60000); 
 
+// 3. Mesin Pemroses Data & Animasi Transisi
 async function refreshCurrentData(isSilent = false) {
-    // 5. Cek koneksi internet sungguhan (Hanya notif jika diklik manual)
+    // Cek internet sungguhan
     if (!navigator.onLine && !isSilent) {
-        showToast("Gagal memuat data. Silahkan cek internet Anda.", "error");
-        return;
+        throw new Error("Offline"); // Lempar ke catch di refreshManual
     }
 
-    if (!isSilent) showToast("Mensinkronkan data terbaru...", "info");
+    const vAdmin = document.getElementById('view-admin');
+    const vVisitor = document.getElementById('view-visitor');
+    const vPublic = document.getElementById('view-public');
     
-    try {
-        const vAdmin = document.getElementById('view-admin');
-        const vVisitor = document.getElementById('view-visitor');
-        const vPublic = document.getElementById('view-public');
-        
-        // A. EFEK KOSONG & LOADING DI DASHBOARD ADMIN
-        if (vAdmin && !vAdmin.classList.contains('hidden')) {
-            if (!isSilent) {
-                const welcome = document.getElementById('welcome-panel');
-                const tbody = document.getElementById('admin-tbody');
-                if (welcome && !welcome.classList.contains('hidden')) {
-                    welcome.innerHTML = '<div class="flex flex-col items-center justify-center py-40 text-slate-400 animate-pulse"><i class="fas fa-spinner fa-spin text-7xl text-indigo-500 mb-6"></i><p class="font-black text-2xl tracking-wide text-slate-600">Memuat Data Terbaru...</p></div>';
-                }
-                if (tbody) {
-                    tbody.innerHTML = '<tr><td colspan="10" class="text-center py-20 animate-pulse"><i class="fas fa-spinner fa-spin text-5xl text-blue-500 mb-4"></i><br><span class="font-black text-lg text-slate-500">Memuat Data Terbaru...</span></td></tr>';
-                }
-            }
-
-            if (activeModule === 'admin-dash') {
-                invalidateCache('Visitor_Attendance'); invalidateCache('Users'); invalidateCache('System_Logs');
-                await renderAdminDashboardStats();
-            } else if (activeModule) {
-                invalidateCache(activeModule);
-                await loadAdminModule(activeModule, true);
-            }
-        } 
-        
-        // B. EFEK KOSONG & LOADING DI VISITOR
-        else if (vVisitor && !vVisitor.classList.contains('hidden')) {
-            const activeBtn = document.querySelector('.v-btn.bg-blue-50');
-            const tab = activeBtn ? activeBtn.getAttribute('data-vtab') : 'dash';
-            
-            if (tab === 'dash') { invalidateCache('Visitor_Attendance'); invalidateCache('Users'); }
-            else if (tab === 'notif' || tab === 'message') { invalidateCache('Notifications'); }
-            else if (tab === 'activity') { invalidateCache('System_Logs'); }
-            else if (tab === 'download' || tab === 'documents') { invalidateCache('Documents'); }
-            else if (tab === 'bookmark' || tab === 'favorite') { invalidateCache('Bookmarks'); }
-
-            await switchVisitorTab(tab);
-        } 
-        
-        // C. EFEK KOSONG & LOADING DI HALAMAN PUBLIK
-        else if (vPublic && !vPublic.classList.contains('hidden')) {
-            const activeBtn = document.querySelector('.nav-btn.active');
-            let sec = 'home';
-            if (activeBtn) sec = activeBtn.getAttribute('data-sec');
-            
-            if (!isSilent) {
-                const el = document.getElementById(`public-${sec}-content`) || document.getElementById('public-home-content');
-                if (el) {
-                    el.innerHTML = '<div class="w-full py-32 flex flex-col items-center justify-center text-slate-400 animate-pulse bg-white rounded-3xl border shadow-sm"><i class="fas fa-spinner fa-spin text-6xl text-blue-500 mb-6"></i><p class="font-black text-2xl tracking-wide text-slate-600">Memuat Data Terbaru...</p></div>';
-                }
-            }
-
-            const sheetMap = { home: 'Home', profil: 'Profile', profile: 'Profile', portfolio: 'Portfolio', career: 'Career_Timeline', gallery: 'Gallery', blog: 'Blog', documents: 'Documents', contact: 'Contact' };
-            invalidateCache(sheetMap[sec] || 'Home');
-            
-            await renderPublicContent(true, sec);
-        }
-        
-        if (!isSilent) showToast("Data berhasil diperbarui!", "success");
-
-    } catch (err) {
-        // Hanya muncul notifikasi error BILA diklik secara manual.
-        // Jika gagal saat latar belakang (otomatis), sistem akan diam saja tanpa mengganggu Anda.
+    // --- EFEK LOADING DASHBOARD ADMIN ---
+    if (vAdmin && !vAdmin.classList.contains('hidden')) {
         if (!isSilent) {
-            showToast("Gagal memuat data. Silahkan cek internet Anda.", "error");
+            const welcome = document.getElementById('welcome-panel');
+            const tbody = document.getElementById('admin-tbody');
+            if (welcome && !welcome.classList.contains('hidden')) {
+                welcome.innerHTML = '<div class="flex flex-col items-center justify-center py-40 text-slate-400 animate-pulse"><i class="fas fa-spinner fa-spin text-7xl text-indigo-500 mb-6"></i><p class="font-black text-2xl tracking-wide text-slate-600">Memuat Data Terbaru...</p></div>';
+            }
+            if (tbody) {
+                tbody.innerHTML = '<tr><td colspan="10" class="text-center py-20 animate-pulse"><i class="fas fa-spinner fa-spin text-5xl text-blue-500 mb-4"></i><br><span class="font-black text-lg text-slate-500">Memuat Data Terbaru...</span></td></tr>';
+            }
         }
+
+        if (activeModule === 'admin-dash') {
+            invalidateCache('Visitor_Attendance'); invalidateCache('Users'); invalidateCache('System_Logs');
+            await renderAdminDashboardStats();
+        } else if (activeModule) {
+            invalidateCache(activeModule);
+            await loadAdminModule(activeModule, true);
+        }
+    } 
+    
+    // --- EFEK LOADING DASHBOARD VISITOR (BUKU TAMU, DLL) ---
+    else if (vVisitor && !vVisitor.classList.contains('hidden')) {
+        const activeBtn = document.querySelector('.v-btn.bg-blue-50');
+        const tab = activeBtn ? activeBtn.getAttribute('data-vtab') : 'dash';
+        
+        if (!isSilent) {
+            const container = document.getElementById('visitor-content-container');
+            if (container) {
+                container.innerHTML = '<div class="bg-white p-16 rounded-3xl border shadow-sm flex flex-col items-center justify-center text-slate-400 animate-pulse min-h-[400px]"><i class="fas fa-spinner fa-spin text-6xl text-blue-600 mb-6"></i><p class="font-black text-2xl tracking-wide text-slate-600">Memuat Data Terbaru...</p></div>';
+            }
+        }
+
+        if (tab === 'dash') { invalidateCache('Visitor_Attendance'); invalidateCache('Users'); }
+        else if (tab === 'notif' || tab === 'message') { invalidateCache('Notifications'); }
+        else if (tab === 'activity') { invalidateCache('System_Logs'); }
+        else if (tab === 'download' || tab === 'documents') { invalidateCache('Documents'); }
+        else if (tab === 'bookmark' || tab === 'favorite') { invalidateCache('Bookmarks'); }
+
+        await switchVisitorTab(tab);
+    } 
+    
+    // --- EFEK LOADING HALAMAN PUBLIK ---
+    else if (vPublic && !vPublic.classList.contains('hidden')) {
+        const activeBtn = document.querySelector('.nav-btn.active');
+        let sec = 'home';
+        if (activeBtn) sec = activeBtn.getAttribute('data-sec');
+        
+        if (!isSilent) {
+            const el = document.getElementById(`public-${sec}-content`) || document.getElementById('public-home-content');
+            if (el) {
+                el.innerHTML = '<div class="w-full py-32 flex flex-col items-center justify-center text-slate-400 animate-pulse bg-white rounded-3xl border shadow-sm"><i class="fas fa-spinner fa-spin text-6xl text-blue-500 mb-6"></i><p class="font-black text-2xl tracking-wide text-slate-600">Memuat Data Terbaru...</p></div>';
+            }
+        }
+
+        const sheetMap = { home: 'Home', profil: 'Profile', profile: 'Profile', portfolio: 'Portfolio', career: 'Career_Timeline', gallery: 'Gallery', blog: 'Blog', documents: 'Documents', contact: 'Contact' };
+        invalidateCache(sheetMap[sec] || 'Home');
+        
+        await renderPublicContent(true, sec);
+    }
+}
+
+// 4. Pemulihan Tampilan Jika Internet Putus
+function restoreFailedUI() {
+    const vAdmin = document.getElementById('view-admin');
+    const vVisitor = document.getElementById('view-visitor');
+    const vPublic = document.getElementById('view-public');
+    
+    if (vAdmin && !vAdmin.classList.contains('hidden') && activeModule) {
+        if (activeModule === 'admin-dash') renderAdminDashboardStats();
+        else loadAdminModule(activeModule, false); 
+    } else if (vVisitor && !vVisitor.classList.contains('hidden')) {
+        const activeBtn = document.querySelector('.v-btn.bg-blue-50');
+        const tab = activeBtn ? activeBtn.getAttribute('data-vtab') : 'dash';
+        switchVisitorTab(tab); 
+    } else if (vPublic && !vPublic.classList.contains('hidden')) {
+        const activeBtn = document.querySelector('.nav-btn.active');
+        let sec = 'home';
+        if (activeBtn) sec = activeBtn.getAttribute('data-sec');
+        renderPublicContent(false, sec);
     }
 }
 
