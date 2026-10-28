@@ -1431,7 +1431,6 @@ async function switchVisitorTab(tab) {
   try {
 
    if (tab === 'dash') {
-      // 1. Tarik Data Realtime
       const [att, usersRes] = await Promise.all([
         getCachedData('Visitor_Attendance'),
         getCachedData('Users')
@@ -1440,109 +1439,25 @@ async function switchVisitorTab(tab) {
       const dataTamu = (att.data || []).reverse();
       const dataUsers = (usersRes.data || []).reverse();
 
-      const totalTamu = dataTamu.length;
-      const totalAkun = dataUsers.length;
+      // Gunakan Helper baru untuk mencetak Accordion Tanggal
+      const htmlTamu = buildAccordionList(dataTamu, 'tamu');
+      const htmlReg = buildAccordionList(dataUsers, 'akun');
 
-      // 2. Olah Data 10 Tamu Terbaru
-      let htmlTamu = '';
-      if (dataTamu.length === 0) {
-         htmlTamu = '<div class="p-6 text-center text-slate-400 text-sm">Belum ada riwayat tamu.</div>';
-      } else {
-         dataTamu.slice(0, 10).forEach(item => {
-            const nama = item.Nama || item.FullName || 'Tanpa Nama';
-            const umur = item.Umur || item.Age ? `${item.Umur || item.Age} thn` : '-';
-            const waktu = item.Timestamp || item.Waktu || 'Baru saja';
-            htmlTamu += `
-               <div class="p-3 hover:bg-slate-50 transition-colors flex justify-between items-center gap-3">
-                  <div class="flex items-center gap-3 overflow-hidden">
-                     <div class="h-10 w-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-sm shrink-0">${nama.charAt(0).toUpperCase()}</div>
-                     <div class="truncate">
-                        <h4 class="font-bold text-slate-800 text-sm truncate">${escapeHtml(nama)}</h4>
-                        <p class="text-xs text-slate-500 truncate">${escapeHtml(umur)}</p>
-                     </div>
-                  </div>
-                  <div class="text-[10px] text-slate-400 text-right shrink-0 whitespace-nowrap bg-slate-100 px-2 py-1 rounded-md">${escapeHtml(waktu)}</div>
-               </div>
-            `;
-         });
-      }
-
-      // 3. Olah Data 10 Akun Terbaru
-      let htmlReg = '';
-      if (dataUsers.length === 0) {
-         htmlReg = '<div class="p-6 text-center text-slate-400 text-sm">Belum ada akun terdaftar.</div>';
-      } else {
-         dataUsers.slice(0, 10).forEach(item => {
-            const nama = item.Nama || item.FullName || item.Username || 'User Anonim';
-            const umur = item.Umur || item.Age ? `${item.Umur || item.Age} thn` : '';
-            const gender = item.Gender || item.Jenis_Kelamin || '';
-            const negara = item.Negara || item.Country || item.Location || '';
-            const waktu = item.Timestamp || item.Waktu || 'Baru saja';
-            
-            const detail = [umur, gender, negara].filter(Boolean).join(' • ');
-
-            htmlReg += `
-               <div class="p-3 hover:bg-slate-50 transition-colors flex justify-between items-center gap-3">
-                  <div class="flex items-center gap-3 overflow-hidden">
-                     <div class="h-10 w-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm shrink-0">${nama.charAt(0).toUpperCase()}</div>
-                     <div class="truncate">
-                        <h4 class="font-bold text-slate-800 text-sm truncate">${escapeHtml(nama)}</h4>
-                        <p class="text-xs text-slate-500 truncate">${escapeHtml(detail) || 'Pengguna Baru'}</p>
-                     </div>
-                  </div>
-                  <div class="text-[10px] text-slate-400 text-right shrink-0 whitespace-nowrap bg-slate-100 px-2 py-1 rounded-md">${escapeHtml(waktu)}</div>
-               </div>
-            `;
-         });
-      }
-
-      // 4. Cetak Tampilan Dashboard
       container.innerHTML =
         `<div class="space-y-6 animate-fade-in">
-          
           <div class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-6 md:p-8 text-white shadow-lg relative overflow-hidden">
             <div class="absolute -top-24 -right-24 w-48 h-48 bg-white/10 rounded-full blur-2xl"></div>
             <h2 class="text-2xl font-black mb-2 relative z-10">Halo, ${escapeHtml(name)}!</h2>
-            <p class="text-blue-100 text-sm max-w-md relative z-10">Selamat datang di Dashboard Komunitas. Pantau statistik dan aktivitas pengguna terbaru secara real-time.</p>
+            <p class="text-blue-100 text-sm max-w-md relative z-10">Selamat datang di Dashboard Komunitas.</p>
           </div>
-
           <div class="grid grid-cols-2 gap-4">
-            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex items-center gap-4">
-               <div class="h-12 w-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl shrink-0"><i class="fas fa-book"></i></div>
-               <div>
-                  <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-0.5">Buku Tamu</p>
-                  <h4 class="text-2xl font-black text-slate-900">${totalTamu}</h4>
-               </div>
-            </div>
-            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex items-center gap-4">
-               <div class="h-12 w-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl shrink-0"><i class="fas fa-users"></i></div>
-               <div>
-                  <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-0.5">Akun Terdaftar</p>
-                  <h4 class="text-2xl font-black text-slate-900">${totalAkun}</h4>
-               </div>
-            </div>
+            <div class="bg-white rounded-2xl p-5 border shadow-sm flex items-center gap-4"><div class="h-12 w-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl shrink-0"><i class="fas fa-book"></i></div><div><p class="text-xs font-bold text-slate-500 uppercase">Buku Tamu</p><h4 class="text-2xl font-black">${dataTamu.length}</h4></div></div>
+            <div class="bg-white rounded-2xl p-5 border shadow-sm flex items-center gap-4"><div class="h-12 w-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl shrink-0"><i class="fas fa-users"></i></div><div><p class="text-xs font-bold text-slate-500 uppercase">Akun Terdaftar</p><h4 class="text-2xl font-black">${dataUsers.length}</h4></div></div>
           </div>
-
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[400px]">
-               <div class="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
-                  <h3 class="font-extrabold text-slate-800 flex items-center gap-2"><i class="fas fa-history text-emerald-500"></i> Riwayat Tamu Terbaru</h3>
-               </div>
-               <div class="p-2 overflow-y-auto flex-1 divide-y divide-slate-100">
-                  ${htmlTamu}
-               </div>
-            </div>
-
-            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[400px]">
-               <div class="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
-                  <h3 class="font-extrabold text-slate-800 flex items-center gap-2"><i class="fas fa-user-plus text-blue-500"></i> Registrasi Terbaru</h3>
-               </div>
-               <div class="p-2 overflow-y-auto flex-1 divide-y divide-slate-100">
-                  ${htmlReg}
-               </div>
-            </div>
+            <div class="bg-white rounded-2xl border shadow-sm overflow-hidden flex flex-col h-[450px]"><div class="p-4 border-b bg-slate-50 shrink-0"><h3 class="font-extrabold flex items-center gap-2"><i class="fas fa-history text-emerald-500"></i> Riwayat Tamu</h3></div><div class="overflow-y-auto flex-1">${htmlTamu}</div></div>
+            <div class="bg-white rounded-2xl border shadow-sm overflow-hidden flex flex-col h-[450px]"><div class="p-4 border-b bg-slate-50 shrink-0"><h3 class="font-extrabold flex items-center gap-2"><i class="fas fa-user-plus text-blue-500"></i> Registrasi Akun</h3></div><div class="overflow-y-auto flex-1">${htmlReg}</div></div>
           </div>
-
         </div>`;
 
     } else if (tab === 'profile') {
@@ -2212,7 +2127,7 @@ async function switchVisitorTab(tab) {
     container.innerHTML =
       '<div class="bg-white p-8 rounded-3xl border shadow-sm text-sm text-rose-600">Gagal memuat data visitor.</div>';
   }
-}
+} // <--- TAMBAHKAN SATU KURUNG TUTUP INI DI SINI
 
 /* ================================================================
    SAVE VISITOR PROFILE
@@ -3744,186 +3659,42 @@ function prefetchEssentialSheets() {
 }
 
 /* ================================================================
-   PUBLIC HOME (DENGAN STATISTIK KOMUNITAS)
+   PUBLIC HOME (DENGAN STATISTIK KOMUNITAS BERDASARKAN TANGGAL)
    ================================================================ */
 async function renderPublicHome(r) {
   const e = document.getElementById('public-home-content');
   if (!e) return;
 
   const x = r.find(a => a.Status === 'publish' || a.Status === 'active') || r[0];
-  if (!x) {
-    renderEmpty(e, 'Belum ada konten Home. Tambahkan melalui Dashboard Admin.');
-    return;
-  }
+  if (!x) { renderEmpty(e, 'Belum ada konten Home.'); return; }
 
   const img = safeUrl(x.HeroImage_URL);
-
-  // 1. Desain Hero 
-  const htmlHero = `
-    <div class="bg-white rounded-3xl p-8 md:p-14 shadow-sm border border-slate-200 flex flex-col md:flex-row items-center gap-10">
-      ${img ? `<img src="${img}" class="w-36 h-36 md:w-52 md:h-52 rounded-full object-cover shadow-xl border-4 border-white">` : ''}
-      <div class="text-center md:text-left flex-1">
-        <h1 class="text-3xl md:text-5xl font-black text-slate-900 leading-tight">${escapeHtml(safeText(x.Title))}</h1>
-        <p class="text-blue-600 font-bold mt-3">${escapeHtml(safeText(x.Subtitle))}</p>
-        <p class="text-slate-500 mt-4 max-w-2xl text-sm md:text-base leading-relaxed whitespace-pre-line">${escapeHtml(safeText(x.Description))}</p>
-        ${x.Action_Button ? `<button onclick="switchPublicSection('portfolio')" class="mt-7 bg-blue-600 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg">${escapeHtml(x.Action_Button)}</button>` : ''}
-      </div>
-    </div>
-  `;
-
-  // 2. Wadah Loading Statistik
-  const htmlStats = `
-    <div id="public-stats-container" class="mt-6 w-full">
-      <div class="text-center text-slate-500 text-sm py-12 bg-white rounded-3xl border border-slate-200 shadow-sm"><i class="fas fa-spinner fa-spin text-3xl mb-3 text-blue-500"></i><br>Menarik Data Komunitas Real-time...</div>
-    </div>
-  `;
-
+  const htmlHero = `<div class="bg-white rounded-3xl p-8 md:p-14 shadow-sm border border-slate-200 flex flex-col md:flex-row items-center gap-10">${img ? `<img src="${img}" class="w-36 h-36 md:w-52 md:h-52 rounded-full object-cover shadow-xl border-4 border-white">` : ''}<div class="text-center md:text-left flex-1"><h1 class="text-3xl md:text-5xl font-black text-slate-900 leading-tight">${escapeHtml(safeText(x.Title))}</h1><p class="text-blue-600 font-bold mt-3">${escapeHtml(safeText(x.Subtitle))}</p><p class="text-slate-500 mt-4 max-w-2xl text-sm md:text-base leading-relaxed whitespace-pre-line">${escapeHtml(safeText(x.Description))}</p>${x.Action_Button ? `<button onclick="switchPublicSection('portfolio')" class="mt-7 bg-blue-600 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg">${escapeHtml(x.Action_Button)}</button>` : ''}</div></div>`;
+  
   e.className = 'flex flex-col gap-6 animate-fade-in w-full';
-  e.innerHTML = htmlHero + htmlStats;
+  e.innerHTML = htmlHero + `<div id="public-stats-container" class="mt-6 w-full"><div class="text-center text-slate-500 text-sm py-12 bg-white rounded-3xl border shadow-sm"><i class="fas fa-spinner fa-spin text-3xl mb-3 text-blue-500"></i><br>Menarik Data Komunitas...</div></div>`;
 
-  // 3. Tarik Data Statistik Publik
   try {
-    const [att, usersRes] = await Promise.all([ getCachedData('Visitor_Attendance'), getCachedData('Users') ]);
+    const [att, usersRes] = await Promise.all([getCachedData('Visitor_Attendance'), getCachedData('Users')]);
     const dataTamu = (att.data || []).reverse();
     const dataUsers = (usersRes.data || []).reverse();
 
-    let htmlTamu = dataTamu.length === 0 ? '<div class="p-6 text-center text-slate-400 text-sm">Belum ada tamu.</div>' : '';
-    dataTamu.slice(0, 10).forEach(item => {
-      const nama = item.Nama || item.FullName || 'Anonim';
-      const waktu = item.Timestamp || item.Waktu || 'Baru saja';
-      htmlTamu += `
-        <div class="p-3 hover:bg-slate-50 flex items-center gap-3">
-          <div class="h-10 w-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-sm shrink-0">${nama.charAt(0).toUpperCase()}</div>
-          <div class="flex-1 truncate"><h4 class="font-bold text-slate-800 text-sm truncate">${escapeHtml(nama)}</h4></div>
-          <div class="text-[10px] text-slate-400 shrink-0 bg-slate-100 px-2 py-1 rounded-md">${escapeHtml(waktu)}</div>
-        </div>`;
-    });
-
-    let htmlReg = dataUsers.length === 0 ? '<div class="p-6 text-center text-slate-400 text-sm">Belum ada akun.</div>' : '';
-    dataUsers.slice(0, 10).forEach(item => {
-      const nama = item.Nama || item.FullName || item.Username || 'Anonim';
-      const waktu = item.Timestamp || item.Waktu || 'Baru saja';
-      htmlReg += `
-        <div class="p-3 hover:bg-slate-50 flex items-center gap-3">
-          <div class="h-10 w-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm shrink-0">${nama.charAt(0).toUpperCase()}</div>
-          <div class="flex-1 truncate"><h4 class="font-bold text-slate-800 text-sm truncate">${escapeHtml(nama)}</h4></div>
-          <div class="text-[10px] text-slate-400 shrink-0 bg-slate-100 px-2 py-1 rounded-md">${escapeHtml(waktu)}</div>
-        </div>`;
-    });
+    const htmlTamu = buildAccordionList(dataTamu, 'tamu');
+    const htmlReg = buildAccordionList(dataUsers, 'akun');
 
     document.getElementById('public-stats-container').innerHTML = `
       <div class="grid grid-cols-2 gap-4 mb-6">
-        <div class="bg-white rounded-2xl p-5 border shadow-sm flex items-center gap-4">
-           <div class="h-12 w-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl shrink-0"><i class="fas fa-book"></i></div>
-           <div><p class="text-[10px] sm:text-xs font-bold text-slate-500 uppercase">Buku Tamu</p><h4 class="text-xl sm:text-2xl font-black">${dataTamu.length}</h4></div>
-        </div>
-        <div class="bg-white rounded-2xl p-5 border shadow-sm flex items-center gap-4">
-           <div class="h-12 w-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl shrink-0"><i class="fas fa-users"></i></div>
-           <div><p class="text-[10px] sm:text-xs font-bold text-slate-500 uppercase">Akun Terdaftar</p><h4 class="text-xl sm:text-2xl font-black">${dataUsers.length}</h4></div>
-        </div>
+        <div class="bg-white rounded-2xl p-5 border shadow-sm flex items-center gap-4"><div class="h-12 w-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl shrink-0"><i class="fas fa-book"></i></div><div><p class="text-[10px] sm:text-xs font-bold text-slate-500 uppercase">Buku Tamu</p><h4 class="text-xl sm:text-2xl font-black">${dataTamu.length}</h4></div></div>
+        <div class="bg-white rounded-2xl p-5 border shadow-sm flex items-center gap-4"><div class="h-12 w-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl shrink-0"><i class="fas fa-users"></i></div><div><p class="text-[10px] sm:text-xs font-bold text-slate-500 uppercase">Akun Terdaftar</p><h4 class="text-xl sm:text-2xl font-black">${dataUsers.length}</h4></div></div>
       </div>
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="bg-white rounded-2xl border shadow-sm overflow-hidden h-[350px] flex flex-col"><div class="p-4 border-b bg-slate-50 shrink-0"><h3 class="font-extrabold flex items-center gap-2"><i class="fas fa-history text-emerald-500"></i> Riwayat Tamu</h3></div><div class="p-2 overflow-y-auto divide-y divide-slate-100">${htmlTamu}</div></div>
-        <div class="bg-white rounded-2xl border shadow-sm overflow-hidden h-[350px] flex flex-col"><div class="p-4 border-b bg-slate-50 shrink-0"><h3 class="font-extrabold flex items-center gap-2"><i class="fas fa-user-plus text-blue-500"></i> Akun Baru</h3></div><div class="p-2 overflow-y-auto divide-y divide-slate-100">${htmlReg}</div></div>
+        <div class="bg-white rounded-2xl border shadow-sm overflow-hidden h-[400px] flex flex-col"><div class="p-4 border-b bg-slate-50 shrink-0"><h3 class="font-extrabold flex items-center gap-2"><i class="fas fa-history text-emerald-500"></i> Riwayat Tamu</h3></div><div class="overflow-y-auto">${htmlTamu}</div></div>
+        <div class="bg-white rounded-2xl border shadow-sm overflow-hidden h-[400px] flex flex-col"><div class="p-4 border-b bg-slate-50 shrink-0"><h3 class="font-extrabold flex items-center gap-2"><i class="fas fa-user-plus text-blue-500"></i> Registrasi Akun</h3></div><div class="overflow-y-auto">${htmlReg}</div></div>
       </div>
     `;
   } catch (err) {
     document.getElementById('public-stats-container').innerHTML = '<div class="p-4 text-center text-rose-500 text-sm bg-rose-50 rounded-2xl">Gagal memuat data statistik.</div>';
   }
-}
-
-/* ================================================================
-   PUBLIC PROFILE
-   ================================================================ */
-function renderPublicProfile(r) {
-
-  const e =
-    document.getElementById(
-      'public-profile-content'
-    );
-
-  if (!e) return;
-
-  const x =
-    r.find(
-      a =>
-        a.Status === 'publish' ||
-        a.Status === 'active'
-    ) ||
-    r[0];
-
-  if (!x) {
-
-    renderEmpty(
-      e,
-      'Belum ada data Profil. Tambahkan melalui Dashboard Admin.'
-    );
-
-    return;
-  }
-
-  e.className =
-    'bg-white p-8 md:p-10 rounded-3xl shadow-sm border animate-fade-in';
-
-  e.innerHTML =
-    `<h2 class="text-2xl md:text-3xl font-black">
-      ${escapeHtml(
-        safeText(
-          x.FullName,
-          'Profil'
-        )
-      )}
-    </h2>
-
-    <p class="text-blue-600 font-bold mt-2">
-      ${escapeHtml(
-        safeText(
-          x.Profession
-        )
-      )}
-    </p>
-
-    <p class="text-slate-600 leading-8 mt-6 whitespace-pre-line">
-      ${escapeHtml(
-        safeText(
-          x.About,
-          'Belum ada deskripsi profil.'
-        )
-      )}
-    </p>
-
-    <div class="grid sm:grid-cols-2 gap-4 mt-8">
-
-      ${
-        [
-          ['Email', x.Email],
-          ['Phone', x.Phone],
-          ['Address', x.Address],
-          ['Profile URL', x.Profile_URL]
-        ]
-        .filter(
-          a => a[1]
-        )
-        .map(
-          a =>
-            `<div class="p-4 bg-slate-50 rounded-2xl">
-
-              <span class="text-xs text-slate-400 font-bold uppercase">
-                ${a[0]}
-              </span>
-
-              <div class="font-semibold mt-1 break-all">
-                ${escapeHtml(
-                  a[1]
-                )}
-              </div>
-
-            </div>`
-        )
-        .join('')
-      }
-
-    </div>`;
 }
 
 /* ================================================================
@@ -7830,100 +7601,123 @@ async function refreshCurrentData(isSilent = false) {
 }
 
 /* ================================================================
-   ADMIN DASHBOARD STATS (SUPER ADMIN VIEW)
+   ADMIN DASHBOARD STATS (DENGAN SISTEM ACCORDION)
    ================================================================ */
 async function renderAdminDashboardStats() {
-    activeModule = 'admin-dash'; // Reset penanda modul
-
+    activeModule = 'admin-dash'; 
     const welcomePanel = document.getElementById('welcome-panel');
     const tablePanel = document.getElementById('table-panel');
-    
-    // Ganti tampilan dari Tabel ke Dashboard
     if (tablePanel) tablePanel.classList.add('hidden');
     if (welcomePanel) {
-        // Hapus class center bawaan agar layout bisa penuh
         welcomePanel.classList.remove('hidden', 'flex-col', 'items-center', 'justify-center', 'text-center');
         welcomePanel.classList.add('block', 'w-full', 'overflow-y-auto', 'animate-fade-in');
     }
 
-    // Warnai tombol sidebar
     document.querySelectorAll('.mod-btn').forEach(b => {
         const isDash = b.dataset.mod === 'admin-dash';
-        b.classList.toggle('bg-blue-600', isDash);
-        b.classList.toggle('bg-indigo-600', isDash); // Prioritas warna indigo untuk admin
-        b.classList.toggle('text-white', isDash);
-        b.classList.toggle('shadow-md', isDash);
-        b.classList.toggle('text-slate-300', !isDash);
+        b.classList.toggle('bg-indigo-600', isDash); b.classList.toggle('text-white', isDash); b.classList.toggle('shadow-md', isDash); b.classList.toggle('text-slate-300', !isDash);
     });
 
     welcomePanel.innerHTML = '<div class="text-center py-32"><i class="fas fa-sync-alt fa-spin text-5xl text-indigo-500 mb-4"></i><p class="text-slate-500 font-bold text-lg">Mengumpulkan Analitik Sistem...</p></div>';
 
     try {
-        const [att, usersRes, logsRes] = await Promise.all([
-            getCachedData('Visitor_Attendance'),
-            getCachedData('Users'),
-            getCachedData('System_Logs')
-        ]);
-
+        const [att, usersRes, logsRes] = await Promise.all([getCachedData('Visitor_Attendance'), getCachedData('Users'), getCachedData('System_Logs')]);
         const dataTamu = (att.data || []).reverse();
         const dataUsers = (usersRes.data || []).reverse();
         const dataLogs = (logsRes.data || []).reverse();
 
-        let htmlLogs = dataLogs.length === 0 ? '<div class="p-6 text-center text-slate-400">Belum ada log sistem.</div>' : '';
-        dataLogs.slice(0, 10).forEach(item => {
-            htmlLogs += `
-               <div class="p-4 border-b border-slate-100 hover:bg-slate-50 flex justify-between gap-4">
-                  <div>
-                     <h4 class="font-bold text-slate-800 text-sm">${escapeHtml(item.Action || 'Aktivitas')}</h4>
-                     <p class="text-xs text-slate-500 mt-0.5">${escapeHtml(item.Description || '-')}</p>
-                  </div>
-                  <div class="text-[10px] font-bold text-indigo-600 whitespace-nowrap">${escapeHtml(item.Timestamp || '')}</div>
-               </div>`;
-        });
+        const htmlLogs = buildAccordionList(dataLogs, 'log');
 
         welcomePanel.innerHTML = `
           <div class="p-8 max-w-7xl mx-auto space-y-6">
              <div class="bg-gradient-to-r from-slate-800 to-slate-900 rounded-3xl p-8 text-white shadow-xl flex justify-between items-center">
-                <div>
-                   <h2 class="text-3xl font-black mb-2">SuperAdmin Dashboard</h2>
-                   <p class="text-slate-400">Ringkasan aktivitas seluruh sistem secara real-time.</p>
-                </div>
+                <div><h2 class="text-3xl font-black mb-2">SuperAdmin Dashboard</h2><p class="text-slate-400">Ringkasan aktivitas seluruh sistem secara real-time.</p></div>
                 <div class="h-16 w-16 bg-white/10 rounded-2xl flex items-center justify-center text-3xl"><i class="fas fa-shield-halved text-emerald-400"></i></div>
              </div>
-
              <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="bg-white rounded-2xl p-6 border shadow-sm">
-                   <div class="flex justify-between items-start mb-4">
-                      <div class="p-3 bg-emerald-50 text-emerald-600 rounded-xl"><i class="fas fa-book-open text-xl"></i></div>
-                   </div>
-                   <h4 class="text-3xl font-black text-slate-900">${dataTamu.length}</h4>
-                   <p class="text-sm font-bold text-slate-500 mt-1">Total Buku Tamu</p>
-                </div>
-                <div class="bg-white rounded-2xl p-6 border shadow-sm">
-                   <div class="flex justify-between items-start mb-4">
-                      <div class="p-3 bg-blue-50 text-blue-600 rounded-xl"><i class="fas fa-users text-xl"></i></div>
-                   </div>
-                   <h4 class="text-3xl font-black text-slate-900">${dataUsers.length}</h4>
-                   <p class="text-sm font-bold text-slate-500 mt-1">Total Akun Pengguna</p>
-                </div>
-                <div class="bg-white rounded-2xl p-6 border shadow-sm">
-                   <div class="flex justify-between items-start mb-4">
-                      <div class="p-3 bg-indigo-50 text-indigo-600 rounded-xl"><i class="fas fa-server text-xl"></i></div>
-                   </div>
-                   <h4 class="text-3xl font-black text-slate-900">${dataLogs.length}</h4>
-                   <p class="text-sm font-bold text-slate-500 mt-1">Total Log Sistem</p>
-                </div>
+                <div class="bg-white rounded-2xl p-6 border shadow-sm"><div class="p-3 bg-emerald-50 text-emerald-600 rounded-xl inline-block mb-4"><i class="fas fa-book-open text-xl"></i></div><h4 class="text-3xl font-black text-slate-900">${dataTamu.length}</h4><p class="text-sm font-bold text-slate-500 mt-1">Total Buku Tamu</p></div>
+                <div class="bg-white rounded-2xl p-6 border shadow-sm"><div class="p-3 bg-blue-50 text-blue-600 rounded-xl inline-block mb-4"><i class="fas fa-users text-xl"></i></div><h4 class="text-3xl font-black text-slate-900">${dataUsers.length}</h4><p class="text-sm font-bold text-slate-500 mt-1">Total Akun Pengguna</p></div>
+                <div class="bg-white rounded-2xl p-6 border shadow-sm"><div class="p-3 bg-indigo-50 text-indigo-600 rounded-xl inline-block mb-4"><i class="fas fa-server text-xl"></i></div><h4 class="text-3xl font-black text-slate-900">${dataLogs.length}</h4><p class="text-sm font-bold text-slate-500 mt-1">Total Log Sistem</p></div>
              </div>
+             <div class="bg-white rounded-2xl border shadow-sm overflow-hidden h-[500px] flex flex-col mt-6">
+                <div class="p-5 bg-slate-50 border-b shrink-0"><h3 class="font-extrabold text-slate-800"><i class="fas fa-satellite-dish text-indigo-500 mr-2"></i> Seluruh Log Aktivitas Sistem</h3></div>
+                <div class="overflow-y-auto">${htmlLogs}</div>
+             </div>
+          </div>`;
+    } catch (err) { welcomePanel.innerHTML = '<div class="p-8 text-center text-rose-500">Gagal memuat Dashboard Admin.</div>'; }
 
-             <div class="bg-white rounded-2xl border shadow-sm overflow-hidden mt-6">
-                <div class="p-5 bg-slate-50 border-b flex justify-between items-center">
-                   <h3 class="font-extrabold text-slate-800"><i class="fas fa-satellite-dish text-indigo-500 mr-2"></i> Log Aktivitas Sistem (Terbaru)</h3>
-                </div>
-                <div class="divide-y divide-slate-100">${htmlLogs}</div>
-             </div>
-          </div>
-        `;
-    } catch (err) {
-        welcomePanel.innerHTML = '<div class="p-8 text-center text-rose-500">Gagal memuat Dashboard Admin.</div>';
-    }
+  }
+
+  /* ================================================================
+   HELPER STATISTIK KOMUNITAS (PENGELOMPOKAN TANGGAL OTOMATIS)
+   ================================================================ */
+function getWaktu(item) {
+   return item.Timestamp || item.Waktu || item.Tanggal || item.Date || item.Created_At || item.WAKTU || item.TANGGAL || 'Tanpa Tanggal';
 }
+
+function buildAccordionList(dataArray, type) {
+   if (!dataArray || dataArray.length === 0) return '<div class="p-6 text-center text-slate-400 text-sm">Belum ada data.</div>';
+   
+   const grouped = {};
+   dataArray.forEach(item => {
+       const rawWaktu = getWaktu(item);
+       let tgl = 'Tanpa Tanggal';
+       if (rawWaktu !== 'Tanpa Tanggal') {
+           tgl = String(rawWaktu).split(' ')[0].split(',')[0].split('T')[0]; 
+       }
+       if (!grouped[tgl]) grouped[tgl] = [];
+       grouped[tgl].push({...item, rawWaktu});
+   });
+
+   let html = '';
+   Object.keys(grouped).forEach((date, index) => {
+       const isFirst = index === 0; 
+       const accId = `acc-${type}-${index}-${Math.floor(Math.random() * 1000)}`;
+       const colorTeks = type === 'tamu' ? 'text-emerald-600' : (type === 'log' ? 'text-indigo-600' : 'text-blue-600');
+       const colorBg = type === 'tamu' ? 'bg-emerald-100 text-emerald-700' : (type === 'log' ? 'bg-indigo-100 text-indigo-700' : 'bg-blue-100 text-blue-700');
+
+       html += `
+       <div class="border-b border-slate-200 last:border-0">
+           <button onclick="document.getElementById('${accId}').classList.toggle('hidden')" class="w-full bg-slate-50/80 p-3.5 flex justify-between items-center hover:bg-slate-100 transition-colors sticky top-0 z-10 backdrop-blur-md">
+               <span class="text-xs font-black text-slate-700 flex items-center gap-2"><i class="fas fa-calendar-day ${colorTeks}"></i> ${escapeHtml(date)}</span>
+               <span class="${colorBg} px-2 py-0.5 rounded-full text-[10px] font-black">${grouped[date].length} Data</span>
+           </button>
+           <div id="${accId}" class="${isFirst ? '' : 'hidden'} divide-y divide-slate-50">
+       `;
+
+       grouped[date].forEach(item => {
+           let nama = item.Nama || item.FullName || item.Username || 'Anonim';
+           let detail = '';
+           
+           if (type === 'tamu') {
+               detail = item.Umur || item.Age ? `${item.Umur || item.Age} thn` : 'Pengunjung';
+           } else if (type === 'akun') {
+               const umur = item.Umur || item.Age ? `${item.Umur || item.Age} thn` : '';
+               const gender = item.Gender || item.Jenis_Kelamin || '';
+               const negara = item.Negara || item.Country || item.Location || '';
+               detail = [umur, gender, negara].filter(Boolean).join(' • ') || 'Pengguna Baru';
+           } else if (type === 'log') {
+               nama = item.Action || 'Aktivitas';
+               detail = item.Description || '-';
+           }
+
+           const colorIkon = type === 'tamu' ? 'bg-emerald-100 text-emerald-600' : (type === 'log' ? 'bg-indigo-100 text-indigo-600' : 'bg-blue-100 text-blue-600');
+           const jam = String(item.rawWaktu).replace(date, '').trim() || String(item.rawWaktu); 
+
+           html += `
+               <div class="p-3 hover:bg-blue-50/50 transition-colors flex justify-between items-center gap-3 pl-6">
+                   <div class="flex items-center gap-3 overflow-hidden">
+                       <div class="h-8 w-8 rounded-full ${colorIkon} flex items-center justify-center font-bold text-xs shrink-0">${nama.charAt(0).toUpperCase()}</div>
+                       <div class="truncate">
+                           <h4 class="font-bold text-slate-800 text-xs truncate">${escapeHtml(nama)}</h4>
+                           <p class="text-[10px] text-slate-500 truncate">${escapeHtml(detail)}</p>
+                       </div>
+                   </div>
+                   <div class="text-[9px] font-bold text-slate-500 text-right shrink-0 whitespace-nowrap bg-white border border-slate-200 px-1.5 py-0.5 rounded shadow-sm">${escapeHtml(jam)}</div>
+               </div>
+           `;
+       });
+       html += `</div></div>`;
+   });
+   return html;
+  }
