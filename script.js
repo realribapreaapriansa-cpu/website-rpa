@@ -1369,7 +1369,7 @@ async function submitAttendance() {
 /* ================================================================
    VISITOR DASHBOARD TABS
    ================================================================ */
-async function switchVisitorTab(tab) {
+async function switchVisitorTab(tab, isSilent = false) {
 
   document.querySelectorAll(
     '.v-btn'
@@ -1425,8 +1425,11 @@ async function switchVisitorTab(tab) {
         )
       : '';
 
-  container.innerHTML =
-    '<div class="bg-white p-8 rounded-3xl border shadow-sm text-sm text-slate-500 animate-fade-in"><i class="fas fa-spinner fa-spin mr-2"></i> Memuat data...</div>';
+  // Tampilkan tulisan loading HANYA saat klik manual (bukan refresh otomatis background)
+  if (!isSilent) {
+    container.innerHTML =
+      '<div class="bg-white p-8 rounded-3xl border shadow-sm text-sm text-slate-500 animate-fade-in"><i class="fas fa-spinner fa-spin mr-2 text-blue-600"></i> Memuat data...</div>';
+  }
 
   try {
 
@@ -7543,26 +7546,37 @@ window.addEventListener('DOMContentLoaded', () => {
     ptrText = document.getElementById('ptr-text');
 });
 
-// 1. Fungsi Tombol Refresh Manual (Pengganti Tarik Layar)
-async function refreshManual(btnElement) {
-    // Putar ikon berputar saat diklik
-    const icon = btnElement.querySelector('.fa-sync-alt');
-    if (icon) icon.classList.add('fa-spin');
-    
-    // Panggil fungsi mesin refresh bawaan Anda
+/* ================================================================
+   PULL-TO-REFRESH & AUTO REAL-TIME SYNC (SILENT & ANIMATED MANUAL)
+   ================================================================ */
+
+// 1. Fungsi Refresh Manual dengan Animasi Putar Ikon di Seluruh Fitur
+async function refreshManual(btnElement = null) {
+  let icon = null;
+  
+  if (btnElement) {
+    icon = btnElement.querySelector('.fa-sync-alt, .fa-sync, .fa-rotate, .fa-arrows-rotate, i');
+  } else {
+    // Jika dipanggil dari event tombol global, cari ikon aktif yang diklik
+    const activeBtn = document.querySelector('button[onclick*="refreshManual"]:not([disabled])');
+    if (activeBtn) icon = activeBtn.querySelector('i');
+  }
+
+  if (icon) icon.classList.add('fa-spin');
+
+  try {
     await refreshCurrentData(false);
-    
-    // Matikan putaran ikon setelah selesai refresh
+  } finally {
     if (icon) icon.classList.remove('fa-spin');
+  }
 }
 
-// 2. Logika Pembaruan Otomatis (Real-time Sync) Setiap 60 Detik
+// 2. Refresh Otomatis Setiap 60 Detik (Berjalan 100% Silent Tanpa Gangguan Visual)
 setInterval(() => {
-    // Mode "Silent" (true) agar tidak muncul notifikasi toast terus-menerus
     refreshCurrentData(true); 
 }, 60000); 
 
-// 3. Mesin Utama Refresh Data
+// 3. Mesin Pemroses Sinkronisasi Data
 async function refreshCurrentData(isSilent = false) {
     if (!isSilent) showToast("Mensinkronkan data terbaru...", "info");
     
@@ -7572,31 +7586,47 @@ async function refreshCurrentData(isSilent = false) {
         const vPublic = document.getElementById('view-public');
         
         if (vAdmin && !vAdmin.classList.contains('hidden')) {
-            // Jika sedang di Dashboard Admin
-            if (activeModule) {
+            // Dashboard Admin
+            if (activeModule === 'admin-dash') {
+                await renderAdminDashboardStats();
+            } else if (activeModule) {
                 invalidateCache(activeModule);
                 await loadAdminModule(activeModule, true);
             }
         } else if (vVisitor && !vVisitor.classList.contains('hidden')) {
-            // Jika sedang di Dashboard Visitor
+            // Dashboard Visitor & Notifikasi
             const activeBtn = document.querySelector('.v-btn.bg-blue-50');
-            if (activeBtn) {
-                const tab = activeBtn.getAttribute('data-vtab');
-                memoryCache = {}; // Kosongkan cache
-                await switchVisitorTab(tab);
+            const tab = activeBtn ? activeBtn.getAttribute('data-vtab') : 'dash';
+            
+            // Invalidate cache sesuai tab aktif agar data selalu terbarui dari server
+            if (tab === 'dash') {
+                invalidateCache('Visitor_Attendance');
+                invalidateCache('Users');
+            } else if (tab === 'notif' || tab === 'message') {
+                invalidateCache('Notifications');
+            } else if (tab === 'activity') {
+                invalidateCache('System_Logs');
+            } else if (tab === 'download' || tab === 'documents') {
+                invalidateCache('Documents');
+            } else if (tab === 'bookmark' || tab === 'favorite') {
+                invalidateCache('Bookmarks');
             }
+
+            await switchVisitorTab(tab, isSilent);
         } else if (vPublic && !vPublic.classList.contains('hidden')) {
-            // Jika sedang di Halaman Publik
+            // Dashboard Publik
             const activeBtn = document.querySelector('.nav-btn.active');
             let sec = 'home';
             if (activeBtn) sec = activeBtn.getAttribute('data-sec');
-            memoryCache = {}; // Kosongkan cache
             await renderPublicContent(true, sec);
         }
         
         if (!isSilent) showToast("Data berhasil diperbarui!", "success");
     } catch (err) {
-        if (!isSilent) showToast("Gagal memuat ulang data. Cek koneksi Anda.", "error");
+        console.warn("Background sync error (dimatikan agar tidak mengganggu):", err);
+        if (!isSilent) {
+            showToast("Gagal memuat ulang data. Cek koneksi Anda.", "error");
+        }
     }
 }
 
