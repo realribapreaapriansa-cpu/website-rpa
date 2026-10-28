@@ -1428,7 +1428,7 @@ async function switchVisitorTab(tab, isSilent = false) {
   // Tampilkan tulisan loading HANYA saat klik manual (bukan refresh otomatis background)
   if (!isSilent) {
     container.innerHTML =
-      '<div class="bg-white p-8 rounded-3xl border shadow-sm text-sm text-slate-500 animate-fade-in"><i class="fas fa-spinner fa-spin mr-2 text-blue-600"></i> Memuat data...</div>';
+    '<div class="bg-white p-16 rounded-3xl border shadow-sm flex flex-col items-center justify-center text-slate-400 animate-pulse min-h-[400px]"><i class="fas fa-spinner fa-spin text-6xl text-blue-600 mb-6"></i><p class="font-black text-2xl tracking-wide text-slate-600">Memuat Data Terbaru...</p></div>';
   }
 
   try {
@@ -7530,54 +7530,48 @@ function closeHelpCenter() {
 }
 
 /* ================================================================
-   PULL-TO-REFRESH & AUTO REAL-TIME SYNC
+   MESIN REFRESH & SINKRONISASI (SMART LOADING & ANIMASI)
    ================================================================ */
-let pStart = { x: 0, y: 0 };
-let pCurrent = { x: 0, y: 0 };
-let isPulling = false;
-let ptrElement = null;
-let ptrIcon = null;
-let ptrText = null;
-const PTR_THRESHOLD = 80;
-
-window.addEventListener('DOMContentLoaded', () => {
-    ptrElement = document.getElementById('ptr-indicator');
-    ptrIcon = document.getElementById('ptr-icon');
-    ptrText = document.getElementById('ptr-text');
-});
-
-/* ================================================================
-   PULL-TO-REFRESH & AUTO REAL-TIME SYNC (SILENT & ANIMATED MANUAL)
-   ================================================================ */
-
-// 1. Fungsi Refresh Manual dengan Animasi Putar Ikon di Seluruh Fitur
-async function refreshManual(btnElement = null) {
-  let icon = null;
-  
-  if (btnElement) {
-    icon = btnElement.querySelector('.fa-sync-alt, .fa-sync, .fa-rotate, .fa-arrows-rotate, i');
-  } else {
-    // Jika dipanggil dari event tombol global, cari ikon aktif yang diklik
-    const activeBtn = document.querySelector('button[onclick*="refreshManual"]:not([disabled])');
-    if (activeBtn) icon = activeBtn.querySelector('i');
-  }
-
-  if (icon) icon.classList.add('fa-spin');
-
-  try {
-    await refreshCurrentData(false);
-  } finally {
-    if (icon) icon.classList.remove('fa-spin');
-  }
+async function refreshManual() {
+    // 1. Deteksi otomatis tombol yang diklik tanpa perlu mengedit HTML
+    let icon = null;
+    if (window.event && window.event.target) {
+        let el = window.event.target;
+        if (el.tagName !== 'BUTTON' && el.closest('button')) el = el.closest('button');
+        icon = el.tagName === 'I' ? el : el.querySelector('.fa-sync-alt, .fa-sync, .fa-rotate');
+    }
+    
+    // 2. Putar ikon saat diklik
+    if (icon) {
+        icon.classList.add('fa-spin');
+    } else {
+        document.querySelectorAll('.fa-sync-alt, .fa-sync, .fa-rotate').forEach(i => i.classList.add('fa-spin'));
+    }
+    
+    try {
+        await refreshCurrentData(false); // False = Refresh Manual (Tampilkan Notifikasi)
+    } finally {
+        // 3. Matikan putaran ikon saat selesai
+        if (icon) {
+            icon.classList.remove('fa-spin');
+        } else {
+            document.querySelectorAll('.fa-sync-alt, .fa-sync, .fa-rotate').forEach(i => i.classList.remove('fa-spin'));
+        }
+    }
 }
 
-// 2. Refresh Otomatis Setiap 60 Detik (Berjalan 100% Silent Tanpa Gangguan Visual)
+// 4. Refresh Otomatis setiap 60 Detik (100% DI LATAR BELAKANG / TANPA GANGGUAN NOTIFIKASI)
 setInterval(() => {
     refreshCurrentData(true); 
 }, 60000); 
 
-// 3. Mesin Pemroses Sinkronisasi Data
 async function refreshCurrentData(isSilent = false) {
+    // 5. Cek koneksi internet sungguhan (Hanya notif jika diklik manual)
+    if (!navigator.onLine && !isSilent) {
+        showToast("Gagal memuat data. Silahkan cek internet Anda.", "error");
+        return;
+    }
+
     if (!isSilent) showToast("Mensinkronkan data terbaru...", "info");
     
     try {
@@ -7585,47 +7579,68 @@ async function refreshCurrentData(isSilent = false) {
         const vVisitor = document.getElementById('view-visitor');
         const vPublic = document.getElementById('view-public');
         
+        // A. EFEK KOSONG & LOADING DI DASHBOARD ADMIN
         if (vAdmin && !vAdmin.classList.contains('hidden')) {
-            // Dashboard Admin
+            if (!isSilent) {
+                const welcome = document.getElementById('welcome-panel');
+                const tbody = document.getElementById('admin-tbody');
+                if (welcome && !welcome.classList.contains('hidden')) {
+                    welcome.innerHTML = '<div class="flex flex-col items-center justify-center py-40 text-slate-400 animate-pulse"><i class="fas fa-spinner fa-spin text-7xl text-indigo-500 mb-6"></i><p class="font-black text-2xl tracking-wide text-slate-600">Memuat Data Terbaru...</p></div>';
+                }
+                if (tbody) {
+                    tbody.innerHTML = '<tr><td colspan="10" class="text-center py-20 animate-pulse"><i class="fas fa-spinner fa-spin text-5xl text-blue-500 mb-4"></i><br><span class="font-black text-lg text-slate-500">Memuat Data Terbaru...</span></td></tr>';
+                }
+            }
+
             if (activeModule === 'admin-dash') {
+                invalidateCache('Visitor_Attendance'); invalidateCache('Users'); invalidateCache('System_Logs');
                 await renderAdminDashboardStats();
             } else if (activeModule) {
                 invalidateCache(activeModule);
                 await loadAdminModule(activeModule, true);
             }
-        } else if (vVisitor && !vVisitor.classList.contains('hidden')) {
-            // Dashboard Visitor & Notifikasi
+        } 
+        
+        // B. EFEK KOSONG & LOADING DI VISITOR
+        else if (vVisitor && !vVisitor.classList.contains('hidden')) {
             const activeBtn = document.querySelector('.v-btn.bg-blue-50');
             const tab = activeBtn ? activeBtn.getAttribute('data-vtab') : 'dash';
             
-            // Invalidate cache sesuai tab aktif agar data selalu terbarui dari server
-            if (tab === 'dash') {
-                invalidateCache('Visitor_Attendance');
-                invalidateCache('Users');
-            } else if (tab === 'notif' || tab === 'message') {
-                invalidateCache('Notifications');
-            } else if (tab === 'activity') {
-                invalidateCache('System_Logs');
-            } else if (tab === 'download' || tab === 'documents') {
-                invalidateCache('Documents');
-            } else if (tab === 'bookmark' || tab === 'favorite') {
-                invalidateCache('Bookmarks');
-            }
+            if (tab === 'dash') { invalidateCache('Visitor_Attendance'); invalidateCache('Users'); }
+            else if (tab === 'notif' || tab === 'message') { invalidateCache('Notifications'); }
+            else if (tab === 'activity') { invalidateCache('System_Logs'); }
+            else if (tab === 'download' || tab === 'documents') { invalidateCache('Documents'); }
+            else if (tab === 'bookmark' || tab === 'favorite') { invalidateCache('Bookmarks'); }
 
-            await switchVisitorTab(tab, isSilent);
-        } else if (vPublic && !vPublic.classList.contains('hidden')) {
-            // Dashboard Publik
+            await switchVisitorTab(tab);
+        } 
+        
+        // C. EFEK KOSONG & LOADING DI HALAMAN PUBLIK
+        else if (vPublic && !vPublic.classList.contains('hidden')) {
             const activeBtn = document.querySelector('.nav-btn.active');
             let sec = 'home';
             if (activeBtn) sec = activeBtn.getAttribute('data-sec');
+            
+            if (!isSilent) {
+                const el = document.getElementById(`public-${sec}-content`) || document.getElementById('public-home-content');
+                if (el) {
+                    el.innerHTML = '<div class="w-full py-32 flex flex-col items-center justify-center text-slate-400 animate-pulse bg-white rounded-3xl border shadow-sm"><i class="fas fa-spinner fa-spin text-6xl text-blue-500 mb-6"></i><p class="font-black text-2xl tracking-wide text-slate-600">Memuat Data Terbaru...</p></div>';
+                }
+            }
+
+            const sheetMap = { home: 'Home', profil: 'Profile', profile: 'Profile', portfolio: 'Portfolio', career: 'Career_Timeline', gallery: 'Gallery', blog: 'Blog', documents: 'Documents', contact: 'Contact' };
+            invalidateCache(sheetMap[sec] || 'Home');
+            
             await renderPublicContent(true, sec);
         }
         
         if (!isSilent) showToast("Data berhasil diperbarui!", "success");
+
     } catch (err) {
-        console.warn("Background sync error (dimatikan agar tidak mengganggu):", err);
+        // Hanya muncul notifikasi error BILA diklik secara manual.
+        // Jika gagal saat latar belakang (otomatis), sistem akan diam saja tanpa mengganggu Anda.
         if (!isSilent) {
-            showToast("Gagal memuat ulang data. Cek koneksi Anda.", "error");
+            showToast("Gagal memuat data. Silahkan cek internet Anda.", "error");
         }
     }
 }
