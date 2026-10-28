@@ -3744,93 +3744,134 @@ function prefetchEssentialSheets() {
 }
 
 /* ================================================================
-   PUBLIC HOME
+   PUBLIC HOME (DENGAN STATISTIK KOMUNITAS)
    ================================================================ */
-function renderPublicHome(r) {
-
-  const e =
-    document.getElementById(
-      'public-home-content'
-    );
-
+async function renderPublicHome(r) {
+  const e = document.getElementById('public-home-content');
   if (!e) return;
 
-  const x =
-    r.find(
-      a =>
-        a.Status === 'publish' ||
-        a.Status === 'active'
-    ) ||
-    r[0];
-
+  const x = r.find(a => a.Status === 'publish' || a.Status === 'active') || r[0];
   if (!x) {
-
-    renderEmpty(
-      e,
-      'Belum ada konten Home. Tambahkan melalui Dashboard Admin.'
-    );
-
+    renderEmpty(e, 'Belum ada konten Home. Tambahkan melalui Dashboard Admin.');
     return;
   }
 
-  const img =
-    safeUrl(
-      x.HeroImage_URL
-    );
+  const img = safeUrl(x.HeroImage_URL);
 
-  e.className =
-    'bg-white rounded-3xl p-8 md:p-14 shadow-sm border border-slate-200 flex flex-col md:flex-row items-center gap-10 animate-fade-in';
+  // 1. Desain Hero Bawaan (Atas)
+  const htmlHero = `
+    <div class="bg-white rounded-3xl p-8 md:p-14 shadow-sm border border-slate-200 flex flex-col md:flex-row items-center gap-10">
+      ${img ? `<img src="${img}" class="w-36 h-36 md:w-52 md:h-52 rounded-full object-cover shadow-xl border-4 border-white" alt="">` : ''}
+      <div class="text-center md:text-left flex-1">
+        <h1 class="text-3xl md:text-5xl font-black text-slate-900 leading-tight">${escapeHtml(safeText(x.Title))}</h1>
+        <p class="text-blue-600 font-bold mt-3">${escapeHtml(safeText(x.Subtitle))}</p>
+        <p class="text-slate-500 mt-4 max-w-2xl text-sm md:text-base leading-relaxed whitespace-pre-line">${escapeHtml(safeText(x.Description))}</p>
+        ${x.Action_Button ? `<button onclick="switchPublicSection('portfolio')" class="mt-7 bg-blue-600 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg">${escapeHtml(x.Action_Button)}</button>` : ''}
+      </div>
+    </div>
+  `;
 
-  e.innerHTML =
-    `${img
-      ? `<img
-          src="${img}"
-          class="w-36 h-36 md:w-52 md:h-52 rounded-full object-cover shadow-xl border-4 border-white"
-          alt=""
-        >`
-      : ''
-    }
+  // 2. Tempat Loading Statistik (Bawah)
+  const htmlStats = `
+    <div id="public-stats-container" class="mt-6 w-full">
+      <div class="text-center text-slate-500 text-sm py-12 bg-white rounded-3xl border border-slate-200 shadow-sm"><i class="fas fa-spinner fa-spin text-3xl mb-3 text-blue-500"></i><br>Menarik Data Komunitas Real-time...</div>
+    </div>
+  `;
 
-    <div class="text-center md:text-left flex-1">
+  // Bungkus Hero dan Wadah Statistik ke dalam elemen utama
+  e.className = 'flex flex-col gap-6 animate-fade-in w-full';
+  e.innerHTML = htmlHero + htmlStats;
 
-      <h1 class="text-3xl md:text-5xl font-black text-slate-900 leading-tight">
-        ${escapeHtml(
-          safeText(
-            x.Title
-          )
-        )}
-      </h1>
+  // 3. Tarik dan Cetak Data Statistik secara Asinkron
+  try {
+    const [att, usersRes] = await Promise.all([
+      getCachedData('Visitor_Attendance'),
+      getCachedData('Users')
+    ]);
 
-      <p class="text-blue-600 font-bold mt-3">
-        ${escapeHtml(
-          safeText(
-            x.Subtitle
-          )
-        )}
-      </p>
+    const dataTamu = (att.data || []).reverse();
+    const dataUsers = (usersRes.data || []).reverse();
 
-      <p class="text-slate-500 mt-4 max-w-2xl text-sm md:text-base leading-relaxed whitespace-pre-line">
-        ${escapeHtml(
-          safeText(
-            x.Description
-          )
-        )}
-      </p>
+    const totalTamu = dataTamu.length;
+    const totalAkun = dataUsers.length;
 
-      ${
-        x.Action_Button
-          ? `<button
-              onclick="switchPublicSection('portfolio')"
-              class="mt-7 bg-blue-600 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg"
-            >
-              ${escapeHtml(
-                x.Action_Button
-              )}
-            </button>`
-          : ''
-      }
+    let htmlTamu = dataTamu.length === 0 ? '<div class="p-6 text-center text-slate-400 text-sm">Belum ada riwayat tamu.</div>' : '';
+    dataTamu.slice(0, 10).forEach(item => {
+      const nama = item.Nama || item.FullName || 'Tanpa Nama';
+      const umur = item.Umur || item.Age ? `${item.Umur || item.Age} thn` : '-';
+      const waktu = item.Timestamp || item.Waktu || 'Baru saja';
+      htmlTamu += `
+        <div class="p-3 hover:bg-slate-50 transition-colors flex justify-between items-center gap-3">
+          <div class="flex items-center gap-3 overflow-hidden">
+             <div class="h-10 w-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-sm shrink-0">${nama.charAt(0).toUpperCase()}</div>
+             <div class="truncate">
+                <h4 class="font-bold text-slate-800 text-sm truncate">${escapeHtml(nama)}</h4>
+                <p class="text-xs text-slate-500 truncate">${escapeHtml(umur)}</p>
+             </div>
+          </div>
+          <div class="text-[10px] text-slate-400 text-right shrink-0 whitespace-nowrap bg-slate-100 px-2 py-1 rounded-md">${escapeHtml(waktu)}</div>
+        </div>
+      `;
+    });
 
-    </div>`;
+    let htmlReg = dataUsers.length === 0 ? '<div class="p-6 text-center text-slate-400 text-sm">Belum ada akun.</div>' : '';
+    dataUsers.slice(0, 10).forEach(item => {
+      const nama = item.Nama || item.FullName || item.Username || 'User Anonim';
+      const umur = item.Umur || item.Age ? `${item.Umur || item.Age} thn` : '';
+      const gender = item.Gender || item.Jenis_Kelamin || '';
+      const negara = item.Negara || item.Country || item.Location || '';
+      const waktu = item.Timestamp || item.Waktu || 'Baru saja';
+      const detail = [umur, gender, negara].filter(Boolean).join(' • ');
+
+      htmlReg += `
+        <div class="p-3 hover:bg-slate-50 transition-colors flex justify-between items-center gap-3">
+          <div class="flex items-center gap-3 overflow-hidden">
+             <div class="h-10 w-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm shrink-0">${nama.charAt(0).toUpperCase()}</div>
+             <div class="truncate">
+                <h4 class="font-bold text-slate-800 text-sm truncate">${escapeHtml(nama)}</h4>
+                <p class="text-xs text-slate-500 truncate">${escapeHtml(detail) || 'Pengguna Baru'}</p>
+             </div>
+          </div>
+          <div class="text-[10px] text-slate-400 text-right shrink-0 whitespace-nowrap bg-slate-100 px-2 py-1 rounded-md">${escapeHtml(waktu)}</div>
+        </div>
+      `;
+    });
+
+    document.getElementById('public-stats-container').innerHTML = `
+      <div class="grid grid-cols-2 gap-4 mb-6">
+        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex items-center gap-4">
+           <div class="h-12 w-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl shrink-0"><i class="fas fa-book"></i></div>
+           <div>
+              <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-0.5">Buku Tamu</p>
+              <h4 class="text-2xl font-black text-slate-900">${totalTamu}</h4>
+           </div>
+        </div>
+        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex items-center gap-4">
+           <div class="h-12 w-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl shrink-0"><i class="fas fa-users"></i></div>
+           <div>
+              <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-0.5">Akun Terdaftar</p>
+              <h4 class="text-2xl font-black text-slate-900">${totalAkun}</h4>
+           </div>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[400px]">
+           <div class="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
+              <h3 class="font-extrabold text-slate-800 flex items-center gap-2"><i class="fas fa-history text-emerald-500"></i> Riwayat Tamu Terbaru</h3>
+           </div>
+           <div class="p-2 overflow-y-auto flex-1 divide-y divide-slate-100">${htmlTamu}</div>
+        </div>
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[400px]">
+           <div class="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
+              <h3 class="font-extrabold text-slate-800 flex items-center gap-2"><i class="fas fa-user-plus text-blue-500"></i> Registrasi Terbaru</h3>
+           </div>
+           <div class="p-2 overflow-y-auto flex-1 divide-y divide-slate-100">${htmlReg}</div>
+        </div>
+      </div>
+    `;
+  } catch (err) {
+    document.getElementById('public-stats-container').innerHTML = '<div class="p-4 text-center text-rose-500 text-sm border border-rose-200 bg-rose-50 rounded-2xl">Gagal memuat data statistik. Cek koneksi Anda.</div>';
+  }
 }
 
 /* ================================================================
