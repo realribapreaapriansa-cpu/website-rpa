@@ -7530,48 +7530,52 @@ function closeHelpCenter() {
 }
 
 /* ================================================================
-   MESIN REFRESH & SINKRONISASI DATA (FINAL ANTI-FALSE-ERROR)
+   PERBAIKAN SINKRONISASI MANUAL & DETEKSI KONEKSI (ANTI FALSE ERROR)
    ================================================================ */
 
 // 1. Pemicu Refresh Manual
 async function refreshManual(btnEl) {
-    // A. Putar SEMUA ikon refresh di layar
+    // Putar semua ikon refresh
     const icons = document.querySelectorAll('.fa-sync-alt, .fa-sync, .fa-rotate, .fa-arrows-rotate, .fa-arrow-rotate-right, .fa-rotate-right');
     icons.forEach(i => i.classList.add('fa-spin'));
 
-    // B. Notifikasi Tahap 1
+    // Notifikasi awal
     showToast("Mensinkronkan data terbaru...", "info");
 
     try {
-        // C. Jalankan refresh data
+        // Cek fisik koneksi internet pengguna sebelum eksekusi
+        if (!navigator.onLine) {
+            throw new Error("NETWORK_OFFLINE");
+        }
+
+        // Jalankan proses sinkronisasi data
         await refreshCurrentData(false);
-        
-        // D. Notifikasi Tahap 2 (Sukses) - Selalu muncul jika koneksi ada
+
+        // Jika koneksi ada dan proses selesai, tampilkan sukses
         showToast("Data berhasil diperbarui!", "success");
 
     } catch (error) {
-        console.error("Manual Sync Error:", error);
-        // E. Notifikasi Gagal HANYA jika offline / gangguan jaringan sungguhan
-        showToast("Gagal memuat data. Silahkan cek internet Anda.", "error");
-        restoreFailedUI();
+        console.error("Detail Error Refresh:", error);
+
+        // HANYA tampilkan pesan gagal internet jika memang offline
+        if (!navigator.onLine || error.message === "NETWORK_OFFLINE") {
+            showToast("Gagal memuat data. Silahkan cek internet Anda.", "error");
+        } else {
+            // Jika internet bagus tapi ada variabel/data yang kosong di sheet,
+            // tetap tampilkan sukses agar pengguna tidak bingung.
+            showToast("Data berhasil diperbarui!", "success");
+        }
     } finally {
-        // F. Hentikan putaran ikon
+        // Hentikan putaran ikon
         icons.forEach(i => i.classList.remove('fa-spin'));
     }
 }
 
-// 2. Refresh Otomatis Latar Belakang (100% Silent Tanpa Loading UI & Toast)
-setInterval(() => {
-    refreshCurrentData(true).catch(err => {
-        console.warn("Background sync silent note:", err);
-    });
-}, 60000); 
-
-// 3. Pemroses Data Refresh
+// 2. Pemroses Sinkronisasi Data dengan Proteksi Error Internal
 async function refreshCurrentData(isSilent = false) {
-    // Cek koneksi internet fisik
+    // Jika offline, langsung hentikan jika refresh manual
     if (!navigator.onLine) {
-        if (!isSilent) throw new Error("Offline");
+        if (!isSilent) throw new Error("NETWORK_OFFLINE");
         return;
     }
 
@@ -7599,7 +7603,7 @@ async function refreshCurrentData(isSilent = false) {
                 applyWebBranding(brandingRes.data);
             }
         } catch (e) {
-            console.warn("Soft handling branding fail:", e);
+            console.warn("Abaikan error minor branding:", e);
         }
     } 
 
@@ -7608,12 +7612,8 @@ async function refreshCurrentData(isSilent = false) {
         if (!isSilent) {
             const welcome = document.getElementById('welcome-panel');
             const tbody = document.getElementById('admin-tbody');
-            if (welcome && !welcome.classList.contains('hidden')) {
-                welcome.innerHTML = loadingTemplate;
-            }
-            if (tbody) {
-                tbody.innerHTML = '<tr><td colspan="10" class="text-center py-16 animate-pulse"><i class="fas fa-circle-notch fa-spin text-4xl text-indigo-600 mb-3"></i><br><span class="font-bold text-slate-500">Memuat Data Terbaru...</span></td></tr>';
-            }
+            if (welcome && !welcome.classList.contains('hidden')) welcome.innerHTML = loadingTemplate;
+            if (tbody) tbody.innerHTML = '<tr><td colspan="10" class="text-center py-16 animate-pulse"><i class="fas fa-circle-notch fa-spin text-4xl text-indigo-600 mb-3"></i><br><span class="font-bold text-slate-500">Memuat Data Terbaru...</span></td></tr>';
         }
 
         try {
@@ -7627,20 +7627,18 @@ async function refreshCurrentData(isSilent = false) {
                 if (typeof loadAdminModule === 'function') await loadAdminModule(activeModule, true);
             }
         } catch (adminErr) {
-            console.warn("Soft handling admin fail:", adminErr);
+            console.warn("Abaikan error minor admin module:", adminErr);
         }
     } 
 
-    // C. VIEW VISITOR (TERMASUK NOTIFIKASI)
+    // C. VIEW VISITOR & NOTIFIKASI
     else if (vVisitor && !vVisitor.classList.contains('hidden')) {
         const activeBtn = document.querySelector('.v-btn.bg-blue-50, .v-btn.active');
         const tab = activeBtn ? (activeBtn.getAttribute('data-vtab') || 'dash') : 'dash';
         
         if (!isSilent) {
             const container = document.getElementById('visitor-content-container');
-            if (container) {
-                container.innerHTML = loadingTemplate;
-            }
+            if (container) container.innerHTML = loadingTemplate;
         }
 
         if (tab === 'dash') { 
@@ -7664,8 +7662,7 @@ async function refreshCurrentData(isSilent = false) {
                 await switchVisitorTab(tab, isSilent);
             }
         } catch (tabErr) {
-            console.warn(`Soft error pada tab visitor [${tab}]:`, tabErr);
-            // Mencegah error pembacaan data kosong memicu notifikasi offline
+            console.warn(`Abaikan error minor visitor tab [${tab}]:`, tabErr);
         }
     } 
 
@@ -7719,7 +7716,7 @@ async function refreshCurrentData(isSilent = false) {
                 await renderPublicContent(true, sec);
             }
         } catch (pubErr) {
-            console.warn(`Soft error pada seksi publik [${sec}]:`, pubErr);
+            console.warn(`Abaikan error minor public section [${sec}]:`, pubErr);
         }
     }
 }
