@@ -1430,114 +1430,119 @@ async function switchVisitorTab(tab) {
 
   try {
 
-    if (tab === 'dash') {
-
-      const [
-        book,
-        notif,
-        att,
-        docs
-      ] = await Promise.all([
-        getCachedData('Bookmarks'),
-        getCachedData('Notifications'),
+   if (tab === 'dash') {
+      // 1. Tarik Data Realtime
+      const [att, usersRes] = await Promise.all([
         getCachedData('Visitor_Attendance'),
-        getCachedData('Documents')
+        getCachedData('Users')
       ]);
 
-      const bc =
-        (book.data || [])
-        .filter(x =>
-          !uid ||
-          String(
-            x.UserID || ''
-          ) === String(uid)
-        )
-        .length;
+      const dataTamu = (att.data || []).reverse();
+      const dataUsers = (usersRes.data || []).reverse();
 
-      const nc =
-        (notif.data || [])
-        .filter(
-          x =>
-            !x.Status ||
-            x.Status === 'active' ||
-            x.Status === 'publish'
-        )
-        .length;
+      const totalTamu = dataTamu.length;
+      const totalAkun = dataUsers.length;
 
-      const ac =
-        (att.data || [])
-        .filter(
-          x =>
-            String(
-              x.Email || ''
-            ).toLowerCase() ===
-            String(
-              email
-            ).toLowerCase()
-        )
-        .length;
+      // 2. Olah Data 10 Tamu Terbaru
+      let htmlTamu = '';
+      if (dataTamu.length === 0) {
+         htmlTamu = '<div class="p-6 text-center text-slate-400 text-sm">Belum ada riwayat tamu.</div>';
+      } else {
+         dataTamu.slice(0, 10).forEach(item => {
+            const nama = item.Nama || item.FullName || 'Tanpa Nama';
+            const umur = item.Umur || item.Age ? `${item.Umur || item.Age} thn` : '-';
+            const waktu = item.Timestamp || item.Waktu || 'Baru saja';
+            htmlTamu += `
+               <div class="p-3 hover:bg-slate-50 transition-colors flex justify-between items-center gap-3">
+                  <div class="flex items-center gap-3 overflow-hidden">
+                     <div class="h-10 w-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-sm shrink-0">${nama.charAt(0).toUpperCase()}</div>
+                     <div class="truncate">
+                        <h4 class="font-bold text-slate-800 text-sm truncate">${escapeHtml(nama)}</h4>
+                        <p class="text-xs text-slate-500 truncate">${escapeHtml(umur)}</p>
+                     </div>
+                  </div>
+                  <div class="text-[10px] text-slate-400 text-right shrink-0 whitespace-nowrap bg-slate-100 px-2 py-1 rounded-md">${escapeHtml(waktu)}</div>
+               </div>
+            `;
+         });
+      }
 
-      const dc =
-        (docs.data || [])
-        .filter(
-          x =>
-            !x.Status ||
-            x.Status === 'publish' ||
-            x.Status === 'active'
-        )
-        .length;
+      // 3. Olah Data 10 Akun Terbaru
+      let htmlReg = '';
+      if (dataUsers.length === 0) {
+         htmlReg = '<div class="p-6 text-center text-slate-400 text-sm">Belum ada akun terdaftar.</div>';
+      } else {
+         dataUsers.slice(0, 10).forEach(item => {
+            const nama = item.Nama || item.FullName || item.Username || 'User Anonim';
+            const umur = item.Umur || item.Age ? `${item.Umur || item.Age} thn` : '';
+            const gender = item.Gender || item.Jenis_Kelamin || '';
+            const negara = item.Negara || item.Country || item.Location || '';
+            const waktu = item.Timestamp || item.Waktu || 'Baru saja';
+            
+            const detail = [umur, gender, negara].filter(Boolean).join(' • ');
 
+            htmlReg += `
+               <div class="p-3 hover:bg-slate-50 transition-colors flex justify-between items-center gap-3">
+                  <div class="flex items-center gap-3 overflow-hidden">
+                     <div class="h-10 w-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm shrink-0">${nama.charAt(0).toUpperCase()}</div>
+                     <div class="truncate">
+                        <h4 class="font-bold text-slate-800 text-sm truncate">${escapeHtml(nama)}</h4>
+                        <p class="text-xs text-slate-500 truncate">${escapeHtml(detail) || 'Pengguna Baru'}</p>
+                     </div>
+                  </div>
+                  <div class="text-[10px] text-slate-400 text-right shrink-0 whitespace-nowrap bg-slate-100 px-2 py-1 rounded-md">${escapeHtml(waktu)}</div>
+               </div>
+            `;
+         });
+      }
+
+      // 4. Cetak Tampilan Dashboard
       container.innerHTML =
         `<div class="space-y-6 animate-fade-in">
-          <div class="bg-white p-8 rounded-3xl border shadow-sm">
-            <h2 class="font-extrabold text-xl text-slate-900">
-              Dashboard Utama Visitor
-            </h2>
+          
+          <div class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-6 md:p-8 text-white shadow-lg relative overflow-hidden">
+            <div class="absolute -top-24 -right-24 w-48 h-48 bg-white/10 rounded-full blur-2xl"></div>
+            <h2 class="text-2xl font-black mb-2 relative z-10">Halo, ${escapeHtml(name)}!</h2>
+            <p class="text-blue-100 text-sm max-w-md relative z-10">Selamat datang di Dashboard Komunitas. Pantau statistik dan aktivitas pengguna terbaru secara real-time.</p>
+          </div>
 
-            <p class="text-sm text-slate-500 mt-1">
-              Selamat datang, ${escapeHtml(name)}.
-            </p>
-
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 pt-6">
-
-              <div class="bg-blue-50 p-5 rounded-2xl border border-blue-100">
-                <div class="text-2xl font-black text-blue-600">
-                  ${bc}
-                </div>
-                <div class="text-xs text-slate-500 font-bold mt-1">
-                  Bookmark
-                </div>
-              </div>
-
-              <div class="bg-emerald-50 p-5 rounded-2xl border border-emerald-100">
-                <div class="text-2xl font-black text-emerald-600">
-                  ${ac}
-                </div>
-                <div class="text-xs text-slate-500 font-bold mt-1">
-                  Kunjungan
-                </div>
-              </div>
-
-              <div class="bg-indigo-50 p-5 rounded-2xl border border-indigo-100">
-                <div class="text-2xl font-black text-indigo-600">
-                  ${dc}
-                </div>
-                <div class="text-xs text-slate-500 font-bold mt-1">
-                  Dokumen Tersedia
-                </div>
-              </div>
-
-              <div class="bg-amber-50 p-5 rounded-2xl border border-amber-100">
-                <div class="text-2xl font-black text-amber-600">
-                  ${nc}
-                </div>
-                <div class="text-xs text-slate-500 font-bold mt-1">
-                  Notifikasi
-                </div>
-              </div>
-
+          <div class="grid grid-cols-2 gap-4">
+            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex items-center gap-4">
+               <div class="h-12 w-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl shrink-0"><i class="fas fa-book"></i></div>
+               <div>
+                  <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-0.5">Buku Tamu</p>
+                  <h4 class="text-2xl font-black text-slate-900">${totalTamu}</h4>
+               </div>
+            </div>
+            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex items-center gap-4">
+               <div class="h-12 w-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl shrink-0"><i class="fas fa-users"></i></div>
+               <div>
+                  <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-0.5">Akun Terdaftar</p>
+                  <h4 class="text-2xl font-black text-slate-900">${totalAkun}</h4>
+               </div>
             </div>
           </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[400px]">
+               <div class="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
+                  <h3 class="font-extrabold text-slate-800 flex items-center gap-2"><i class="fas fa-history text-emerald-500"></i> Riwayat Tamu Terbaru</h3>
+               </div>
+               <div class="p-2 overflow-y-auto flex-1 divide-y divide-slate-100">
+                  ${htmlTamu}
+               </div>
+            </div>
+
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[400px]">
+               <div class="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
+                  <h3 class="font-extrabold text-slate-800 flex items-center gap-2"><i class="fas fa-user-plus text-blue-500"></i> Registrasi Terbaru</h3>
+               </div>
+               <div class="p-2 overflow-y-auto flex-1 divide-y divide-slate-100">
+                  ${htmlReg}
+               </div>
+            </div>
+          </div>
+
         </div>`;
 
     } else if (tab === 'profile') {
