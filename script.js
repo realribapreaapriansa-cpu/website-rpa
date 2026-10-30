@@ -3451,40 +3451,12 @@ function renderEmpty(
 }
 
 /* ================================================================
-   PUBLIC DATA LOADER
+   PUBLIC DATA LOADER (SUDAH DIBERSIHKAN DARI BUG MACET)
    ================================================================ */
 async function renderPublicContent(
   force = false,
   prioritySection = 'home'
 ) {
-
-  // === TAMBAHAN KODE PROFIL ===
-    const sec = section.toLowerCase();
-    if (sec === 'profil' || sec === 'profile') {
-        const container = document.getElementById('public-profile-content');
-        if (container) {
-            if (forceRefresh || container.innerHTML.trim() === '') {
-                container.innerHTML = `
-                    <div class="w-full py-24 flex flex-col items-center justify-center text-slate-400 animate-pulse bg-white rounded-3xl border border-slate-100 shadow-sm">
-                        <i class="fas fa-circle-notch fa-spin text-5xl text-blue-600 mb-4"></i>
-                        <p class="font-bold text-lg tracking-wide text-slate-600">Memuat Profil...</p>
-                    </div>
-                `;
-            }
-            try {
-                const res = await getCachedData('Profile', forceRefresh);
-                const data = (res && res.data) ? res.data : [];
-                if (typeof renderPublicProfile === 'function') {
-                    renderPublicProfile(data);
-                }
-            } catch (err) {
-                console.error("Gagal memuat profil:", err);
-                if (typeof renderPublicProfile === 'function') renderPublicProfile([]); 
-            }
-        }
-        return; // Menghentikan proses agar tidak bentrok dengan kode lama
-    }
-    // === AKHIR TAMBAHAN KODE PROFIL ===
 
   const names = [
     'Home',
@@ -3519,174 +3491,75 @@ async function renderPublicContent(
     ] ||
     'Home';
 
+  // 1. Tampilkan Animasi Loading di Seksi yang Sedang Aktif Saja
+  const containerMap = {
+      'Home': 'public-home-content',
+      'Profile': 'public-profile-content',
+      'Portfolio': 'public-portfolio-list',
+      'Career_Timeline': 'public-career-content',
+      'Gallery': 'public-gallery-content',
+      'Blog': 'public-blog-content',
+      'Documents': 'public-documents-content',
+      'Contact': 'public-contact-content'
+  };
+  
+  const targetContainer = document.getElementById(containerMap[priority]);
+  if (targetContainer && force) {
+      targetContainer.innerHTML = `
+          <div class="w-full py-24 flex flex-col items-center justify-center text-slate-400 animate-pulse bg-white rounded-3xl border border-slate-100 shadow-sm">
+              <i class="fas fa-circle-notch fa-spin text-5xl text-blue-600 mb-4"></i>
+              <p class="font-bold text-lg tracking-wide text-slate-600">Memuat Data...</p>
+          </div>
+      `;
+  }
+
+  // 2. Tarik Data Prioritas (Menu yang Sedang Diklik)
   try {
-
-    const first =
-      await getCachedData(
-        priority,
-        force
-      );
-
-    const data =
-      first.data ||
-      [];
-
-    if (
-      priority === 'Home'
-    ) {
-      renderPublicHome(data);
-
-    } else if (
-      priority === 'Profile'
-    ) {
-      renderPublicProfile(data);
-
-    } else if (
-      priority === 'Portfolio'
-    ) {
-      renderPublicPortfolio(data);
-
-    } else if (
-      priority === 'Career_Timeline'
-    ) {
-      renderPublicCareer(data);
-
-    } else if (
-      priority === 'Gallery'
-    ) {
-      renderPublicGallery(data);
-
-    } else if (
-      priority === 'Blog'
-    ) {
-      renderPublicBlog(data);
-
-    } else if (
-      priority === 'Documents'
-    ) {
-      renderPublicDocuments(data);
-
-    } else if (
-      priority === 'Contact'
-    ) {
-      renderPublicContact(data);
+    let first = await getCachedData(priority, force);
+    
+    // Fallback khusus Profil: Jika sheet "Profile" kosong, coba cari sheet "Profil"
+    if (priority === 'Profile' && (!first || !first.data || first.data.length === 0)) {
+       try { first = await getCachedData('Profil', force); } catch(e) {}
     }
+
+    const data = first?.data || [];
+
+    if (priority === 'Home') renderPublicHome(data);
+    else if (priority === 'Profile') {
+        if (typeof renderPublicProfile === 'function') renderPublicProfile(data);
+    }
+    else if (priority === 'Portfolio') renderPublicPortfolio(data);
+    else if (priority === 'Career_Timeline') renderPublicCareer(data);
+    else if (priority === 'Gallery') renderPublicGallery(data);
+    else if (priority === 'Blog') renderPublicBlog(data);
+    else if (priority === 'Documents') renderPublicDocuments(data);
+    else if (priority === 'Contact') renderPublicContact(data);
 
   } catch(error) {
-
-    console.warn(
-      'Gagal memuat section prioritas:',
-      error
-    );
+    console.warn('Gagal memuat section prioritas:', error);
   }
 
-  const backgroundNames =
-    names.filter(
-      name =>
-        name !== priority
-    );
+  // 3. Tarik Data Menu Lainnya di Latar Belakang (Tanpa Mengganggu Layar Utama)
+  const backgroundNames = names.filter(name => name !== priority);
+  await Promise.allSettled(backgroundNames.map(name => getCachedData(name, force)));
 
-  await Promise.allSettled(
-    backgroundNames.map(
-      name =>
-        getCachedData(
-          name,
-          force
-        )
-    )
-  );
+  names.forEach(name => {
+    // Jangan render ulang jika sudah selesai dirender di blok prioritas atas
+    if (name === priority) return; 
 
-  names.forEach(
-    name => {
+    const data = memoryCache[name]?.data || [];
 
-      const data =
-        memoryCache[name]?.data ||
-        [];
-
-      if (
-        name === 'Home'
-      ) {
-        renderPublicHome(data);
-
-      } else if (
-        name === 'Profile'
-      ) {
-        renderPublicProfile(data);
-
-      } else if (
-        name === 'Portfolio'
-      ) {
-        renderPublicPortfolio(data);
-
-      } else if (
-        name === 'Career_Timeline'
-      ) {
-        renderPublicCareer(data);
-
-      } else if (
-        name === 'Gallery'
-      ) {
-        renderPublicGallery(data);
-
-      } else if (
-        name === 'Blog'
-      ) {
-        renderPublicBlog(data);
-
-      } else if (
-        name === 'Documents'
-      ) {
-        renderPublicDocuments(data);
-
-      } else if (
-        name === 'Contact'
-      ) {
-        renderPublicContact(data);
-      }
+    if (name === 'Home') renderPublicHome(data);
+    else if (name === 'Profile') {
+        if (typeof renderPublicProfile === 'function') renderPublicProfile(data);
     }
-  );
-}
-
-function prefetchEssentialSheets() {
-
-  const sheets = [
-    'Home',
-    'Profile',
-    'Dynamic_Menu',
-    'Banners',
-    'Popups',
-    'Web_Branding'
-  ];
-
-  const run = () =>
-    Promise.allSettled(
-      sheets.map(
-        sheet =>
-          getCachedData(
-            sheet,
-            false
-          )
-      )
-    );
-
-  if (
-    'requestIdleCallback' in window
-  ) {
-
-    requestIdleCallback(
-      run,
-      {
-        timeout: 2500
-      }
-    );
-
-  } else {
-
-    setTimeout(
-      run,
-      1200
-    );
-  }
+    else if (name === 'Portfolio') renderPublicPortfolio(data);
+    else if (name === 'Career_Timeline') renderPublicCareer(data);
+    else if (name === 'Gallery') renderPublicGallery(data);
+    else if (name === 'Blog') renderPublicBlog(data);
+    else if (name === 'Documents') renderPublicDocuments(data);
+    else if (name === 'Contact') renderPublicContact(data);
+  });
 }
 
 /* ================================================================
