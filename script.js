@@ -2460,139 +2460,46 @@ function closeModalForm() {
   editingRow = null;
 }
 
+/* ================================================================
+   SUBMIT DATA (TAMBAH/EDIT DENGAN JEDA SIMPAN GOOGLE SHEETS)
+   ================================================================ */
 async function submitData() {
-
-  if (!memoryCache[activeModule]) {
-    return showToast(
-      'Modul belum siap.',
-      'warning'
-    );
-  }
-
-  const headers =
-    memoryCache[
-      activeModule
-    ].headers.slice(1);
-
+  if (!memoryCache[activeModule]) return showToast('Modul belum siap.', 'warning');
+  const headers = memoryCache[activeModule].headers.slice(1);
   const data = {};
-
-  headers.forEach(
-    c => {
-
-      const el =
-        document.getElementById(
-          'inp-' + c
-        );
-
-      data[c] =
-        el
-          ? el.value
-          : '';
-    }
-  );
-
+  headers.forEach(c => {
+    const el = document.getElementById('inp-' + c);
+    data[c] = el ? el.value : '';
+  });
   const payload = {
-    action:
-      editingId
-        ? 'update'
-        : 'insert',
-
-    sheet:
-      activeModule,
-
-    user:
-      currentUser
-        ? currentUser.UserID
-        : 'System',
-
-    data:
-      data
+    action: editingId ? 'update' : 'insert',
+    sheet: activeModule,
+    user: currentUser ? currentUser.UserID : 'System',
+    data: data
   };
-
-  if (editingId) {
-    payload.data.id =
-      editingId;
-  }
-
+  if (editingId) payload.data.id = editingId;
   closeModalForm();
-
   toggleLoader(true);
-
   try {
-
-    const r =
-      await apiCall(
-        'POST',
-        payload
-      );
-
-    if (
-      r.status === 'success'
-    ) {
-
-      invalidateCache(
-        activeModule
-      );
-
-      await loadAdminModule(
-        activeModule,
-        true
-      );
-
-      const related = [
-        'Home',
-        'Profile',
-        'Contact',
-        'Portfolio',
-        'Blog',
-        'Career_Timeline',
-        'Documents',
-        'Gallery',
-        'Web_Branding',
-        'Dynamic_Menu',
-        'Banners',
-        'Popups'
-      ];
-
-      if (
-        related.includes(
-          activeModule
-        )
-      ) {
-
-        related.forEach(
-          x =>
-            invalidateCache(x)
-        );
-
-        await prefetchEssentialSheets();
-
-        renderPublicContent(
-          false
-        );
-
-        renderPublicBanners();
-
-        renderPublicPopup();
-      }
-
-      showToast(
-        r.message ||
-        'Data berhasil disimpan!',
-        'success'
-      );
-
+    const r = await apiCall('POST', payload);
+    if (r.status === 'success') {
+      showToast(r.message || 'Data berhasil disimpan!', 'success');
+      setTimeout(async () => {
+          invalidateCache(activeModule);
+          await loadAdminModule(activeModule, true);
+          const related = ['Home', 'Profile', 'Contact', 'Portfolio', 'Blog', 'Career_Timeline', 'Documents', 'Gallery', 'Web_Branding', 'Dynamic_Menu', 'Banners', 'Popups'];
+          if (related.includes(activeModule)) {
+            related.forEach(x => invalidateCache(x));
+            await prefetchEssentialSheets();
+            renderPublicContent(false);
+            renderPublicBanners();
+            renderPublicPopup();
+          }
+      }, 1500);
     } else {
-
-      showToast(
-        r.message ||
-        'Gagal menyimpan data.',
-        'error'
-      );
+      showToast(r.message || 'Gagal menyimpan data.', 'error');
     }
-
   } finally {
-
     toggleLoader(false);
   }
 }
@@ -5244,77 +5151,45 @@ function openEditById(
   }
 }
 
-async function actionData(
-  id,
-  actionType
-) {
-
-  if (
-    !confirm(
-      actionType ===
-        'softDelete'
-        ? 'Pindahkan data ini ke tempat sampah?'
-        : 'Pulihkan data ini?'
-    )
-  ) {
+/* ================================================================
+   ACTION DATA (HAPUS/EDIT DENGAN UPDATE INSTAN LOKAL)
+   ================================================================ */
+async function actionData(id, actionType) {
+  if (!confirm(actionType === 'softDelete' ? 'Pindahkan data ini ke tempat sampah?' : 'Pulihkan data ini?')) {
     return;
   }
-
   toggleLoader(true);
-
   try {
-
-    const r =
-      await apiCall(
-        'POST',
-        {
-          action:
-            actionType,
-
-          sheet:
-            activeModule,
-
-          user:
-            currentUser
-              ? currentUser.UserID
-              : 'System',
-
-          data: {
-            id: id
-          }
-        }
-      );
-
-    if (
-      r.status ===
-      'success'
-    ) {
-
-      invalidateCache(
-        activeModule
-      );
-
-      await loadAdminModule(
-        activeModule,
-        true
-      );
-
-      showToast(
-        r.message,
-        'success'
-      );
-
+    const r = await apiCall('POST', {
+      action: actionType,
+      sheet: activeModule,
+      user: currentUser ? currentUser.UserID : 'System',
+      data: { id: id }
+    });
+    if (r.status === 'success') {
+      showToast(r.message || 'Aksi berhasil!', 'success');
+      
+      // Update instan di layar
+      if (memoryCache[activeModule] && memoryCache[activeModule].data) {
+         const rowIdx = memoryCache[activeModule].data.findIndex(x => String(x[memoryCache[activeModule].headers[0]]) === String(id));
+         if (rowIdx > -1) {
+             if (actionType === 'softDelete') memoryCache[activeModule].data[rowIdx].Status = 'trash';
+             else if (actionType === 'restore') memoryCache[activeModule].data[rowIdx].Status = 'publish';
+             else if (actionType === 'delete' || actionType === 'hardDelete') memoryCache[activeModule].data.splice(rowIdx, 1);
+             
+             renderAdminTable(memoryCache[activeModule].headers, memoryCache[activeModule].data);
+         }
+      }
+      
+      // Sinkronisasi server
+      setTimeout(async () => {
+         invalidateCache(activeModule);
+         await loadAdminModule(activeModule, true);
+      }, 1500);
     } else {
-
-      showToast(
-        r.message ||
-        'Gagal memproses data.',
-        'error'
-      );
+      showToast(r.message || 'Gagal memproses data.', 'error');
     }
-
   } finally {
-
     toggleLoader(false);
   }
 }
