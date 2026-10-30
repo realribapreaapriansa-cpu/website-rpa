@@ -51,74 +51,50 @@ let pendingRequests = {};
 let loaderCount = 0;
 
 /* ================================================================
-    API CONNECTOR
-    Menggunakan text/plain agar request POST Apps Script tidak
-    memicu preflight CORS yang menyebabkan "Koneksi bermasalah".
-    ================================================================ */
+   API CONNECTOR (DIPERBAIKI: ANTI-CACHE BROWSER & GOOGLE SERVER)
+   ================================================================ */
 async function apiCall(method = 'GET', payload = {}) {
   const url = API_URL;
 
   const options = {
     method: method.toUpperCase(),
     redirect: 'follow',
-    cache: 'no-store'
+    cache: 'no-store', // Memaksa browser tidak menyimpan cache
+    headers: {}
   };
 
-  if (method.toUpperCase() === 'POST') {
-    options.headers = {
-      'Content-Type': 'text/plain;charset=utf-8'
-    };
+  let targetUrl = url;
 
+  if (method.toUpperCase() === 'POST') {
+    options.headers['Content-Type'] = 'text/plain;charset=utf-8';
     options.body = JSON.stringify(payload);
   } else {
     const params = new URLSearchParams();
-
+    
     Object.entries(payload || {}).forEach(([k, v]) => {
-      params.set(
-        k,
-        typeof v === 'object'
-          ? JSON.stringify(v)
-          : String(v)
-      );
+      params.set(k, typeof v === 'object' ? JSON.stringify(v) : String(v));
     });
 
-    const target =
-      params.toString()
-        ? `${url}?${params.toString()}`
-        : url;
-
-    const response =
-      await fetch(target, options);
-
-    const text =
-      await response.text();
-
-    try {
-      return JSON.parse(text);
-    } catch (e) {
-      throw new Error(
-        'Respons Apps Script bukan JSON.'
-      );
+    // --- KUNCI REALTIME (ANTI-BUG STUCK DATA) ---
+    // Menyisipkan Date.now() membuat URL API selalu unik 100% setiap ditekan.
+    // Ini memastikan blokade cache dari server Google Apps Script berhasil dijebol.
+    params.set('_t', Date.now()); 
+    
+    if (params.toString()) {
+        targetUrl = `${url}?${params.toString()}`;
     }
   }
 
-  const response =
-    await fetch(url, options);
-
-  const text =
-    await response.text();
-
-  let result;
+  // Tarik data dengan URL yang sudah dijamin unik
+  const response = await fetch(targetUrl, options);
+  const text = await response.text();
 
   try {
-    result = JSON.parse(text);
+    return JSON.parse(text);
   } catch (e) {
-    throw new Error(
-      'Respons Apps Script bukan JSON.'
-    );
+    console.error("API Error (Bukan JSON):", text);
+    throw new Error('Respons Apps Script gagal diproses atau bukan JSON.');
   }
-
-  return result;
 }
 
 async function getCachedData(sheetName, force = false) {
