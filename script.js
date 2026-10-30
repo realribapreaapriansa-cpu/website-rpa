@@ -5154,6 +5154,9 @@ function openEditById(
 /* ================================================================
    ACTION DATA (HAPUS/EDIT DENGAN UPDATE INSTAN LOKAL)
    ================================================================ */
+/* ================================================================
+   ACTION DATA (HAPUS/EDIT DENGAN UPDATE INSTAN & SINKRONISASI PUBLIK)
+   ================================================================ */
 async function actionData(id, actionType) {
   if (!confirm(actionType === 'softDelete' ? 'Pindahkan data ini ke tempat sampah?' : 'Pulihkan data ini?')) {
     return;
@@ -5169,7 +5172,7 @@ async function actionData(id, actionType) {
     if (r.status === 'success') {
       showToast(r.message || 'Aksi berhasil!', 'success');
       
-      // Update instan di layar
+      // Update instan di tabel Admin
       if (memoryCache[activeModule] && memoryCache[activeModule].data) {
          const rowIdx = memoryCache[activeModule].data.findIndex(x => String(x[memoryCache[activeModule].headers[0]]) === String(id));
          if (rowIdx > -1) {
@@ -5181,10 +5184,20 @@ async function actionData(id, actionType) {
          }
       }
       
-      // Sinkronisasi server
+      // Sinkronisasi Server & Tampilan Publik
       setTimeout(async () => {
          invalidateCache(activeModule);
          await loadAdminModule(activeModule, true);
+         
+         // BUG FIX: Otomatis render ulang tampilan publik saat ada data dihapus
+         const related = ['Home', 'Profile', 'Contact', 'Portfolio', 'Blog', 'Career_Timeline', 'Documents', 'Gallery', 'Web_Branding', 'Dynamic_Menu', 'Banners', 'Popups'];
+         if (related.includes(activeModule)) {
+            related.forEach(x => invalidateCache(x));
+            await prefetchEssentialSheets();
+            if (typeof renderPublicContent === 'function') renderPublicContent(false);
+            if (typeof renderPublicBanners === 'function') renderPublicBanners();
+            if (typeof renderPublicPopup === 'function') renderPublicPopup();
+         }
       }, 1500);
     } else {
       showToast(r.message || 'Gagal memproses data.', 'error');
@@ -7253,40 +7266,32 @@ function closeHelpCenter() {
    PERBAIKAN SINKRONISASI MANUAL & DETEKSI KONEKSI (ANTI FALSE ERROR)
    ================================================================ */
 
-// 1. Pemicu Refresh Manual
+// 1. Pemicu Refresh Manual (Penyapu Bersih Cache Total)
 async function refreshManual(btnEl) {
-    // Putar semua ikon refresh
     const icons = document.querySelectorAll('.fa-sync-alt, .fa-sync, .fa-rotate, .fa-arrows-rotate, .fa-arrow-rotate-right, .fa-rotate-right');
     icons.forEach(i => i.classList.add('fa-spin'));
-
-    // Notifikasi awal
     showToast("Mensinkronkan data terbaru...", "info");
 
     try {
-        // Cek fisik koneksi internet pengguna sebelum eksekusi
         if (!navigator.onLine) {
             throw new Error("NETWORK_OFFLINE");
         }
 
-        // Jalankan proses sinkronisasi data
+        // KUNCI REALTIME: Hapus SELURUH memori web setiap kali tombol refresh ditekan
+        memoryCache = {};
+        pendingRequests = {};
+        cacheTimestamps = {};
+
         await refreshCurrentData(false);
-
-        // Jika koneksi ada dan proses selesai, tampilkan sukses
         showToast("Data berhasil diperbarui!", "success");
-
     } catch (error) {
         console.error("Detail Error Refresh:", error);
-
-        // HANYA tampilkan pesan gagal internet jika memang offline
         if (!navigator.onLine || error.message === "NETWORK_OFFLINE") {
             showToast("Gagal memuat data. Silahkan cek internet Anda.", "error");
         } else {
-            // Jika internet bagus tapi ada variabel/data yang kosong di sheet,
-            // tetap tampilkan sukses agar pengguna tidak bingung.
             showToast("Data berhasil diperbarui!", "success");
         }
     } finally {
-        // Hentikan putaran ikon
         icons.forEach(i => i.classList.remove('fa-spin'));
     }
 }
