@@ -2158,289 +2158,151 @@ async function saveVisitorProfile() {
 /* ================================================================
    ADMIN MODAL INPUT
    ================================================================ */
-function openModalInput(
-  row = null
-) {
-
-  if (
-    !memoryCache[activeModule]
-  ) {
-    showToast(
-      'Data modul belum siap.',
-      'warning'
-    );
-    return;
-  }
-
+/* ================================================================
+   ADMIN MODAL INPUT (MENDUKUNG GAMBAR & FILE/LINK)
+   ================================================================ */
+function openModalInput(row = null) {
+  if (!memoryCache[activeModule]) { showToast('Data modul belum siap.', 'warning'); return; }
+  
   editingRow = row;
-
-  editingId =
-    row
-      ? row[
-          memoryCache[
-            activeModule
-          ].headers[0]
-        ]
-      : null;
-
-  const headers =
-    memoryCache[
-      activeModule
-    ].headers.slice(1);
-
-  document.getElementById(
-    'modal-title'
-  ).innerText =
-    (
-      row
-        ? 'Edit: '
-        : 'Tambah: '
-    ) +
-    activeModule.replace(
-      /_/g,
-      ' '
-    );
-
-  document.getElementById(
-    'modal-subtitle'
-  ).innerText =
-    row
-      ? 'Perubahan akan langsung diperbarui di Google Sheets.'
-      : 'Data akan disimpan ke Google Sheets.';
-
-  const body =
-    document.getElementById(
-      'modal-body'
-    );
-
+  editingId = row ? row[memoryCache[activeModule].headers[0]] : null;
+  const headers = memoryCache[activeModule].headers.slice(1);
+  
+  document.getElementById('modal-title').innerText = (row ? 'Edit: ' : 'Tambah: ') + activeModule.replace(/_/g, ' ');
+  document.getElementById('modal-subtitle').innerText = row ? 'Perubahan akan langsung diperbarui di Google Sheets.' : 'Data akan disimpan ke Google Sheets.';
+  
+  const body = document.getElementById('modal-body');
   body.innerHTML = '';
 
-  headers.forEach(
-    col => {
+  headers.forEach(col => {
+    const label = col.replace(/_/g, ' ');
+    
+    // Deteksi cerdas jenis input
+    const isImage = /url|image|cover|pic|logo|favicon|foto|avatar/i.test(col);
+    const isFile = /file|document|pdf|cv|berkas|arsip|link/i.test(col);
+    const isMedia = isImage || isFile;
+    const long = /Description|Content|JSON|Value|About|Message|Subtitle/i.test(col);
 
-      const label =
-        col.replace(
-          /_/g,
-          ' '
-        );
+    const v = row && row[col] != null ? String(row[col]) : '';
+    const safe = escapeHtml(v);
+    const span = isMedia || long ? 'md:col-span-2' : 'col-span-1';
 
-      const image =
-        /url|image|cover|pic|logo|favicon/i
-          .test(col);
+    if (isMedia) {
+       let acceptAttr = isImage ? "image/*" : "*";
+       let iconLabel = isImage ? "📸 Gambar" : "📄 File / Dokumen";
+       
+       let prevTag = isImage 
+           ? `<img id="prev-${col}" src="${safe}" class="${v ? '' : 'hidden'} h-24 w-24 object-cover rounded-xl border mt-3">` 
+           : `<div id="prev-${col}" class="${v ? '' : 'hidden'} mt-3 p-3 bg-blue-50 border border-blue-100 text-blue-600 rounded-xl text-xs font-bold flex items-center gap-2"><i class="fas fa-file-check text-lg"></i> Link File Tersimpan</div>`;
 
-      const long =
-        /Description|Content|JSON|Value|About|Message|Subtitle/i
-          .test(col);
-
-      const v =
-        row &&
-        row[col] != null
-          ? String(row[col])
-          : '';
-
-      const safe =
-        escapeHtml(v);
-
-      const span =
-        image || long
-          ? 'md:col-span-2'
-          : 'col-span-1';
-
-      if (image) {
-
-        body.innerHTML +=
-          `<div class="${span} bg-white p-5 rounded-2xl border shadow-sm space-y-3">
-
-            <label class="block font-bold text-slate-800 text-sm">
-              📸 ${label}
-            </label>
-
-            <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-
-              <div class="relative overflow-hidden inline-block shrink-0">
-
-                <button
-                  type="button"
-                  class="bg-blue-50 text-blue-600 font-bold py-2.5 px-4 rounded-xl text-xs"
-                >
-                  Pilih Kamera / File
-                </button>
-
-                <input
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  onchange="convertImg(event,'${col}')"
-                  class="absolute inset-0 opacity-0 cursor-pointer"
-                >
-
-              </div>
-
-              <span class="text-xs text-slate-400">
-                Atau Paste URL:
-              </span>
-
-              <input
-                type="text"
-                id="inp-${col}"
-                value="${safe}"
-                class="flex-1 w-full p-2.5 bg-slate-50 border rounded-xl text-xs"
-              >
-
-            </div>
-
-            <img
-              id="prev-${col}"
-              src="${safe}"
-              class="${v ? '' : 'hidden'} h-24 w-24 object-cover rounded-xl border"
-            >
-
-          </div>`;
-
-      } else if (
-        col === 'Status'
-      ) {
-
-        const s =
-          v || 'publish';
-
-        body.innerHTML +=
-          `<div class="${span}">
-
-            <label class="block font-bold text-sm mb-2">
-              ${label}
-            </label>
-
-            <select
-              id="inp-${col}"
-              class="w-full p-3.5 bg-white border rounded-xl font-bold"
-            >
-              <option value="publish" ${s === 'publish' ? 'selected' : ''}>
-                🟢 Publish
-              </option>
-
-              <option value="active" ${s === 'active' ? 'selected' : ''}>
-                🟢 Active
-              </option>
-
-              <option value="draft" ${s === 'draft' ? 'selected' : ''}>
-                🟡 Draft
-              </option>
-
-              <option value="trash" ${s === 'trash' ? 'selected' : ''}>
-                🔴 Trash
-              </option>
-
-            </select>
-
-          </div>`;
-
-      } else if (long) {
-
-        body.innerHTML +=
-          `<div class="${span}">
-
-            <label class="block font-bold text-sm mb-2">
-              ${label}
-            </label>
-
-            <textarea
-              id="inp-${col}"
-              rows="5"
-              class="w-full p-3.5 bg-white border rounded-xl"
-            >${safe}</textarea>
-
-          </div>`;
-
-      } else {
-
-        body.innerHTML +=
-          `<div class="${span}">
-
-            <label class="block font-bold text-sm mb-2">
-              ${label}
-            </label>
-
-            <input
-              type="text"
-              id="inp-${col}"
-              value="${safe}"
-              class="w-full p-3.5 bg-white border rounded-xl"
-            >
-
-          </div>`;
-      }
+       body.innerHTML += 
+         `<div class="${span} bg-white p-5 rounded-2xl border shadow-sm space-y-3 relative overflow-hidden">
+           <div class="absolute top-0 right-0 p-4 opacity-5 pointer-events-none"><i class="fas ${isImage ? 'fa-image' : 'fa-file-alt'} text-6xl"></i></div>
+           <label class="block font-black text-slate-800 text-sm relative z-10">${iconLabel} ${label}</label>
+           
+           <div class="flex flex-col sm:flex-row gap-4 items-start relative z-10">
+             <div class="relative overflow-hidden inline-block shrink-0 w-full sm:w-auto">
+               <button type="button" class="w-full sm:w-auto bg-slate-900 text-white font-bold py-3 px-5 rounded-xl text-xs shadow-md">
+                 <i class="fas fa-upload mr-1"></i> Pilih ${isImage ? 'Gambar' : 'File'}
+               </button>
+               <input type="file" accept="${acceptAttr}" onchange="convertImg(event, '${col}', '${isImage ? 'image' : 'file'}')" class="absolute inset-0 opacity-0 cursor-pointer">
+             </div>
+             
+             <div class="flex-1 w-full">
+                 <span class="text-[10px] text-blue-600 font-black uppercase tracking-wider block mb-1">Paste Link Google Drive / Web Di Sini:</span>
+                 <input type="text" id="inp-${col}" value="${safe}" oninput="autoConvertDriveLink(this)" placeholder="https://..." class="w-full p-3 bg-blue-50/50 border border-blue-100 rounded-xl text-xs font-medium focus:border-blue-500 focus:bg-white outline-none transition-all">
+             </div>
+           </div>
+           ${prevTag}
+         </div>`;
+    } else if (col === 'Status') {
+         const s = v || 'publish';
+         body.innerHTML += `<div class="${span}"><label class="block font-bold text-sm mb-2">${label}</label><select id="inp-${col}" class="w-full p-3.5 bg-white border rounded-xl font-bold text-slate-700"><option value="publish" ${s==='publish'?'selected':''}>🟢 Publish</option><option value="active" ${s==='active'?'selected':''}>🟢 Active</option><option value="draft" ${s==='draft'?'selected':''}>🟡 Draft</option><option value="trash" ${s==='trash'?'selected':''}>🔴 Trash</option></select></div>`;
+    } else if (long) {
+         body.innerHTML += `<div class="${span}"><label class="block font-bold text-sm mb-2">${label}</label><textarea id="inp-${col}" rows="5" class="w-full p-3.5 bg-white border rounded-xl outline-none focus:border-blue-500">${safe}</textarea></div>`;
+    } else {
+         body.innerHTML += `<div class="${span}"><label class="block font-bold text-sm mb-2">${label}</label><input type="text" id="inp-${col}" value="${safe}" class="w-full p-3.5 bg-white border rounded-xl outline-none focus:border-blue-500"></div>`;
     }
-  );
-
-  document
-    .getElementById(
-      'modal-form'
-    )
-    .classList.remove(
-      'hidden'
-    );
-
-  document.body.style.overflow =
-    'hidden';
+  });
+  
+  document.getElementById('modal-form').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
 }
 
-function convertImg(
-  e,
-  col
-) {
-
-  const f =
-    e.target.files[0];
-
-  if (!f) return;
-
-  if (
-    f.size > 2 * 1024 * 1024
-  ) {
-
-    showToast(
-      'Ukuran gambar maksimal 2 MB.',
-      'warning'
-    );
-
-    e.target.value = '';
-
-    return;
-  }
-
-  const r =
-    new FileReader();
-
-  r.onload = x => {
-
-    const input =
-      document.getElementById(
-        'inp-' + col
-      );
-
-    const img =
-      document.getElementById(
-        'prev-' + col
-      );
-
-    if (input) {
-      input.value =
-        x.target.result;
+/* ================================================================
+   SISTEM KOMPRESI GAMBAR & LINK GOOGLE DRIVE
+   ================================================================ */
+function autoConvertDriveLink(inputEl) {
+    let url = inputEl.value;
+    const driveRegex = /drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/;
+    const match = url.match(driveRegex);
+    
+    if (match && match[1]) {
+        inputEl.value = `https://drive.google.com/uc?export=view&id=${match[1]}`;
+        showToast("Link Google Drive dikonversi ke mode publik!", "info");
+        
+        const prevEl = document.getElementById(inputEl.id.replace('inp-', 'prev-'));
+        if (prevEl) {
+            if (prevEl.tagName === 'IMG') prevEl.src = inputEl.value;
+            prevEl.classList.remove('hidden');
+        }
     }
+}
 
-    if (img) {
+async function convertImg(e, col, type = 'image') {
+    const f = e.target.files[0];
+    if (!f) return;
 
-      img.src =
-        x.target.result;
+    const input = document.getElementById('inp-' + col);
+    const prev = document.getElementById('prev-' + col);
 
-      img.classList.remove(
-        'hidden'
-      );
+    if (type === 'image' || f.type.startsWith('image/')) {
+        showToast("Mengompresi gambar untuk database...", "info");
+        const compressedBase64 = await compressImageToGoogleSheets(f);
+        
+        if (compressedBase64.length > 49000) {
+            showToast('Gambar masih terlalu besar. Silakan Upload ke Google Drive & Paste link-nya di kotak!', 'error');
+        } else {
+            if (input) input.value = compressedBase64;
+            if (prev) { prev.src = compressedBase64; prev.classList.remove('hidden'); }
+            showToast('Gambar berhasil diproses.', 'success');
+        }
+    } else {
+        showToast('Untuk Dokumen/File, WAJIB upload ke Google Drive lalu paste link-nya di kotak yang tersedia.', 'warning');
+        e.target.value = ''; 
     }
-  };
+}
 
-  r.readAsDataURL(f);
+function compressImageToGoogleSheets(file) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                // Kecilkan dimensi maksimal jadi 300px agar data sangat ringan
+                const MAX_WIDTH = 300; 
+                const MAX_HEIGHT = 300;
+                let width = img.width;
+                let height = img.height;
+
+                if (width > height) {
+                    if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+                } else {
+                    if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                // Turunkan kualitas menjadi 30% agar muat di Google Sheets
+                resolve(canvas.toDataURL('image/jpeg', 0.3));
+            };
+        };
+    });
 }
 
 function closeModalForm() {
