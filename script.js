@@ -49,119 +49,87 @@ const menuGroups = [
 
 let pendingRequests = {};
 let loaderCount = 0;
+let cacheTimestamps = {}; // Tambahan untuk anti-stuck realtime
 
 /* ================================================================
-   API CONNECTOR (DIPERBAIKI: ANTI-CACHE BROWSER & GOOGLE SERVER)
+   API CONNECTOR & SISTEM CACHE (ANTI-STUCK REALTIME)
    ================================================================ */
 async function apiCall(method = 'GET', payload = {}) {
-  const url = API_URL;
-
-  const options = {
-    method: method.toUpperCase(),
-    redirect: 'follow',
-    cache: 'no-store', // Memaksa browser tidak menyimpan cache
-    headers: {}
-  };
-
-  let targetUrl = url;
-
-  if (method.toUpperCase() === 'POST') {
-    options.headers['Content-Type'] = 'text/plain;charset=utf-8';
-    options.body = JSON.stringify(payload);
-  } else {
-    const params = new URLSearchParams();
-    
-    Object.entries(payload || {}).forEach(([k, v]) => {
-      params.set(k, typeof v === 'object' ? JSON.stringify(v) : String(v));
-    });
-
-    // --- KUNCI REALTIME (ANTI-BUG STUCK DATA) ---
-    // Menyisipkan Date.now() membuat URL API selalu unik 100% setiap ditekan.
-    // Ini memastikan blokade cache dari server Google Apps Script berhasil dijebol.
-    params.set('_t', Date.now()); 
-    
-    if (params.toString()) {
-        targetUrl = `${url}?${params.toString()}`;
+    const url = API_URL;
+    const options = {
+        method: method.toUpperCase(),
+        redirect: 'follow',
+        cache: 'no-store',
+        headers: {}
+    };
+    let targetUrl = url;
+    if (method.toUpperCase() === 'POST') {
+        options.headers['Content-Type'] = 'text/plain;charset=utf-8';
+        options.body = JSON.stringify(payload);
+    } else {
+        const params = new URLSearchParams();
+        Object.entries(payload || {}).forEach(([k, v]) => {
+            params.set(k, typeof v === 'object' ? JSON.stringify(v) : String(v));
+        });
+        // Bypass cache Apps Script 100%
+        params.set('_t', Date.now()); 
+        if (params.toString()) {
+            targetUrl = `${url}?${params.toString()}`;
+        }
     }
-  }
-
-  // Tarik data dengan URL yang sudah dijamin unik
-  const response = await fetch(targetUrl, options);
-  const text = await response.text();
-
-  try {
-    return JSON.parse(text);
-  } catch (e) {
-    console.error("API Error (Bukan JSON):", text);
-    throw new Error('Respons Apps Script gagal diproses atau bukan JSON.');
-  }
+    const response = await fetch(targetUrl, options);
+    const text = await response.text();
+    try {
+        return JSON.parse(text);
+    } catch (e) {
+        throw new Error('Respons Apps Script gagal diproses atau bukan JSON.');
+    }
 }
 
 async function getCachedData(sheetName, force = false) {
-  if (!force && memoryCache[sheetName]) {
-    return memoryCache[sheetName];
-  }
+    if (!force && memoryCache[sheetName]) return memoryCache[sheetName];
+    if (pendingRequests[sheetName] && !force) return pendingRequests[sheetName];
 
-  if (pendingRequests[sheetName] && !force) {
-    return pendingRequests[sheetName];
-  }
-
-  pendingRequests[sheetName] = (async () => {
-    try {
-      const result = await apiCall(
-        'GET',
-        {
-          action: 'getData',
-          sheet: sheetName,
-          role: currentUser?.Role || 'Visitor'
+    const reqTime = Date.now();
+    pendingRequests[sheetName] = (async () => {
+        try {
+            const result = await apiCall('GET', {
+                action: 'getData',
+                sheet: sheetName,
+                role: currentUser?.Role || 'Visitor',
+                _req: reqTime
+            });
+            if (!result || result.status !== 'success') {
+                throw new Error(result?.message || `Gagal membaca Sheet ${sheetName}`);
+            }
+            const normalized = {
+                status: 'success',
+                headers: result.headers || [],
+                data: result.data || []
+            };
+            if (!cacheTimestamps[sheetName] || reqTime >= cacheTimestamps[sheetName]) {
+                memoryCache[sheetName] = normalized;
+                cacheTimestamps[sheetName] = reqTime;
+            }
+            return normalized;
+        } finally {
+            delete pendingRequests[sheetName];
         }
-      );
-
-      if (!result || result.status !== 'success') {
-        throw new Error(
-          result?.message ||
-          `Gagal membaca Sheet ${sheetName}`
-        );
-      }
-
-      const normalized = {
-        status: 'success',
-        headers: result.headers || [],
-        data: result.data || []
-      };
-
-      memoryCache[sheetName] = normalized;
-
-      return normalized;
-
-    } finally {
-      delete pendingRequests[sheetName];
-    }
-  })();
-
-  return pendingRequests[sheetName];
+    })();
+    return pendingRequests[sheetName];
 }
 
 function toggleLoader(show) {
-  const loader =
-    document.getElementById('loader');
-
-  if (!loader) return;
-
-  loaderCount =
-    Math.max(
-      0,
-      loaderCount + (show ? 1 : -1)
-    );
-
-  loader.style.display =
-    loaderCount > 0
-      ? 'flex'
-      : 'none';
+    const loader = document.getElementById('loader');
+    if (!loader) return;
+    loaderCount = Math.max(0, loaderCount + (show ? 1 : -1));
+    loader.style.display = loaderCount > 0 ? 'flex' : 'none';
 }
 
 function invalidateCache(sheetName) {
-  delete memoryCache[sheetName];
+    delete memoryCache[sheetName];
+    delete pendingRequests[sheetName];
+    delete cacheTimestamps[sheetName];
 }
 
 /* ================================================================
