@@ -193,22 +193,14 @@ function showToast(
 }
 
 /* ================================================================
-   CONTROLLER SPLASH SCREEN (DIPERBAIKI ANTI-BENTROK MAINTENANCE)
+   CONTROLLER SPLASH SCREEN (LANGSUNG KE PUBLIK JIKA BUKU TAMU TUTUP)
    ================================================================ */
 function skipSplash() {
-  if (splashAutoTimer) {
-    clearInterval(splashAutoTimer);
-  }
+  if (splashAutoTimer) clearInterval(splashAutoTimer);
   
   const splash = document.getElementById('splash-screen');
-  const form = document.getElementById('guest-form-card');
-  const closedCard = document.getElementById('guest-closed-card');
-  
-  if (splash) {
-    splash.classList.add('hidden');
-  }
+  if (splash) splash.classList.add('hidden');
 
-  // Cek status maintenance dari memori (cache) secara langsung agar akurat 100%
   let isMaintenance = false;
   if (memoryCache['Web_Branding'] && memoryCache['Web_Branding'].data) {
       const settings = memoryCache['Web_Branding'].data.find(s => s.Status === 'publish' || s.Status === 'active') || memoryCache['Web_Branding'].data[0];
@@ -218,12 +210,12 @@ function skipSplash() {
       }
   }
 
-  // Logika cerdas: Jika sedang maintenance, jangan biarkan form buku tamu muncul!
   if (isMaintenance) {
-      if (form) form.classList.add('hidden');
-      if (closedCard) closedCard.classList.remove('hidden');
+      // BUKU TAMU DITUTUP: Langsung lempar ke Dashboard Publik secara instan
+      navigateTo('public', 'home', true);
   } else {
-      if (closedCard) closedCard.classList.add('hidden');
+      // BUKU TAMU BUKA: Munculkan form pengisian seperti biasa
+      const form = document.getElementById('guest-form-card');
       if (form) form.classList.remove('hidden');
   }
 }
@@ -2446,7 +2438,7 @@ async function submitData() {
 }
 
 /* ================================================================
-   WEB BRANDING & KENDALI BUKU TAMU (OPEN/CLOSE CERDAS)
+   WEB BRANDING & BYPASS BUKU TAMU KE PUBLIK
    ================================================================ */
 function applyWebBranding(data) {
   if (!data || data.length === 0) return;
@@ -2474,25 +2466,23 @@ function applyWebBranding(data) {
      document.querySelectorAll('.dynamic-logo-placeholder').forEach(el => el.classList.add('hidden'));
   }
 
-  // --- LOGIKA BUKU TAMU OPEN/CLOSE YANG AMAN DARI SPLASH SCREEN ---
+  // --- LOGIKA BYPASS BUKU TAMU KE DASHBOARD PUBLIK ---
   const gbStatus = String(activeSettings.Guestbook_Status || 'Open').toLowerCase();
-  const formCard = document.getElementById('guest-form-card');
-  const closedCard = document.getElementById('guest-closed-card');
+  const attendanceView = document.getElementById('view-attendance');
   const splash = document.getElementById('splash-screen');
-  
-  // Deteksi apakah animasi loading awal (splash screen) masih berjalan
   const isSplashVisible = splash && !splash.classList.contains('hidden');
 
-  if (formCard && closedCard) {
-      if (gbStatus === 'close' || gbStatus === 'tutup' || gbStatus === 'maintenance') {
-          formCard.classList.add('hidden'); 
-          // Munculkan peringatan tutup HANYA JIKA splash screen sudah selesai
-          if (!isSplashVisible) closedCard.classList.remove('hidden');
-      } else {
-          closedCard.classList.add('hidden');
-          // Munculkan form buku tamu HANYA JIKA splash screen sudah selesai
-          if (!isSplashVisible) formCard.classList.remove('hidden');
+  if (gbStatus === 'close' || gbStatus === 'tutup' || gbStatus === 'maintenance') {
+      const formCard = document.getElementById('guest-form-card');
+      if (formCard) formCard.classList.add('hidden');
+      
+      // Jika layar sedang di buku tamu & loading awal sudah selesai, lempar paksa ke Publik!
+      if (attendanceView && !attendanceView.classList.contains('hidden') && !isSplashVisible) {
+          navigateTo('public', 'home', true);
       }
+  } else {
+      const formCard = document.getElementById('guest-form-card');
+      if (formCard && !isSplashVisible) formCard.classList.remove('hidden');
   }
 }
 
