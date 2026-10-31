@@ -212,9 +212,9 @@ function skipSplash() {
       navigateTo('public', 'home', true);
       
       // 2. MUNCULKAN TOMBOL BUKU TAMU RAHASIA (Agar Anda tidak terkunci)
-      if (!document.getElementById('btn-buku-secret')) {
+      if (!document.getElementById('btn-book-secret')) {
            const btn = document.createElement('button');
-           btn.id = 'btn-buku-secret';
+           btn.id = 'btn-book-secret';
            btn.innerHTML = '<i class="fas fa-user-shield"></i> Buku Tamu';
            btn.className = 'fixed bottom-6 right-6 bg-slate-900/90 backdrop-blur-md text-white px-5 py-3 rounded-full text-xs font-bold shadow-2xl z-[99999] hover:bg-blue-600 transition-all border border-slate-700 animate-fade-in';
            btn.onclick = () => {
@@ -232,7 +232,7 @@ function skipSplash() {
       const form = document.getElementById('guest-form-card');
       if (form) form.classList.remove('hidden');
       
-      const secretBtn = document.getElementById('btn-buku-secret');
+      const secretBtn = document.getElementById('btn-book-secret');
       if (secretBtn) secretBtn.remove();
   }
 }
