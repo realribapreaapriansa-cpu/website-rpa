@@ -2515,11 +2515,20 @@ function navigateTo(
   );
 }
 
-function renderView(
-  view,
-  section
-) {
+function renderView( view,  section)
+  {
+  function renderView(view, section) {
 
+  // === KODE PENJAGA GERBANG TAMBAHAN ===
+  if (view === 'attendance') {
+      const settings = memoryCache['Web_Branding']?.data?.find(s => s.Status === 'publish' || s.Status === 'active') || memoryCache['Web_Branding']?.data?.[0];
+      const stat = String(settings?.Guestbook_Status || 'Open').toLowerCase();
+      if (stat === 'close' || stat === 'tutup' || stat === 'maintenance') {
+          // Ganti rute paksa ke Publik jika Buku Tamu sedang tutup
+          view = 'public';
+          section = 'home';
+      }
+  }
   [
     'attendance',
     'public',
@@ -5068,35 +5077,44 @@ async function actionData(id, actionType) {
 }
 
 /* ================================================================
-   WINDOW LOAD
+   WINDOW LOAD (PENJAGA GERBANG UTAMA BUKU TAMU)
    ================================================================ */
-window.addEventListener(
-  'load',
-  () => {
+window.addEventListener('load', async () => {
+    // 1. Cek Google Sheets SEBELUM merender halaman apapun!
+    try {
+        const res = await getCachedData('Web_Branding', true);
+        let isClosed = false;
+        
+        if (res && res.data && res.data.length > 0) {
+            const settings = res.data.find(s => s.Status === 'publish' || s.Status === 'active') || res.data[0];
+            const stat = String(settings.Guestbook_Status || 'Open').toLowerCase();
+            if (stat === 'close' || stat === 'tutup' || stat === 'maintenance') {
+                isClosed = true;
+            }
+            if (typeof applyWebBranding === 'function') applyWebBranding(res.data);
+        }
 
-    history.replaceState(
-      {
-        view:
-          'attendance',
-        section:
-          null
-      },
-      '',
-      ''
-    );
-
-    renderView(
-      'attendance',
-      null
-    );
-
-    startSplashTimer();
-
-  },
-  {
-    once: true
-  }
-);
+        // 2. Tentukan Rute Otomatis
+        if (isClosed) {
+            // JIKA TUTUP: Hapus splash screen, bypass 100% ke Publik
+            const splash = document.getElementById('splash-screen');
+            if (splash) splash.classList.add('hidden');
+            
+            history.replaceState({ view: 'public', section: 'home' }, '', '');
+            renderView('public', 'home');
+        } else {
+            // JIKA BUKA: Masuk ke Buku Tamu seperti biasa
+            history.replaceState({ view: 'attendance', section: null }, '', '');
+            renderView('attendance', null);
+            if (typeof startSplashTimer === 'function') startSplashTimer();
+        }
+    } catch (err) {
+        // Jika internet error/lemot, fallback ke Buku Tamu
+        history.replaceState({ view: 'attendance', section: null }, '', '');
+        renderView('attendance', null);
+        if (typeof startSplashTimer === 'function') startSplashTimer();
+    }
+}, { once: true });
 
 /* ================================================================
    FITUR LOGIN, REGISTRASI, PASSWORD, KAMERA WAJAH, RECOVERY
