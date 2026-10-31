@@ -6146,7 +6146,7 @@ async function handleRegister() {
 }
 
 /* ================================================================
-   LOGIN (BUG 2 & 5 FIXED)
+   LOGIN (LANGSUNG KE HOME/STATISTIK JIKA ADMIN)
    ================================================================ */
 async function handleLogin() {
   const identifier = document.getElementById('login-identifier')?.value || document.getElementById('login-email')?.value;
@@ -6156,7 +6156,6 @@ async function handleLogin() {
     return showToast("Isi semua data login!", "warning");
   }
 
-  // BUG 5 FIXED: Paksa wajib ambil foto sebelum login
   if (!isFaceVerified || !tempFaceData.front) {
     return showToast("Verifikasi wajah wajib dilakukan untuk Login!", "warning");
   }
@@ -6167,11 +6166,11 @@ async function handleLogin() {
   const payload = {
     action: 'login',
     data: {
-      identifier: identifier.trim(), // BUG 2 FIXED: Ganti nama var jadi 'identifier'
+      identifier: identifier.trim(),
       password: password,
       faceVerified: isFaceVerified,
-      loginFacePhoto: tempFaceData.front, // Kirim ke backend sebagai bukti foto saat itu
-      loginFaceDescriptor: JSON.stringify(tempFaceData.descriptor || []), // Wajib untuk pencocokan Euclidean Distance
+      loginFacePhoto: tempFaceData.front,
+      loginFaceDescriptor: JSON.stringify(tempFaceData.descriptor || []),
       deviceInfo: meta.deviceInfo
     }
   };
@@ -6181,9 +6180,16 @@ async function handleLogin() {
     if (json.status === 'success') {
       currentUser = json.user;
       showToast("Login Berhasil! Selamat datang.", "success");
+      
       if (currentUser.Role === 'SuperAdmin') {
         initAdminSidebar();
         switchView('admin');
+        
+        // FITUR BARU: Paksa Admin langsung melihat Dashboard Utama (Statistik) saat baru masuk
+        setTimeout(() => {
+            if (typeof renderAdminDashboardStats === 'function') renderAdminDashboardStats();
+        }, 100);
+
       } else {
         switchView('visitor');
       }
@@ -6198,33 +6204,18 @@ async function handleLogin() {
 }
 
 /* ================================================================
-   LOGOUT
+   LOGOUT (KEMBALI KE DASHBOARD PUBLIK)
    ================================================================ */
 function handleLogout() {
-
-  currentUser =
-    null;
-
-  memoryCache =
-    {};
-
-  isFaceVerified =
-    false;
-
-  tempFaceData = {
-    front: '',
-    right: '',
-    left: ''
-  };
-
-  showToast(
-    "Sesi berakhir.",
-    "info"
-  );
-
-  switchView(
-    'attendance'
-  );
+  currentUser = null;
+  memoryCache = {};
+  isFaceVerified = false;
+  tempFaceData = { front: '', right: '', left: '', descriptor: [] };
+  
+  showToast("Sesi berhasil diakhiri.", "info");
+  
+  // LOGIKA BARU: Otomatis kembali ke Dashboard Publik, BUKAN buku tamu
+  navigateTo('public', 'home', true);
 }
 
 /* ================================================================
@@ -7457,4 +7448,121 @@ function renderPublicProfile(profileData) {
             </div>
         </div>
     `;
+}
+
+/* ================================================================
+   ADMIN DASHBOARD UTAMA (STATISTIK LENGKAP & RESPONSIF)
+   ================================================================ */
+async function renderAdminDashboardStats() {
+  activeModule = 'admin-dash';
+  
+  // Atur visibilitas panel agar rapi
+  const tablePanel = document.getElementById('table-panel');
+  const welcomePanel = document.getElementById('welcome-panel');
+  if (tablePanel) tablePanel.classList.add('hidden');
+  if (welcomePanel) welcomePanel.classList.remove('hidden');
+
+  // Berikan warna aktif pada menu samping (Sidebar)
+  document.querySelectorAll('.admin-menu-button').forEach(b => {
+      const isDash = b.getAttribute('data-mod') === 'admin-dash';
+      b.classList.toggle('bg-indigo-600', isDash);
+      b.classList.toggle('text-white', isDash);
+      b.classList.toggle('bg-blue-600', false); 
+      b.classList.toggle('text-slate-300', !isDash);
+  });
+
+  if (welcomePanel) {
+      welcomePanel.innerHTML = `
+          <div class="w-full py-24 flex flex-col items-center justify-center text-slate-400 animate-pulse bg-white rounded-3xl border border-slate-100 shadow-sm">
+              <i class="fas fa-chart-pie fa-spin text-5xl text-indigo-500 mb-4"></i>
+              <p class="font-bold text-lg">Memuat Statistik Sistem...</p>
+          </div>
+      `;
+  }
+
+  try {
+      // Tarik 3 Data Utama untuk Statistik
+      const [att, users, logs] = await Promise.all([
+          getCachedData('Visitor_Attendance'),
+          getCachedData('Users'),
+          getCachedData('System_Logs')
+      ]);
+
+      const totalVisitor = att.data ? att.data.length : 0;
+      const totalUsers = users.data ? users.data.length : 0;
+      const totalLogs = logs.data ? logs.data.length : 0;
+
+      // Desain UI Dashboard yang Bersih, Responsif Mobile/Desktop & Efisien
+      welcomePanel.innerHTML = `
+          <div class="space-y-6 animate-fade-in w-full max-w-full overflow-hidden p-1">
+              
+              <!-- Header Selamat Datang -->
+              <div class="bg-gradient-to-r from-indigo-600 to-blue-600 rounded-3xl p-6 md:p-10 text-white shadow-xl relative overflow-hidden">
+                  <div class="absolute -top-24 -right-24 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
+                  <div class="relative z-10">
+                      <h2 class="text-3xl font-black mb-2">Dashboard Utama</h2>
+                      <p class="text-indigo-100 text-sm md:text-base max-w-xl leading-relaxed">
+                          Selamat datang di pusat kendali, <b>${escapeHtml(currentUser?.FullName || 'Admin')}</b>. 
+                          Pantau statistik pengunjung dan kelola seluruh konten website secara realtime dari sini.
+                      </p>
+                  </div>
+              </div>
+
+              <!-- Grid Statistik -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+                  <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm flex items-center gap-5 hover:shadow-md transition-shadow">
+                      <div class="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-500 flex items-center justify-center text-2xl shrink-0"><i class="fas fa-eye"></i></div>
+                      <div>
+                          <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Pengunjung</p>
+                          <h4 class="text-3xl font-black text-slate-800 mt-1">${totalVisitor}</h4>
+                      </div>
+                  </div>
+                  <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm flex items-center gap-5 hover:shadow-md transition-shadow">
+                      <div class="w-16 h-16 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center text-2xl shrink-0"><i class="fas fa-users"></i></div>
+                      <div>
+                          <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Akun Terdaftar</p>
+                          <h4 class="text-3xl font-black text-slate-800 mt-1">${totalUsers}</h4>
+                      </div>
+                  </div>
+                  <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm flex items-center gap-5 hover:shadow-md transition-shadow">
+                      <div class="w-16 h-16 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center text-2xl shrink-0"><i class="fas fa-shield-halved"></i></div>
+                      <div>
+                          <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Log Sistem</p>
+                          <h4 class="text-3xl font-black text-slate-800 mt-1">${totalLogs}</h4>
+                      </div>
+                  </div>
+              </div>
+
+              <!-- Jalan Pintas (Shortcut Fitur Esensial) -->
+              <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm">
+                  <h3 class="font-extrabold text-lg text-slate-800 mb-4 flex items-center gap-2">
+                      <i class="fas fa-bolt text-amber-400"></i> Jalan Pintas
+                  </h3>
+                  <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <button onclick="loadAdminModule('Portfolio')" class="p-4 bg-slate-50 hover:bg-blue-50 hover:text-blue-600 rounded-2xl text-left transition-colors border border-slate-100 flex flex-col items-start gap-3 group">
+                          <i class="fas fa-briefcase text-xl text-slate-400 group-hover:text-blue-500"></i>
+                          <span class="font-bold text-sm">Kelola Portofolio</span>
+                      </button>
+                      <button onclick="loadAdminModule('Blog')" class="p-4 bg-slate-50 hover:bg-emerald-50 hover:text-emerald-600 rounded-2xl text-left transition-colors border border-slate-100 flex flex-col items-start gap-3 group">
+                          <i class="fas fa-newspaper text-xl text-slate-400 group-hover:text-emerald-500"></i>
+                          <span class="font-bold text-sm">Tulis Artikel Blog</span>
+                      </button>
+                      <button onclick="loadAdminModule('Users')" class="p-4 bg-slate-50 hover:bg-purple-50 hover:text-purple-600 rounded-2xl text-left transition-colors border border-slate-100 flex flex-col items-start gap-3 group">
+                          <i class="fas fa-user-cog text-xl text-slate-400 group-hover:text-purple-500"></i>
+                          <span class="font-bold text-sm">Atur Pengguna</span>
+                      </button>
+                      <button onclick="loadAdminModule('Web_Branding')" class="p-4 bg-slate-50 hover:bg-rose-50 hover:text-rose-600 rounded-2xl text-left transition-colors border border-slate-100 flex flex-col items-start gap-3 group">
+                          <i class="fas fa-palette text-xl text-slate-400 group-hover:text-rose-500"></i>
+                          <span class="font-bold text-sm">Tampilan & Tema</span>
+                      </button>
+                  </div>
+              </div>
+
+          </div>
+      `;
+  } catch (err) {
+      if (welcomePanel) {
+          welcomePanel.innerHTML = '<div class="p-6 bg-rose-50 text-rose-600 font-bold rounded-2xl text-center">Gagal memuat statistik.</div>';
+      }
+  }
 }
