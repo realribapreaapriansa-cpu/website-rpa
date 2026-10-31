@@ -5048,41 +5048,52 @@ async function actionData(id, actionType) {
 /* ================================================================
    WINDOW LOAD (TAHAN TOMBOL SPLASH SEBELUM DATA SIAP)
    ================================================================ */
-window.addEventListener('load', async () => {
+/* ================================================================
+   1. PENJAGA INSTAN (MENGUNCI TOMBOL SEJAK AWAL HTML DIBACA)
+   ================================================================ */
+const splashObserver = new MutationObserver((mutations, obs) => {
+    const btn = document.querySelector('button[onclick="skipSplash()"]');
+    if (btn && !btn.disabled) {
+        btn.disabled = true; // Kunci tombol 100% instan
+        btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Menyiapkan...';
+        btn.className = 'mt-6 bg-slate-200 text-slate-400 border border-slate-300 px-8 py-3.5 rounded-full font-bold flex items-center justify-center gap-2 mx-auto w-full sm:w-auto cursor-not-allowed transition-all';
+        obs.disconnect(); // Hentikan pantauan setelah tombol berhasil dikunci
+    }
+});
+splashObserver.observe(document, { childList: true, subtree: true });
+
+/* ================================================================
+   2. STARTUP CEPAT (JALAN TANPA MENUNGGU GAMBAR LOADING)
+   ================================================================ */
+document.addEventListener('DOMContentLoaded', async () => {
+    splashObserver.disconnect(); // Matikan observer berjaga-jaga
+
     history.replaceState({ view: 'attendance', section: null }, '', '');
     renderView('attendance', null);
     if (typeof startSplashTimer === 'function') startSplashTimer();
 
-    // 1. KUNCI TOMBOL SEMENTARA WAKTU (Cegah pengunjung mencuri klik)
-    const splashBtn = document.querySelector('button[onclick="skipSplash()"]');
-    if (splashBtn) {
-        splashBtn.disabled = true; // Kunci tombol agar tidak bisa diklik
-        splashBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memeriksa Status...';
-        splashBtn.className = 'mt-6 bg-slate-400 text-white px-8 py-3.5 rounded-full font-bold flex items-center justify-center gap-2 mx-auto w-full sm:w-auto cursor-not-allowed transition-all';
-    }
-
-    // 2. Tarik data Web Branding dari Server
+    // Tarik data Web Branding dari Server secepat mungkin (tanpa nunggu gambar loading)
     try {
         const res = await getCachedData('Web_Branding', true);
         if (res && res.data && res.data.length > 0) {
             if (typeof applyWebBranding === 'function') applyWebBranding(res.data);
         } else {
-            // Jika data kosong, buka paksa menjadi normal
-            if (splashBtn) {
-                splashBtn.disabled = false;
-                splashBtn.innerHTML = 'Mulai Isi Buku Tamu <i class="fas fa-arrow-right"></i>';
-                splashBtn.className = 'mt-6 bg-blue-600 hover:bg-blue-700 text-white px-8 py-3.5 rounded-full font-bold shadow-xl shadow-blue-600/30 transition-all flex items-center justify-center gap-2 mx-auto w-full sm:w-auto';
-            }
+            unlockSplashButton();
         }
     } catch (err) {
-        // Jika internet error, buka paksa menjadi normal agar pengunjung tidak terjebak
-        if (splashBtn) {
-            splashBtn.disabled = false;
-            splashBtn.innerHTML = 'Mulai Isi Buku Tamu <i class="fas fa-arrow-right"></i>';
-            splashBtn.className = 'mt-6 bg-blue-600 hover:bg-blue-700 text-white px-8 py-3.5 rounded-full font-bold shadow-xl shadow-blue-600/30 transition-all flex items-center justify-center gap-2 mx-auto w-full sm:w-auto';
-        }
+        unlockSplashButton();
     }
 }, { once: true });
+
+// Fungsi darurat jika Google Sheets gagal merespons
+function unlockSplashButton() {
+    const btn = document.querySelector('button[onclick="skipSplash()"]');
+    if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = 'Mulai Isi Buku Tamu <i class="fas fa-arrow-right"></i>';
+        btn.className = 'mt-6 bg-blue-600 hover:bg-blue-700 text-white px-8 py-3.5 rounded-full font-bold shadow-xl shadow-blue-600/30 transition-all flex items-center justify-center gap-2 mx-auto w-full sm:w-auto';
+    }
+}
 
 /* ================================================================
    FITUR LOGIN, REGISTRASI, PASSWORD, KAMERA WAJAH, RECOVERY
