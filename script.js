@@ -2225,9 +2225,9 @@ function openModalInput(row = null) {
            
            <div class="relative z-10">${previewHtml}</div>
          </div>`;
-    } else if (col === 'Status') {
-         const s = v || 'publish';
-         body.innerHTML += `<div class="${span}"><label class="block font-black text-slate-800 text-sm mb-2">${label}</label><select id="inp-${col}" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-700 focus:border-blue-500 outline-none transition-all"><option value="publish" ${s==='publish'?'selected':''}>🟢 Publik (Live)</option><option value="active" ${s==='active'?'selected':''}>🟢 Aktif</option><option value="draft" ${s==='draft'?'selected':''}>🟡 Draft (Sembunyikan)</option><option value="trash" ${s==='trash'?'selected':''}>🔴 Trash (Sampah)</option></select></div>`;
+    } else if (col === 'Guestbook_Status') {
+         const s = v || 'Open';
+         body.innerHTML += `<div class="${span}"><label class="block font-black text-slate-800 text-sm mb-2">Kendali Buku Tamu</label><select id="inp-${col}" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-700 focus:border-blue-500 outline-none transition-all"><option value="Open" ${s==='Open'?'selected':''}>🟢 Buka (Beroperasi)</option><option value="Close" ${s==='Close'?'selected':''}>🔴 Tutup (Mode Pemeliharaan)</option></select></div>`;
     } else if (long) {
          body.innerHTML += `<div class="${span}"><label class="block font-black text-slate-800 text-sm mb-2">${label}</label><textarea id="inp-${col}" rows="5" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-700 outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-50 transition-all custom-scrollbar">${safe}</textarea></div>`;
     } else {
@@ -2435,100 +2435,47 @@ async function submitData() {
 }
 
 /* ================================================================
-   WEB BRANDING
+   WEB BRANDING & KENDALI BUKU TAMU (OPEN/CLOSE)
    ================================================================ */
-function applyWebBranding(
-  data
-) {
+function applyWebBranding(data) {
+  if (!data || data.length === 0) return;
+  const activeSettings = data.find(s => s.Status === 'publish' || s.Status === 'active') || data[0];
 
-  if (
-    !data ||
-    data.length === 0
-  ) {
-    return;
+  if (activeSettings.Site_Name) document.title = activeSettings.Site_Name;
+  
+  if (activeSettings.Favicon_URL) {
+     let favicon = document.getElementById('dynamic-favicon');
+     if (favicon) { favicon.href = activeSettings.Favicon_URL; }
+     else {
+        favicon = document.createElement('link');
+        favicon.id = 'dynamic-favicon';
+        favicon.rel = 'icon';
+        favicon.href = activeSettings.Favicon_URL;
+        document.head.appendChild(favicon);
+     }
+  }
+  
+  if (activeSettings.Logo_URL) {
+     document.querySelectorAll('.dynamic-logo-img').forEach(img => {
+        img.src = activeSettings.Logo_URL;
+        img.classList.remove('hidden');
+     });
+     document.querySelectorAll('.dynamic-logo-placeholder').forEach(el => el.classList.add('hidden'));
   }
 
-  const activeSettings =
-    data.find(
-      s =>
-        s.Status === 'publish' ||
-        s.Status === 'active'
-    ) ||
-    data[0];
+  // --- LOGIKA BUKU TAMU OPEN / CLOSE ---
+  const gbStatus = String(activeSettings.Guestbook_Status || 'Open').toLowerCase();
+  const formCard = document.getElementById('guest-form-card');
+  const closedCard = document.getElementById('guest-closed-card');
 
-  if (
-    activeSettings.Site_Name
-  ) {
-    document.title =
-      activeSettings.Site_Name;
-  }
-
-  if (
-    activeSettings.Favicon_URL
-  ) {
-
-    let favicon =
-      document.getElementById(
-        'dynamic-favicon'
-      );
-
-    if (favicon) {
-
-      favicon.href =
-        activeSettings.Favicon_URL;
-
-    } else {
-
-      favicon =
-        document.createElement(
-          'link'
-        );
-
-      favicon.id =
-        'dynamic-favicon';
-
-      favicon.rel =
-        'icon';
-
-      favicon.href =
-        activeSettings.Favicon_URL;
-
-      document.head.appendChild(
-        favicon
-      );
-    }
-  }
-
-  if (
-    activeSettings.Logo_URL
-  ) {
-
-    document
-      .querySelectorAll(
-        '.dynamic-logo-img'
-      )
-      .forEach(
-        img => {
-
-          img.src =
-            activeSettings.Logo_URL;
-
-          img.classList.remove(
-            'hidden'
-          );
-        }
-      );
-
-    document
-      .querySelectorAll(
-        '.dynamic-logo-placeholder'
-      )
-      .forEach(
-        el =>
-          el.classList.add(
-            'hidden'
-          )
-      );
+  if (formCard && closedCard) {
+      if (gbStatus === 'close' || gbStatus === 'tutup' || gbStatus === 'maintenance') {
+          formCard.classList.add('hidden'); // Sembunyikan form absen
+          closedCard.classList.remove('hidden'); // Munculkan kartu perbaikan
+      } else {
+          formCard.classList.remove('hidden'); // Tampilkan form absen
+          closedCard.classList.add('hidden'); // Sembunyikan kartu perbaikan
+      }
   }
 }
 
