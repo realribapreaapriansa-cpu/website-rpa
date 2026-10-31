@@ -3123,24 +3123,30 @@ function safeText(
     : String(v);
 }
 
+/* ================================================================
+   SAFE URL HELPER (PENAMPIL GAMBAR BASE64 & LINK OTOMATIS)
+   ================================================================ */
 function safeUrl(v) {
+  if (!v) return '';
+  
+  let str = String(v).trim();
+  
+  // 1. Izinkan format gambar Base64 tampil di layar
+  if (str.startsWith('data:image/')) {
+      return str;
+  }
+  
+  // 2. Jika pengguna lupa mengetik https:// pada link Drive atau Web, tambahkan otomatis
+  if (!/^https?:\/\//i.test(str) && str.includes('.')) {
+      str = 'https://' + str;
+  }
 
+  // 3. Validasi akhir untuk link standar
   try {
-
-    const u =
-      new URL(v);
-
-    return [
-      'http:',
-      'https:'
-    ].includes(
-      u.protocol
-    )
-      ? u.href
-      : '';
-
+    const u = new URL(str);
+    return ['http:', 'https:'].includes(u.protocol) ? u.href : '';
   } catch(e) {
-
+    // Jika format benar-benar hancur, kembalikan kosong agar layout web tidak rusak
     return '';
   }
 }
