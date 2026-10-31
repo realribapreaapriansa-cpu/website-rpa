@@ -40,7 +40,12 @@ const menuGroups = [
     {sheet:'Privacy_Policy',label:'Privacy Policy'}, {sheet:'Terms_Conditions',label:'Terms Conditions'}
   ]},
   { title: "Interaksi Visitor", icon: 'fa-users', items: [
-    {sheet:'Visitor_Attendance',label:'Visitor Attendance'}, {sheet:'Newsletter',label:'Inbox Newsletter'}, {sheet:'Notifications',label:'Notifications'}, {sheet:'Bookmarks',label:'User Bookmarks'}, {sheet:'Analytics',label:'Analytics Heatmap'}
+    {sheet:'Visitor_Attendance',label:'Visitor Attendance'}, 
+    {sheet:'Live_Chat',label:'Live Chat Inbox'}, 
+    {sheet:'Newsletter',label:'Inbox Newsletter'}, 
+    {sheet:'Notifications',label:'Notifications'}, 
+    {sheet:'Bookmarks',label:'User Bookmarks'}, 
+    {sheet:'Analytics',label:'Analytics Heatmap'}
   ]},
   { title: "Sistem & Keamanan", icon: 'fa-shield-halved', items: [
     {sheet:'Users',label:'Users'}, {sheet:'System_Logs',label:'System Logs'}
@@ -2581,6 +2586,12 @@ function navigateTo(
    RENDER VIEW (BERSIH DARI BLOKIR)
    ================================================================ */
 function renderView(view, section) {
+  // Matikan sinkronisasi chat saat pindah halaman agar tidak memberatkan web
+  if (typeof chatSyncTimer !== 'undefined' && chatSyncTimer) {
+      clearInterval(chatSyncTimer);
+      chatSyncTimer = null;
+  }
+
   ['attendance', 'public', 'login', 'visitor', 'admin'].forEach(v => {
       const el = document.getElementById(`view-${v}`);
       if (el) el.classList.add('hidden');
@@ -2604,6 +2615,9 @@ function renderView(view, section) {
           }
       });
       renderPublicContent(false, sec);
+      
+      // MUNCULKAN FOOTER DINAMIS DI BAWAH HALAMAN PUBLIK
+      if (typeof renderDynamicFooter === 'function') renderDynamicFooter();
   } else if (view === 'visitor') {
       switchVisitorTab('dash');
   }
@@ -4428,157 +4442,48 @@ function toggleAdminSidebar() {
       : '';
 }
 
-async function loadAdminModule(
-  sheetName,
-  force = false
-) {
+async function loadAdminModule(sheetName, force = false) {
+  activeModule = sheetName;
+  
+  document.getElementById('welcome-panel').classList.add('hidden');
+  const tablePanel = document.getElementById('table-panel');
+  
+  // Hapus UI Chat Admin jika sebelumnya ada
+  const existingChat = document.getElementById('admin-live-chat-panel');
+  if (existingChat) existingChat.remove();
 
-  activeModule =
-    sheetName;
-
-  document
-    .getElementById(
-      'welcome-panel'
-    )
-    .classList.add(
-      'hidden'
-    );
-
-  document
-    .getElementById(
-      'table-panel'
-    )
-    .classList.remove(
-      'hidden'
-    );
-
-  const activeLabel =
-    menuGroups
-      .flatMap(
-        g => g.items
-      )
-      .find(
-        x =>
-          x.sheet ===
-          sheetName
-      )
-      ?.label ||
-    sheetName.replace(
-      /_/g,
-      ' '
-    );
-
-  document
-    .getElementById(
-      'admin-module-title'
-    )
-    .innerText =
-      activeLabel;
-
-  document
-    .querySelectorAll(
-      '.mod-btn'
-    )
-    .forEach(
-      b => {
-
-        const a =
-          b.dataset.mod ===
-          sheetName;
-
-        b.classList.toggle(
-          'bg-blue-600',
-          a
-        );
-
-        b.classList.toggle(
-          'text-white',
-          a
-        );
-
-        b.classList.toggle(
-          'shadow-md',
-          a
-        );
-
-        b.classList.toggle(
-          'text-slate-300',
-          !a
-        );
-      }
-    );
-
-  if (
-    innerWidth < 768
-  ) {
-
-    const sb =
-      document.getElementById(
-        'adm-sidebar'
-      );
-
-    if (sb) {
-
-      sb.classList.add(
-        'hidden'
-      );
-
-      sb.classList.remove(
-        'mobile-open'
-      );
-    }
-
-    document.body.style.overflow =
-      '';
+  // === JIKA KLIK MENU LIVE CHAT ===
+  if (sheetName === 'Live_Chat') {
+      tablePanel.classList.add('hidden'); // Sembunyikan tabel standar
+      
+      // Buat panel chat
+      const chatPanel = document.createElement('div');
+      chatPanel.id = 'admin-live-chat-panel';
+      chatPanel.className = 'w-full max-w-7xl mx-auto animate-fade-in mb-8';
+      chatPanel.innerHTML = buildChatUI('admin');
+      tablePanel.parentNode.appendChild(chatPanel);
+      
+      // Warnai tombol menu
+      document.querySelectorAll('.mod-btn').forEach(b => {
+          const a = b.dataset.mod === sheetName;
+          b.classList.toggle('bg-blue-600', a);
+          b.classList.toggle('text-white', a);
+          b.classList.toggle('shadow-md', a);
+          b.classList.toggle('text-slate-300', !a);
+      });
+      
+      if (innerWidth < 768) toggleAdminSidebar();
+      
+      activeChatRoom = 'Global';
+      await renderAdminChatRooms();
+      switchChatRoom('Global');
+      if (typeof chatSyncTimer !== 'undefined') clearInterval(chatSyncTimer);
+      chatSyncTimer = setInterval(syncChatMessages, 5000);
+      return;
   }
-
-  const ro = [
-    'System_Logs',
-    'Analytics',
-    'Visitor_Attendance'
-  ].includes(
-    sheetName
-  );
-
-  const addButton =
-    document.getElementById(
-      'btn-add'
-    );
-
-  if (addButton) {
-
-    addButton.style.display =
-      ro
-        ? 'none'
-        : 'flex';
-  }
-
-  if (
-    !force &&
-    memoryCache[sheetName]
-  ) {
-
-    renderAdminTable(
-      memoryCache[sheetName]
-        .headers,
-      memoryCache[sheetName]
-        .data
-    );
-
-    return;
-  }
-
-  const res =
-    await getCachedData(
-      sheetName,
-      force
-    );
-
-  renderAdminTable(
-    res.headers || [],
-    res.data || []
-  );
-}
+  
+  // Jika bukan Live Chat, kembalikan tampilan tabel standar
+  tablePanel.classList.remove('hidden');
 
 /* ================================================================
    ADMIN TABLE
@@ -7466,88 +7371,185 @@ async function renderAdminDashboardStats() {
 }
 
 /* ================================================================
-   MESIN LIVE CHAT (WHATSAPP CLONE)
+   FOOTER DINAMIS (OTOMATIS BERADA DI PALING BAWAH HALAMAN)
+   ================================================================ */
+async function renderDynamicFooter() {
+    let footer = document.getElementById('main-dynamic-footer');
+    if (!footer) {
+        footer = document.createElement('footer');
+        footer.id = 'main-dynamic-footer';
+        footer.className = 'bg-slate-900 text-slate-300 py-10 md:py-12 border-t border-slate-800 w-full mt-auto shrink-0 z-10';
+        
+        const pubView = document.getElementById('view-public');
+        if (pubView) {
+            pubView.classList.add('flex', 'flex-col');
+            pubView.appendChild(footer);
+        }
+    }
+    
+    try {
+        const res = await getCachedData('Contact', true);
+        const x = (res.data && res.data.length) ? (res.data.find(a => a.Status === 'publish' || a.Status === 'active') || res.data[0]) : null;
+        
+        let socHtml = '';
+        let contHtml = '<p class="text-slate-500 animate-pulse">Memuat kontak...</p>';
+        
+        if (x) {
+            contHtml = `
+                <p class="flex items-center gap-3 hover:text-white transition-colors"><i class="fas fa-envelope w-5 text-slate-500"></i> ${escapeHtml(safeText(x.Email, '-'))}</p>
+                <p class="flex items-center gap-3 hover:text-white transition-colors mt-2"><i class="fas fa-phone w-5 text-slate-500"></i> ${escapeHtml(safeText(x.WhatsApp, '-'))}</p>
+                <p class="flex items-start gap-3 hover:text-white transition-colors mt-2"><i class="fas fa-map-marker-alt w-5 text-slate-500 mt-1"></i> <span>${escapeHtml(safeText(x.Address, '-'))}</span></p>
+            `;
+            const links = [
+                { key: 'Instagram_URL', icon: 'fa-instagram', color: 'hover:bg-pink-600' },
+                { key: 'Facebook_URL', icon: 'fa-facebook-f', color: 'hover:bg-blue-600' },
+                { key: 'LinkedIn_URL', icon: 'fa-linkedin-in', color: 'hover:bg-blue-700' },
+                { key: 'YouTube_URL', icon: 'fa-youtube', color: 'hover:bg-rose-600' },
+                { key: 'GitHub_URL', icon: 'fa-github', color: 'hover:bg-slate-700' }
+            ];
+            socHtml = links.map(l => safeUrl(x[l.key]) ? `<a href="${safeUrl(x[l.key])}" target="_blank" class="w-10 h-10 rounded-full bg-slate-800 text-white flex items-center justify-center transition-all ${l.color}"><i class="fab ${l.icon}"></i></a>` : '').join('');
+        }
+        
+        footer.innerHTML = `
+        <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-8 text-sm">
+            <div>
+                <h4 class="text-white font-black mb-5 uppercase tracking-widest text-xs">Hubungi Kami</h4>
+                <div class="space-y-3">${contHtml}</div>
+            </div>
+            <div>
+                <h4 class="text-white font-black mb-5 uppercase tracking-widest text-xs">Informasi Legal</h4>
+                <div class="flex flex-col space-y-3">
+                    <button onclick="openModal('privacy')" class="text-left hover:text-blue-400 transition-colors flex items-center gap-2"><i class="fas fa-shield-alt text-slate-500"></i> Kebijakan Privasi</button>
+                    <button onclick="openModal('terms')" class="text-left hover:text-blue-400 transition-colors flex items-center gap-2"><i class="fas fa-file-contract text-slate-500"></i> Syarat & Ketentuan</button>
+                    <button onclick="openHelpCenter()" class="text-left hover:text-blue-400 transition-colors flex items-center gap-2"><i class="fas fa-life-ring text-slate-500"></i> Pusat Bantuan</button>
+                </div>
+            </div>
+            <div>
+                <h4 class="text-white font-black mb-5 uppercase tracking-widest text-xs">Sosial Media</h4>
+                <div class="flex flex-wrap gap-3">${socHtml}</div>
+            </div>
+        </div>
+        <div class="text-center text-[10px] text-slate-500 mt-10 pt-6 border-t border-slate-800 max-w-7xl mx-auto px-6 font-bold uppercase tracking-wider">&copy; 2026 ZEXRAPS SYSTEM. Hak Cipta Dilindungi.</div>`;
+    } catch (e) {}
+}
+
+/* ================================================================
+   PENGGANTIAN KONTAK PUBLIK MENJADI CHAT
+   ================================================================ */
+function renderPublicContact(r) {
+    const e = document.getElementById('public-contact-content');
+    if (!e) return;
+    
+    if (!currentUser) {
+        e.innerHTML = `<div class="bg-white p-10 md:p-16 rounded-3xl border text-center shadow-sm max-w-3xl mx-auto animate-fade-in"><i class="fab fa-whatsapp text-6xl text-emerald-500 mb-5"></i><h2 class="text-2xl md:text-3xl font-black mb-3 text-slate-800">Live Chat Tersedia</h2><p class="text-slate-500 mb-8 max-w-md mx-auto">Silakan masuk (Login) sebagai Visitor untuk mulai mengirim pesan ke Global atau Admin.</p><button onclick="navigateTo('attendance')" class="bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-3.5 rounded-full font-bold shadow-xl shadow-emerald-500/30 transition-transform hover:-translate-y-1">Login / Isi Buku Tamu</button></div>`;
+        return;
+    }
+    
+    e.innerHTML = buildChatUI('public');
+    activeChatRoom = 'Global';
+    switchChatRoom('Global');
+    if (typeof chatSyncTimer !== 'undefined') clearInterval(chatSyncTimer);
+    chatSyncTimer = setInterval(syncChatMessages, 5000);
+}
+
+/* ================================================================
+   PENGGANTIAN VISITOR INBOX MENJADI CHAT
+   ================================================================ */
+// TIMPA fungsi switchVisitorTab bagian `} else if (tab === 'message') {` menjadi ini:
+// (Catatan: Salin ini untuk menimpa kode 'message' di switchVisitorTab Anda)
+// } else if (tab === 'message') {
+//      container.innerHTML = buildChatUI('visitor');
+//      activeChatRoom = 'Admin';
+//      switchChatRoom('Admin');
+//      if (typeof chatSyncTimer !== 'undefined') clearInterval(chatSyncTimer);
+//      chatSyncTimer = setInterval(syncChatMessages, 5000);
+// }
+
+/* ================================================================
+   MESIN INTI LIVE CHAT (UI BUILDER & LOGIC)
    ================================================================ */
 let activeChatRoom = 'Global';
 let chatSyncTimer = null;
 
-function toggleLiveChat() {
-    if (!currentUser) {
-        return showToast("Anda wajib Login atau mengisi Buku Tamu untuk menggunakan Live Chat!", "warning");
-    }
+function buildChatUI(roleContext) {
+    const adminRooms = roleContext === 'admin' ? '<div id="admin-visitor-rooms" class="flex flex-col"></div>' : '';
+    const stdRooms = roleContext !== 'admin' ? `
+        <button onclick="switchChatRoom('Global')" class="w-full p-3 md:p-4 flex items-center gap-3 hover:bg-slate-50 border-b border-slate-100 transition-colors text-left chat-room-btn active bg-emerald-50" id="room-btn-Global">
+            <div class="w-10 h-10 md:w-12 md:h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0 text-lg md:text-xl"><i class="fas fa-globe"></i></div>
+            <div class="hidden md:block overflow-hidden"><h4 class="font-bold text-sm text-slate-800 truncate">Global Publik</h4><p class="text-[10px] text-slate-500 truncate">Grup Semua Orang</p></div>
+        </button>
+        <button onclick="switchChatRoom('Admin')" class="w-full p-3 md:p-4 flex items-center gap-3 hover:bg-slate-50 border-b border-slate-100 transition-colors text-left chat-room-btn" id="room-btn-Admin">
+            <div class="w-10 h-10 md:w-12 md:h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0 text-lg md:text-xl"><i class="fas fa-user-shield"></i></div>
+            <div class="hidden md:block overflow-hidden"><h4 class="font-bold text-sm text-slate-800 truncate">Admin Support</h4><p class="text-[10px] text-slate-500 truncate">Hubungi Admin</p></div>
+        </button>
+    ` : '';
 
-    const modal = document.getElementById('live-chat-app');
-    if (!modal) return;
-
-    const isClosed = modal.classList.contains('hidden');
-    if (isClosed) {
-        modal.classList.remove('hidden');
-        // Render daftar Visitor khusus untuk Admin
-        if (currentUser.Role === 'SuperAdmin') renderAdminChatRooms();
-        
-        setTimeout(() => {
-            modal.classList.remove('scale-95', 'opacity-0');
-            modal.classList.add('scale-100', 'opacity-100');
-        }, 10);
-        
-        switchChatRoom(activeChatRoom);
-        chatSyncTimer = setInterval(syncChatMessages, 5000); // Tarik data tiap 5 detik
-    } else {
-        modal.classList.remove('scale-100', 'opacity-100');
-        modal.classList.add('scale-95', 'opacity-0');
-        setTimeout(() => modal.classList.add('hidden'), 300);
-        if (chatSyncTimer) clearInterval(chatSyncTimer);
-    }
+    return `
+    <div class="w-full h-[550px] bg-slate-100 rounded-3xl shadow-sm flex overflow-hidden border border-slate-200 animate-fade-in">
+        <div class="w-[70px] md:w-1/3 bg-white border-r border-slate-200 flex flex-col h-full shrink-0 z-10">
+            <div class="h-16 bg-slate-50 border-b border-slate-200 flex items-center px-4 font-black text-slate-700 shrink-0 justify-center md:justify-start">
+                <span class="hidden md:block">Pesan Inbox</span><i class="fas fa-comments md:hidden text-2xl text-emerald-500"></i>
+            </div>
+            <div class="overflow-y-auto flex-1 custom-scrollbar" id="chat-room-list">
+                ${roleContext === 'admin' ? stdRooms + adminRooms : stdRooms}
+            </div>
+        </div>
+        <div class="flex-1 bg-[url('https://i.pinimg.com/originals/8c/98/99/8c98994518b575bfd8c949e91d20548b.jpg')] bg-cover bg-center flex flex-col relative h-full">
+            <div class="absolute inset-0 bg-white/60 backdrop-blur-[2px]"></div>
+            <div class="h-16 bg-slate-50/90 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-4 shrink-0 shadow-sm z-10">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center" id="chat-header-bg"><i class="fas fa-globe" id="chat-header-icon"></i></div>
+                    <div><h4 class="font-bold text-slate-800 text-sm" id="chat-header-title">Global Publik</h4><p class="text-[10px] text-emerald-600 font-bold" id="chat-header-status">Online</p></div>
+                </div>
+            </div>
+            <div class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar z-10 flex flex-col" id="chat-messages-container"></div>
+            <div class="bg-slate-50 p-3 border-t border-slate-200 flex items-end gap-2 shrink-0 z-10">
+                <textarea id="chat-input-msg" rows="1" placeholder="Ketik pesan..." class="flex-1 resize-none rounded-2xl bg-white border border-slate-300 py-3.5 px-4 text-sm outline-none focus:border-emerald-500 max-h-24 custom-scrollbar shadow-inner"></textarea>
+                <button onclick="sendChatMessage()" class="w-12 h-12 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0 hover:bg-emerald-600 transition-colors shadow-md"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>`;
 }
 
 function switchChatRoom(room) {
     activeChatRoom = room;
-    
-    // Update UI Sidebar
-    document.querySelectorAll('.chat-room-btn').forEach(btn => {
-        btn.classList.remove('bg-emerald-50', 'active');
-    });
+    document.querySelectorAll('.chat-room-btn').forEach(btn => btn.classList.remove('bg-emerald-50', 'active'));
     const activeBtn = document.getElementById('room-btn-' + room);
     if (activeBtn) activeBtn.classList.add('bg-emerald-50', 'active');
 
-    // Update Header Chat
     const title = document.getElementById('chat-header-title');
     const icon = document.getElementById('chat-header-icon');
     const bg = document.getElementById('chat-header-bg');
     
     if (room === 'Global') {
-        title.innerText = 'Global Publik';
-        icon.className = 'fas fa-globe';
-        bg.className = 'w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center';
+        if(title) title.innerText = 'Global Publik';
+        if(icon) icon.className = 'fas fa-globe';
+        if(bg) bg.className = 'w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center';
     } else if (room === 'Admin') {
-        title.innerText = 'Admin Support';
-        icon.className = 'fas fa-user-shield';
-        bg.className = 'w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center';
+        if(title) title.innerText = 'Admin Support';
+        if(icon) icon.className = 'fas fa-user-shield';
+        if(bg) bg.className = 'w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center';
     } else {
-        title.innerText = 'Visitor: ' + room;
-        icon.className = 'fas fa-user';
-        bg.className = 'w-10 h-10 rounded-full bg-slate-700 text-white flex items-center justify-center';
+        if(title) title.innerText = 'Visitor: ' + room;
+        if(icon) icon.className = 'fas fa-user';
+        if(bg) bg.className = 'w-10 h-10 rounded-full bg-slate-700 text-white flex items-center justify-center';
     }
 
-    document.getElementById('chat-messages-container').innerHTML = '<div class="text-center text-slate-500 text-xs my-auto"><i class="fas fa-spinner fa-spin text-2xl mb-2"></i><br>Membuka percakapan...</div>';
+    const container = document.getElementById('chat-messages-container');
+    if (container) container.innerHTML = '<div class="text-center text-slate-500 text-xs my-auto"><i class="fas fa-spinner fa-spin text-2xl mb-2"></i><br>Membuka ruangan...</div>';
     syncChatMessages();
 }
 
-// Khusus Admin: Render daftar room untuk membalas Visitor secara pribadi
 async function renderAdminChatRooms() {
     const container = document.getElementById('admin-visitor-rooms');
     if (!container) return;
-    
-    container.classList.remove('hidden');
-    container.classList.add('flex');
-    
     const res = await getCachedData('Users', false);
     const visitors = (res.data || []).filter(u => u.Role !== 'SuperAdmin');
     
     container.innerHTML = visitors.map(v => `
         <button onclick="switchChatRoom('${v.FullName}')" class="w-full p-3 md:p-4 flex items-center gap-3 hover:bg-slate-50 border-b border-slate-100 transition-colors text-left chat-room-btn" id="room-btn-${v.FullName}">
-            <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center shrink-0 text-xl font-black">${v.FullName.charAt(0)}</div>
-            <div class="hidden md:block overflow-hidden"><h4 class="font-bold text-sm text-slate-800 truncate">${v.FullName}</h4><p class="text-[10px] text-slate-500 truncate">Visitor ID: ${v.UserID}</p></div>
+            <div class="w-10 h-10 md:w-12 md:h-12 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center shrink-0 text-lg md:text-xl font-black">${v.FullName.charAt(0)}</div>
+            <div class="hidden md:block overflow-hidden"><h4 class="font-bold text-sm text-slate-800 truncate">${v.FullName}</h4><p class="text-[10px] text-slate-500 truncate">ID: ${v.UserID}</p></div>
         </button>
     `).join('');
 }
@@ -7556,120 +7558,66 @@ async function syncChatMessages() {
     try {
         const res = await getCachedData('Live_Chat', true);
         const allChats = res.data || [];
-        
-        // Filter percakapan berdasarkan Ruang (Room)
         let filteredChats = [];
+        
         if (activeChatRoom === 'Global') {
             filteredChats = allChats.filter(c => c.Room === 'Global');
         } else if (activeChatRoom === 'Admin') {
-            // Chat Admin: Jika user adalah Visitor, dia hanya melihat chatnya dengan Admin.
-            // Jika user adalah Admin, di tab 'Admin' dia melihat pesan yang dikirim ke 'Admin' secara umum.
-            if (currentUser.Role === 'SuperAdmin') {
-                filteredChats = allChats.filter(c => c.Room === 'Admin');
-            } else {
-                filteredChats = allChats.filter(c => c.Room === 'Admin' && (c.Sender_Name === currentUser.FullName || c.Sender_Name === 'Admin Support'));
-            }
+            if (currentUser.Role === 'SuperAdmin') filteredChats = allChats.filter(c => c.Room === 'Admin');
+            else filteredChats = allChats.filter(c => c.Room === 'Admin' && (c.Sender_Name === currentUser.FullName || c.Sender_Name === 'Admin Support'));
         } else {
-            // Tab spesifik Visitor (Hanya dilihat oleh Admin)
             filteredChats = allChats.filter(c => c.Room === activeChatRoom || (c.Sender_Name === activeChatRoom && c.Room === 'Admin'));
         }
-
         renderChatBubbles(filteredChats);
-    } catch (e) {
-        console.warn("Gagal sinkronisasi chat", e);
-    }
+    } catch (e) {}
 }
 
 function renderChatBubbles(chats) {
     const container = document.getElementById('chat-messages-container');
     if (!container) return;
-
     if (chats.length === 0) {
-        container.innerHTML = '<div class="text-center text-slate-400 text-xs my-auto"><i class="fas fa-comments text-4xl mb-3 opacity-50"></i><br>Belum ada obrolan di ruangan ini. Mulai sapa!</div>';
+        container.innerHTML = '<div class="text-center text-slate-400 text-xs my-auto"><i class="fas fa-comments text-4xl mb-3 opacity-50"></i><br>Belum ada obrolan. Mulai sapa!</div>';
         return;
     }
+    const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 50;
 
     container.innerHTML = chats.map(c => {
-        // Tentukan apakah pesan ini milik kita atau orang lain
         let isMe = false;
         if (currentUser.Role === 'SuperAdmin' && c.Sender_Role === 'SuperAdmin') isMe = true;
         else if (c.Sender_Name === currentUser.FullName) isMe = true;
-
-        const time = String(c.Timestamp || '').split(' ')[1] || ''; // Ambil jam saja jika ada
+        const time = String(c.Timestamp || '').split(' ')[1] || '';
 
         if (isMe) {
-            // Bubble Kanan (Kita)
-            return `
-            <div class="flex justify-end mb-2 animate-fade-in">
-                <div class="max-w-[75%] bg-emerald-100 text-slate-800 p-3 rounded-2xl rounded-tr-sm shadow-sm border border-emerald-200">
-                    <p class="text-[13px] leading-relaxed">${escapeHtml(c.Message)}</p>
-                    <p class="text-[9px] text-emerald-600 text-right mt-1 font-bold">${time} <i class="fas fa-check-double ml-1"></i></p>
-                </div>
-            </div>`;
+            return `<div class="flex justify-end mb-2 animate-fade-in"><div class="max-w-[85%] md:max-w-[75%] bg-emerald-100 text-slate-800 p-3 rounded-2xl rounded-tr-sm shadow-sm border border-emerald-200"><p class="text-[13px] leading-relaxed break-words">${escapeHtml(c.Message)}</p><p class="text-[9px] text-emerald-600 text-right mt-1 font-bold">${time} <i class="fas fa-check-double ml-1"></i></p></div></div>`;
         } else {
-            // Bubble Kiri (Orang Lain)
             const isSenderAdmin = c.Sender_Role === 'SuperAdmin';
-            return `
-            <div class="flex justify-start mb-2 animate-fade-in">
-                <div class="max-w-[75%] bg-white text-slate-800 p-3 rounded-2xl rounded-tl-sm shadow-sm border border-slate-200">
-                    <p class="text-[10px] font-black ${isSenderAdmin ? 'text-blue-600' : 'text-emerald-600'} mb-1">${escapeHtml(c.Sender_Name)} ${isSenderAdmin ? '<i class="fas fa-certificate text-[8px] text-blue-500"></i>' : ''}</p>
-                    <p class="text-[13px] leading-relaxed">${escapeHtml(c.Message)}</p>
-                    <p class="text-[9px] text-slate-400 text-right mt-1 font-bold">${time}</p>
-                </div>
-            </div>`;
+            return `<div class="flex justify-start mb-2 animate-fade-in"><div class="max-w-[85%] md:max-w-[75%] bg-white text-slate-800 p-3 rounded-2xl rounded-tl-sm shadow-sm border border-slate-200"><p class="text-[10px] font-black ${isSenderAdmin ? 'text-blue-600' : 'text-emerald-600'} mb-1">${escapeHtml(c.Sender_Name)} ${isSenderAdmin ? '<i class="fas fa-certificate text-[8px] text-blue-500"></i>' : ''}</p><p class="text-[13px] leading-relaxed break-words">${escapeHtml(c.Message)}</p><p class="text-[9px] text-slate-400 text-right mt-1 font-bold">${time}</p></div></div>`;
         }
     }).join('');
 
-    // Otomatis scroll ke bawah
-    container.scrollTop = container.scrollHeight;
+    if (isAtBottom) container.scrollTop = container.scrollHeight;
 }
 
 async function sendChatMessage() {
     const input = document.getElementById('chat-input-msg');
     const msg = input.value.trim();
     if (!msg) return;
-
-    input.value = ''; // Kosongkan box
+    input.value = ''; 
     
-    // Tampilkan pesan sementara di layar kita (Instant UI Update)
     const container = document.getElementById('chat-messages-container');
-    const now = new Date();
-    const tempTime = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+    const tempTime = new Date().getHours().toString().padStart(2,'0') + ':' + new Date().getMinutes().toString().padStart(2,'0');
     
-    container.innerHTML += `
-    <div class="flex justify-end mb-2 opacity-50">
-        <div class="max-w-[75%] bg-emerald-100 text-slate-800 p-3 rounded-2xl rounded-tr-sm shadow-sm border border-emerald-200">
-            <p class="text-[13px] leading-relaxed">${escapeHtml(msg)}</p>
-            <p class="text-[9px] text-emerald-600 text-right mt-1 font-bold"><i class="fas fa-clock"></i></p>
-        </div>
-    </div>`;
+    container.innerHTML += `<div class="flex justify-end mb-2 opacity-50"><div class="max-w-[75%] bg-emerald-100 text-slate-800 p-3 rounded-2xl rounded-tr-sm shadow-sm border border-emerald-200"><p class="text-[13px] leading-relaxed">${escapeHtml(msg)}</p><p class="text-[9px] text-emerald-600 text-right mt-1 font-bold"><i class="fas fa-clock"></i></p></div></div>`;
     container.scrollTop = container.scrollHeight;
 
-    // Tentukan room penyimpanan
     let targetRoom = activeChatRoom;
-    if (currentUser.Role === 'SuperAdmin' && activeChatRoom !== 'Global' && activeChatRoom !== 'Admin') {
-        // Jika Admin sedang membalas Visitor, kirim atas nama Admin ke room 'Admin' milik Visitor tersebut
-        targetRoom = 'Admin';
-    }
+    if (currentUser.Role === 'SuperAdmin' && activeChatRoom !== 'Global' && activeChatRoom !== 'Admin') targetRoom = 'Admin';
 
     try {
-        const r = await apiCall('POST', {
-            action: 'insert',
-            sheet: 'Live_Chat',
-            user: currentUser.UserID,
-            data: {
-                Sender_Name: currentUser.Role === 'SuperAdmin' ? 'Admin Support' : currentUser.FullName,
-                Sender_Role: currentUser.Role,
-                Room: targetRoom,
-                Message: msg
-            }
-        });
-        
-        if (r.status === 'success') {
-            syncChatMessages(); // Tarik balik yang sudah tersimpan
-        }
+        const r = await apiCall('POST', { action: 'insert', sheet: 'Live_Chat', user: currentUser.UserID, data: { Sender_Name: currentUser.Role === 'SuperAdmin' ? 'Admin Support' : currentUser.FullName, Sender_Role: currentUser.Role, Room: targetRoom, Message: msg } });
+        if (r.status === 'success') syncChatMessages();
     } catch (e) {
-        showToast("Gagal mengirim pesan", "error");
-        input.value = msg; // Kembalikan teks jika gagal
+        showToast("Gagal mengirim", "error");
+        input.value = msg; 
     }
 }
