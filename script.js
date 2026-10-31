@@ -3783,134 +3783,43 @@ function renderPublicDocuments(r) {
 }
 
 /* ================================================================
-   PUBLIC CONTACT
+   PUBLIC CONTACT (SEKARANG MENGISI FOOTER BAWAH)
    ================================================================ */
 function renderPublicContact(r) {
+    const x = r.find(a => a.Status === 'publish' || a.Status === 'active') || r[0];
+    const footer = document.getElementById('main-footer');
+    if (!footer) return;
 
-  const e =
-    document.getElementById(
-      'public-contact-content'
-    );
+    if (x) {
+        footer.classList.remove('hidden'); // Munculkan footer jika data siap
+        
+        // Isi Kontak Info
+        const info = document.getElementById('footer-contact-info');
+        if (info) {
+            info.innerHTML = `
+                <p class="flex items-center gap-3 hover:text-white transition-colors"><i class="fas fa-envelope w-5 text-slate-500"></i> ${escapeHtml(safeText(x.Email, '-'))}</p>
+                <p class="flex items-center gap-3 hover:text-white transition-colors mt-2"><i class="fas fa-phone w-5 text-slate-500"></i> ${escapeHtml(safeText(x.WhatsApp, '-'))}</p>
+                <p class="flex items-start gap-3 hover:text-white transition-colors mt-2"><i class="fas fa-map-marker-alt w-5 text-slate-500 mt-1"></i> <span>${escapeHtml(safeText(x.Address, '-'))}</span></p>
+            `;
+        }
 
-  if (!e) return;
-
-  const x =
-    r.find(
-      a =>
-        a.Status === 'publish' ||
-        a.Status === 'active'
-    ) ||
-    r[0];
-
-  if (!x) {
-
-    renderEmpty(
-      e,
-      'Belum ada data Contact. Tambahkan melalui Dashboard Admin.'
-    );
-
-    return;
-  }
-
-  const links = [
-    [
-      'Instagram_URL',
-      'Instagram'
-    ],
-    [
-      'Facebook_URL',
-      'Facebook'
-    ],
-    [
-      'LinkedIn_URL',
-      'LinkedIn'
-    ],
-    [
-      'YouTube_URL',
-      'YouTube'
-    ],
-    [
-      'GitHub_URL',
-      'GitHub'
-    ]
-  ];
-
-  e.className =
-    'bg-white rounded-3xl p-8 md:p-10 shadow-sm border animate-fade-in';
-
-  e.innerHTML =
-    `<h2 class="text-2xl font-black">
-      Contact
-    </h2>
-
-    <div class="grid sm:grid-cols-2 gap-4 mt-6">
-
-      <div class="p-4 bg-slate-50 rounded-2xl">
-        <b>Email</b>
-        <div class="text-sm text-slate-600 mt-1">
-          ${escapeHtml(
-            safeText(
-              x.Email,
-              '-'
-            )
-          )}
-        </div>
-      </div>
-
-      <div class="p-4 bg-slate-50 rounded-2xl">
-        <b>WhatsApp</b>
-        <div class="text-sm text-slate-600 mt-1">
-          ${escapeHtml(
-            safeText(
-              x.WhatsApp,
-              '-'
-            )
-          )}
-        </div>
-      </div>
-
-      <div class="p-4 bg-slate-50 rounded-2xl sm:col-span-2">
-        <b>Alamat</b>
-        <div class="text-sm text-slate-600 mt-1">
-          ${escapeHtml(
-            safeText(
-              x.Address,
-              '-'
-            )
-          )}
-        </div>
-      </div>
-
-    </div>
-
-    <div class="flex flex-wrap gap-2 mt-6">
-
-      ${
-        links
-          .map(
-            ([k, l]) => {
-
-              const u =
-                safeUrl(
-                  x[k]
-                );
-
-              return u
-                ? `<a
-                    href="${u}"
-                    target="_blank"
-                    rel="noopener"
-                    class="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold"
-                  >
-                    ${l}
-                  </a>`
-                : '';
-            }
-          )
-          .join('')
-      }
-
-    </div>`;
+        // Isi Sosial Media
+        const social = document.getElementById('footer-social-links');
+        if (social) {
+            const links = [
+                { key: 'Instagram_URL', icon: 'fa-instagram', color: 'hover:bg-pink-600' },
+                { key: 'Facebook_URL', icon: 'fa-facebook-f', color: 'hover:bg-blue-600' },
+                { key: 'LinkedIn_URL', icon: 'fa-linkedin-in', color: 'hover:bg-blue-700' },
+                { key: 'YouTube_URL', icon: 'fa-youtube', color: 'hover:bg-rose-600' },
+                { key: 'GitHub_URL', icon: 'fa-github', color: 'hover:bg-slate-700' }
+            ];
+            
+            social.innerHTML = links.map(l => {
+                const u = safeUrl(x[l.key]);
+                return u ? `<a href="${u}" target="_blank" class="w-10 h-10 rounded-full bg-slate-800 text-white flex items-center justify-center transition-all ${l.color}"><i class="fab ${l.icon}"></i></a>` : '';
+            }).join('');
+        }
+    }
 }
 
 /* ================================================================
@@ -7554,4 +7463,213 @@ async function renderAdminDashboardStats() {
           welcomePanel.innerHTML = '<div class="p-6 bg-rose-50 text-rose-600 font-bold rounded-2xl text-center">Gagal memuat statistik.</div>';
       }
   }
+}
+
+/* ================================================================
+   MESIN LIVE CHAT (WHATSAPP CLONE)
+   ================================================================ */
+let activeChatRoom = 'Global';
+let chatSyncTimer = null;
+
+function toggleLiveChat() {
+    if (!currentUser) {
+        return showToast("Anda wajib Login atau mengisi Buku Tamu untuk menggunakan Live Chat!", "warning");
+    }
+
+    const modal = document.getElementById('live-chat-app');
+    if (!modal) return;
+
+    const isClosed = modal.classList.contains('hidden');
+    if (isClosed) {
+        modal.classList.remove('hidden');
+        // Render daftar Visitor khusus untuk Admin
+        if (currentUser.Role === 'SuperAdmin') renderAdminChatRooms();
+        
+        setTimeout(() => {
+            modal.classList.remove('scale-95', 'opacity-0');
+            modal.classList.add('scale-100', 'opacity-100');
+        }, 10);
+        
+        switchChatRoom(activeChatRoom);
+        chatSyncTimer = setInterval(syncChatMessages, 5000); // Tarik data tiap 5 detik
+    } else {
+        modal.classList.remove('scale-100', 'opacity-100');
+        modal.classList.add('scale-95', 'opacity-0');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+        if (chatSyncTimer) clearInterval(chatSyncTimer);
+    }
+}
+
+function switchChatRoom(room) {
+    activeChatRoom = room;
+    
+    // Update UI Sidebar
+    document.querySelectorAll('.chat-room-btn').forEach(btn => {
+        btn.classList.remove('bg-emerald-50', 'active');
+    });
+    const activeBtn = document.getElementById('room-btn-' + room);
+    if (activeBtn) activeBtn.classList.add('bg-emerald-50', 'active');
+
+    // Update Header Chat
+    const title = document.getElementById('chat-header-title');
+    const icon = document.getElementById('chat-header-icon');
+    const bg = document.getElementById('chat-header-bg');
+    
+    if (room === 'Global') {
+        title.innerText = 'Global Publik';
+        icon.className = 'fas fa-globe';
+        bg.className = 'w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center';
+    } else if (room === 'Admin') {
+        title.innerText = 'Admin Support';
+        icon.className = 'fas fa-user-shield';
+        bg.className = 'w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center';
+    } else {
+        title.innerText = 'Visitor: ' + room;
+        icon.className = 'fas fa-user';
+        bg.className = 'w-10 h-10 rounded-full bg-slate-700 text-white flex items-center justify-center';
+    }
+
+    document.getElementById('chat-messages-container').innerHTML = '<div class="text-center text-slate-500 text-xs my-auto"><i class="fas fa-spinner fa-spin text-2xl mb-2"></i><br>Membuka percakapan...</div>';
+    syncChatMessages();
+}
+
+// Khusus Admin: Render daftar room untuk membalas Visitor secara pribadi
+async function renderAdminChatRooms() {
+    const container = document.getElementById('admin-visitor-rooms');
+    if (!container) return;
+    
+    container.classList.remove('hidden');
+    container.classList.add('flex');
+    
+    const res = await getCachedData('Users', false);
+    const visitors = (res.data || []).filter(u => u.Role !== 'SuperAdmin');
+    
+    container.innerHTML = visitors.map(v => `
+        <button onclick="switchChatRoom('${v.FullName}')" class="w-full p-3 md:p-4 flex items-center gap-3 hover:bg-slate-50 border-b border-slate-100 transition-colors text-left chat-room-btn" id="room-btn-${v.FullName}">
+            <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center shrink-0 text-xl font-black">${v.FullName.charAt(0)}</div>
+            <div class="hidden md:block overflow-hidden"><h4 class="font-bold text-sm text-slate-800 truncate">${v.FullName}</h4><p class="text-[10px] text-slate-500 truncate">Visitor ID: ${v.UserID}</p></div>
+        </button>
+    `).join('');
+}
+
+async function syncChatMessages() {
+    try {
+        const res = await getCachedData('Live_Chat', true);
+        const allChats = res.data || [];
+        
+        // Filter percakapan berdasarkan Ruang (Room)
+        let filteredChats = [];
+        if (activeChatRoom === 'Global') {
+            filteredChats = allChats.filter(c => c.Room === 'Global');
+        } else if (activeChatRoom === 'Admin') {
+            // Chat Admin: Jika user adalah Visitor, dia hanya melihat chatnya dengan Admin.
+            // Jika user adalah Admin, di tab 'Admin' dia melihat pesan yang dikirim ke 'Admin' secara umum.
+            if (currentUser.Role === 'SuperAdmin') {
+                filteredChats = allChats.filter(c => c.Room === 'Admin');
+            } else {
+                filteredChats = allChats.filter(c => c.Room === 'Admin' && (c.Sender_Name === currentUser.FullName || c.Sender_Name === 'Admin Support'));
+            }
+        } else {
+            // Tab spesifik Visitor (Hanya dilihat oleh Admin)
+            filteredChats = allChats.filter(c => c.Room === activeChatRoom || (c.Sender_Name === activeChatRoom && c.Room === 'Admin'));
+        }
+
+        renderChatBubbles(filteredChats);
+    } catch (e) {
+        console.warn("Gagal sinkronisasi chat", e);
+    }
+}
+
+function renderChatBubbles(chats) {
+    const container = document.getElementById('chat-messages-container');
+    if (!container) return;
+
+    if (chats.length === 0) {
+        container.innerHTML = '<div class="text-center text-slate-400 text-xs my-auto"><i class="fas fa-comments text-4xl mb-3 opacity-50"></i><br>Belum ada obrolan di ruangan ini. Mulai sapa!</div>';
+        return;
+    }
+
+    container.innerHTML = chats.map(c => {
+        // Tentukan apakah pesan ini milik kita atau orang lain
+        let isMe = false;
+        if (currentUser.Role === 'SuperAdmin' && c.Sender_Role === 'SuperAdmin') isMe = true;
+        else if (c.Sender_Name === currentUser.FullName) isMe = true;
+
+        const time = String(c.Timestamp || '').split(' ')[1] || ''; // Ambil jam saja jika ada
+
+        if (isMe) {
+            // Bubble Kanan (Kita)
+            return `
+            <div class="flex justify-end mb-2 animate-fade-in">
+                <div class="max-w-[75%] bg-emerald-100 text-slate-800 p-3 rounded-2xl rounded-tr-sm shadow-sm border border-emerald-200">
+                    <p class="text-[13px] leading-relaxed">${escapeHtml(c.Message)}</p>
+                    <p class="text-[9px] text-emerald-600 text-right mt-1 font-bold">${time} <i class="fas fa-check-double ml-1"></i></p>
+                </div>
+            </div>`;
+        } else {
+            // Bubble Kiri (Orang Lain)
+            const isSenderAdmin = c.Sender_Role === 'SuperAdmin';
+            return `
+            <div class="flex justify-start mb-2 animate-fade-in">
+                <div class="max-w-[75%] bg-white text-slate-800 p-3 rounded-2xl rounded-tl-sm shadow-sm border border-slate-200">
+                    <p class="text-[10px] font-black ${isSenderAdmin ? 'text-blue-600' : 'text-emerald-600'} mb-1">${escapeHtml(c.Sender_Name)} ${isSenderAdmin ? '<i class="fas fa-certificate text-[8px] text-blue-500"></i>' : ''}</p>
+                    <p class="text-[13px] leading-relaxed">${escapeHtml(c.Message)}</p>
+                    <p class="text-[9px] text-slate-400 text-right mt-1 font-bold">${time}</p>
+                </div>
+            </div>`;
+        }
+    }).join('');
+
+    // Otomatis scroll ke bawah
+    container.scrollTop = container.scrollHeight;
+}
+
+async function sendChatMessage() {
+    const input = document.getElementById('chat-input-msg');
+    const msg = input.value.trim();
+    if (!msg) return;
+
+    input.value = ''; // Kosongkan box
+    
+    // Tampilkan pesan sementara di layar kita (Instant UI Update)
+    const container = document.getElementById('chat-messages-container');
+    const now = new Date();
+    const tempTime = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+    
+    container.innerHTML += `
+    <div class="flex justify-end mb-2 opacity-50">
+        <div class="max-w-[75%] bg-emerald-100 text-slate-800 p-3 rounded-2xl rounded-tr-sm shadow-sm border border-emerald-200">
+            <p class="text-[13px] leading-relaxed">${escapeHtml(msg)}</p>
+            <p class="text-[9px] text-emerald-600 text-right mt-1 font-bold"><i class="fas fa-clock"></i></p>
+        </div>
+    </div>`;
+    container.scrollTop = container.scrollHeight;
+
+    // Tentukan room penyimpanan
+    let targetRoom = activeChatRoom;
+    if (currentUser.Role === 'SuperAdmin' && activeChatRoom !== 'Global' && activeChatRoom !== 'Admin') {
+        // Jika Admin sedang membalas Visitor, kirim atas nama Admin ke room 'Admin' milik Visitor tersebut
+        targetRoom = 'Admin';
+    }
+
+    try {
+        const r = await apiCall('POST', {
+            action: 'insert',
+            sheet: 'Live_Chat',
+            user: currentUser.UserID,
+            data: {
+                Sender_Name: currentUser.Role === 'SuperAdmin' ? 'Admin Support' : currentUser.FullName,
+                Sender_Role: currentUser.Role,
+                Room: targetRoom,
+                Message: msg
+            }
+        });
+        
+        if (r.status === 'success') {
+            syncChatMessages(); // Tarik balik yang sudah tersimpan
+        }
+    } catch (e) {
+        showToast("Gagal mengirim pesan", "error");
+        input.value = msg; // Kembalikan teks jika gagal
+    }
 }
