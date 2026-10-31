@@ -193,27 +193,38 @@ function showToast(
 }
 
 /* ================================================================
-   CONTROLLER SPLASH SCREEN
+   CONTROLLER SPLASH SCREEN (DIPERBAIKI ANTI-BENTROK MAINTENANCE)
    ================================================================ */
-function startSplashTimer() {}
-
 function skipSplash() {
   if (splashAutoTimer) {
     clearInterval(splashAutoTimer);
   }
-
-  const splash =
-    document.getElementById('splash-screen');
-
-  const form =
-    document.getElementById('guest-form-card');
-
+  
+  const splash = document.getElementById('splash-screen');
+  const form = document.getElementById('guest-form-card');
+  const closedCard = document.getElementById('guest-closed-card');
+  
   if (splash) {
     splash.classList.add('hidden');
   }
 
-  if (form) {
-    form.classList.remove('hidden');
+  // Cek status maintenance dari memori (cache) secara langsung agar akurat 100%
+  let isMaintenance = false;
+  if (memoryCache['Web_Branding'] && memoryCache['Web_Branding'].data) {
+      const settings = memoryCache['Web_Branding'].data.find(s => s.Status === 'publish' || s.Status === 'active') || memoryCache['Web_Branding'].data[0];
+      const stat = String(settings.Guestbook_Status || 'Open').toLowerCase();
+      if (stat === 'close' || stat === 'tutup' || stat === 'maintenance') {
+          isMaintenance = true;
+      }
+  }
+
+  // Logika cerdas: Jika sedang maintenance, jangan biarkan form buku tamu muncul!
+  if (isMaintenance) {
+      if (form) form.classList.add('hidden');
+      if (closedCard) closedCard.classList.remove('hidden');
+  } else {
+      if (closedCard) closedCard.classList.add('hidden');
+      if (form) form.classList.remove('hidden');
   }
 }
 
@@ -2435,7 +2446,7 @@ async function submitData() {
 }
 
 /* ================================================================
-   WEB BRANDING & KENDALI BUKU TAMU (OPEN/CLOSE)
+   WEB BRANDING & KENDALI BUKU TAMU (OPEN/CLOSE CERDAS)
    ================================================================ */
 function applyWebBranding(data) {
   if (!data || data.length === 0) return;
@@ -2463,18 +2474,24 @@ function applyWebBranding(data) {
      document.querySelectorAll('.dynamic-logo-placeholder').forEach(el => el.classList.add('hidden'));
   }
 
-  // --- LOGIKA BUKU TAMU OPEN / CLOSE ---
+  // --- LOGIKA BUKU TAMU OPEN/CLOSE YANG AMAN DARI SPLASH SCREEN ---
   const gbStatus = String(activeSettings.Guestbook_Status || 'Open').toLowerCase();
   const formCard = document.getElementById('guest-form-card');
   const closedCard = document.getElementById('guest-closed-card');
+  const splash = document.getElementById('splash-screen');
+  
+  // Deteksi apakah animasi loading awal (splash screen) masih berjalan
+  const isSplashVisible = splash && !splash.classList.contains('hidden');
 
   if (formCard && closedCard) {
       if (gbStatus === 'close' || gbStatus === 'tutup' || gbStatus === 'maintenance') {
-          formCard.classList.add('hidden'); // Sembunyikan form absen
-          closedCard.classList.remove('hidden'); // Munculkan kartu perbaikan
+          formCard.classList.add('hidden'); 
+          // Munculkan peringatan tutup HANYA JIKA splash screen sudah selesai
+          if (!isSplashVisible) closedCard.classList.remove('hidden');
       } else {
-          formCard.classList.remove('hidden'); // Tampilkan form absen
-          closedCard.classList.add('hidden'); // Sembunyikan kartu perbaikan
+          closedCard.classList.add('hidden');
+          // Munculkan form buku tamu HANYA JIKA splash screen sudah selesai
+          if (!isSplashVisible) formCard.classList.remove('hidden');
       }
   }
 }
