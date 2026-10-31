@@ -193,7 +193,7 @@ function showToast(
 }
 
 /* ================================================================
-   CONTROLLER SPLASH & TOMBOL ADMIN RAHASIA
+   CONTROLLER SPLASH (PENGARAH RUTE SETELAH KLIK TOMBOL)
    ================================================================ */
 function skipSplash() {
   if (splashAutoTimer) clearInterval(splashAutoTimer);
@@ -208,7 +208,7 @@ function skipSplash() {
   }
 
   if (isClosed) {
-      // 1. LOMPAT KE PUBLIK 100%
+      // 1. LOMPAT KE PUBLIK 100% (Lewati Buku Tamu)
       navigateTo('public', 'home', true);
       
       // 2. MUNCULKAN TOMBOL LOGIN ADMIN RAHASIA (Agar Anda tidak terkunci)
@@ -228,7 +228,7 @@ function skipSplash() {
            document.body.appendChild(btn);
       }
   } else {
-      // BUKU TAMU BUKA NORMAL
+      // BUKU TAMU BUKA NORMAL (Munculkan Form Buku Tamu)
       const form = document.getElementById('guest-form-card');
       if (form) form.classList.remove('hidden');
       
@@ -2503,14 +2503,13 @@ async function submitData() {
 }
 
 /* ================================================================
-   WEB BRANDING & BYPASS BUKU TAMU KE PUBLIK
+   WEB BRANDING (UBAH TEKS TOMBOL SPLASH BERDASARKAN STATUS)
    ================================================================ */
 function applyWebBranding(data) {
   if (!data || data.length === 0) return;
   const activeSettings = data.find(s => s.Status === 'publish' || s.Status === 'active') || data[0];
 
   if (activeSettings.Site_Name) document.title = activeSettings.Site_Name;
-  
   if (activeSettings.Favicon_URL) {
      let favicon = document.getElementById('dynamic-favicon');
      if (favicon) { favicon.href = activeSettings.Favicon_URL; }
@@ -2522,7 +2521,6 @@ function applyWebBranding(data) {
         document.head.appendChild(favicon);
      }
   }
-  
   if (activeSettings.Logo_URL) {
      document.querySelectorAll('.dynamic-logo-img').forEach(img => {
         img.src = activeSettings.Logo_URL;
@@ -2531,23 +2529,23 @@ function applyWebBranding(data) {
      document.querySelectorAll('.dynamic-logo-placeholder').forEach(el => el.classList.add('hidden'));
   }
 
-  // --- LOGIKA BYPASS BUKU TAMU KE DASHBOARD PUBLIK ---
+  // --- UBAH TEKS TOMBOL DI SPLASH SCREEN BERDASARKAN STATUS ---
   const gbStatus = String(activeSettings.Guestbook_Status || 'Open').toLowerCase();
-  const attendanceView = document.getElementById('view-attendance');
-  const splash = document.getElementById('splash-screen');
-  const isSplashVisible = splash && !splash.classList.contains('hidden');
-
-  if (gbStatus === 'close' || gbStatus === 'tutup' || gbStatus === 'maintenance') {
-      const formCard = document.getElementById('guest-form-card');
-      if (formCard) formCard.classList.add('hidden');
-      
-      // Jika layar sedang di buku tamu & loading awal sudah selesai, lempar paksa ke Publik!
-      if (attendanceView && !attendanceView.classList.contains('hidden') && !isSplashVisible) {
-          navigateTo('public', 'home', true);
+  const isClosed = (gbStatus === 'close' || gbStatus === 'tutup' || gbStatus === 'maintenance');
+  
+  // Cari tombol pada splash screen yang memanggil fungsi skipSplash()
+  const splashBtn = document.querySelector('button[onclick="skipSplash()"]');
+  
+  if (splashBtn) {
+      if (isClosed) {
+          // Jika mode CLOSE: Teks berubah jadi Mode Perbaikan dan warna jadi merah
+          splashBtn.innerHTML = '<i class="fas fa-tools"></i> Masuk Mode Perbaikan/Update';
+          splashBtn.className = 'mt-6 bg-rose-600 hover:bg-rose-700 text-white px-8 py-3.5 rounded-full font-bold shadow-xl shadow-rose-600/30 transition-all flex items-center justify-center gap-2 mx-auto w-full sm:w-auto animate-pulse';
+      } else {
+          // Jika mode OPEN: Teks normal
+          splashBtn.innerHTML = 'Mulai Isi Buku Tamu <i class="fas fa-arrow-right"></i>';
+          splashBtn.className = 'mt-6 bg-blue-600 hover:bg-blue-700 text-white px-8 py-3.5 rounded-full font-bold shadow-xl shadow-blue-600/30 transition-all flex items-center justify-center gap-2 mx-auto w-full sm:w-auto';
       }
-  } else {
-      const formCard = document.getElementById('guest-form-card');
-      if (formCard && !isSplashVisible) formCard.classList.remove('hidden');
   }
 }
 
@@ -5049,12 +5047,21 @@ async function actionData(id, actionType) {
 }
 
 /* ================================================================
-   WINDOW LOAD (CEPAT & AMAN TANPA BLOKIR)
+   WINDOW LOAD (TAMPILKAN SPLASH SCREEN TERLEBIH DAHULU)
    ================================================================ */
-window.addEventListener('load', () => {
+window.addEventListener('load', async () => {
+    // 1. Selalu tampilkan Splash Screen (attendance view) di awal
     history.replaceState({ view: 'attendance', section: null }, '', '');
     renderView('attendance', null);
     if (typeof startSplashTimer === 'function') startSplashTimer();
+
+    // 2. Tarik data Web Branding untuk mengubah teks tombol di Splash Screen
+    try {
+        const res = await getCachedData('Web_Branding', true);
+        if (res && res.data && res.data.length > 0) {
+            if (typeof applyWebBranding === 'function') applyWebBranding(res.data);
+        }
+    } catch (err) {}
 }, { once: true });
 
 /* ================================================================
