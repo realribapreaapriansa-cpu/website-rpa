@@ -4249,8 +4249,11 @@ function resetKameraUI() {
   document.getElementById('btn-rec-face')?.classList.remove('hidden');
 }
 
+/* ================================================================
+   TAB LOGIN & REGISTER CONTROLLER
+   ================================================================ */
 function showAuthPanel(panel) {
-  resetKameraUI(); // BUG 3 FIXED: Reset kamera setiap ganti tab Login/Daftar
+  if (typeof resetKameraUI === 'function') resetKameraUI(); 
 
   const lp = document.getElementById('auth-login-panel');
   const rp = document.getElementById('auth-register-panel');
@@ -4263,8 +4266,15 @@ function showAuthPanel(panel) {
   lp.classList.toggle('hidden', !isLogin);
   rp.classList.toggle('hidden', isLogin);
   
-  if (lt) lt.classList.toggle('active', isLogin);
-  if (rt) rt.classList.toggle('active', !isLogin);
+  if (lt && rt) {
+      if (isLogin) {
+          lt.className = "flex-1 text-sm font-black py-3 rounded-xl bg-white text-blue-600 shadow-sm transition-all";
+          rt.className = "flex-1 text-sm font-bold py-3 rounded-xl text-slate-500 hover:text-slate-700 transition-all";
+      } else {
+          rt.className = "flex-1 text-sm font-black py-3 rounded-xl bg-white text-blue-600 shadow-sm transition-all";
+          lt.className = "flex-1 text-sm font-bold py-3 rounded-xl text-slate-500 hover:text-slate-700 transition-all";
+      }
+  }
 }
 
 /* ================================================================
@@ -4425,7 +4435,7 @@ async function loadAdminModule(sheetName, force = false) {
   
   // Jika bukan Live Chat, kembalikan tampilan tabel standar
   tablePanel.classList.remove('hidden');
-} // <-- PENUTUP FUNGSI YANG SEBELUMNYA HILANG
+}
 
 /* ================================================================
    ADMIN TABLE
@@ -7371,7 +7381,7 @@ async function renderDynamicFooter() {
                 <div class="flex flex-wrap gap-3">${socHtml}</div>
             </div>
         </div>
-        <div class="text-center text-[10px] text-slate-500 mt-10 pt-6 border-t border-slate-800 max-w-7xl mx-auto px-6 font-bold uppercase tracking-wider">&copy; 2026 ZEXRAPS SYSTEM. Hak Cipta Dilindungi.</div>`;
+        <div class="text-center text-[10px] text-slate-500 mt-10 pt-6 border-t border-slate-800 max-w-7xl mx-auto px-6 font-bold uppercase tracking-wider">&copy; 2026 RIBA PREA APRIANSA Kolaborasi Dengan Perusahaan ZEXRAPS. Seluruh konten dilindungi oleh undang-undang Negara Kesatuan Republik Indonesia.</div>`;
     } catch (e) {}
 }
 
