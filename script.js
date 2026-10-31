@@ -280,7 +280,7 @@ function applyWebBranding(data) {
       const formCard = document.getElementById('guest-form-card');
       if (formCard && !isSplashVisible) formCard.classList.remove('hidden');
       
-      const secretBtn = document.getElementById('btn-admin-secret');
+      const secretBtn = document.getElementById('btn-book-secret');
       if (secretBtn) secretBtn.remove();
   }
 }
@@ -2503,7 +2503,7 @@ async function submitData() {
 }
 
 /* ================================================================
-   WEB BRANDING (UBAH TEKS TOMBOL SPLASH BERDASARKAN STATUS)
+   WEB BRANDING (RILIS KUNCIAN & UBAH TEKS TOMBOL SPLASH)
    ================================================================ */
 function applyWebBranding(data) {
   if (!data || data.length === 0) return;
@@ -2533,16 +2533,15 @@ function applyWebBranding(data) {
   const gbStatus = String(activeSettings.Guestbook_Status || 'Open').toLowerCase();
   const isClosed = (gbStatus === 'close' || gbStatus === 'tutup' || gbStatus === 'maintenance');
   
-  // Cari tombol pada splash screen yang memanggil fungsi skipSplash()
   const splashBtn = document.querySelector('button[onclick="skipSplash()"]');
   
   if (splashBtn) {
+      splashBtn.disabled = false; // BUKA KUNCIAN TOMBOL
+      
       if (isClosed) {
-          // Jika mode CLOSE: Teks berubah jadi Mode Perbaikan dan warna jadi merah
           splashBtn.innerHTML = '<i class="fas fa-tools"></i> Masuk Mode Perbaikan/Update';
           splashBtn.className = 'mt-6 bg-rose-600 hover:bg-rose-700 text-white px-8 py-3.5 rounded-full font-bold shadow-xl shadow-rose-600/30 transition-all flex items-center justify-center gap-2 mx-auto w-full sm:w-auto animate-pulse';
       } else {
-          // Jika mode OPEN: Teks normal
           splashBtn.innerHTML = 'Mulai Isi Buku Tamu <i class="fas fa-arrow-right"></i>';
           splashBtn.className = 'mt-6 bg-blue-600 hover:bg-blue-700 text-white px-8 py-3.5 rounded-full font-bold shadow-xl shadow-blue-600/30 transition-all flex items-center justify-center gap-2 mx-auto w-full sm:w-auto';
       }
@@ -5047,21 +5046,42 @@ async function actionData(id, actionType) {
 }
 
 /* ================================================================
-   WINDOW LOAD (TAMPILKAN SPLASH SCREEN TERLEBIH DAHULU)
+   WINDOW LOAD (TAHAN TOMBOL SPLASH SEBELUM DATA SIAP)
    ================================================================ */
 window.addEventListener('load', async () => {
-    // 1. Selalu tampilkan Splash Screen (attendance view) di awal
     history.replaceState({ view: 'attendance', section: null }, '', '');
     renderView('attendance', null);
     if (typeof startSplashTimer === 'function') startSplashTimer();
 
-    // 2. Tarik data Web Branding untuk mengubah teks tombol di Splash Screen
+    // 1. KUNCI TOMBOL SEMENTARA WAKTU (Cegah pengunjung mencuri klik)
+    const splashBtn = document.querySelector('button[onclick="skipSplash()"]');
+    if (splashBtn) {
+        splashBtn.disabled = true; // Kunci tombol agar tidak bisa diklik
+        splashBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memeriksa Status...';
+        splashBtn.className = 'mt-6 bg-slate-400 text-white px-8 py-3.5 rounded-full font-bold flex items-center justify-center gap-2 mx-auto w-full sm:w-auto cursor-not-allowed transition-all';
+    }
+
+    // 2. Tarik data Web Branding dari Server
     try {
         const res = await getCachedData('Web_Branding', true);
         if (res && res.data && res.data.length > 0) {
             if (typeof applyWebBranding === 'function') applyWebBranding(res.data);
+        } else {
+            // Jika data kosong, buka paksa menjadi normal
+            if (splashBtn) {
+                splashBtn.disabled = false;
+                splashBtn.innerHTML = 'Mulai Isi Buku Tamu <i class="fas fa-arrow-right"></i>';
+                splashBtn.className = 'mt-6 bg-blue-600 hover:bg-blue-700 text-white px-8 py-3.5 rounded-full font-bold shadow-xl shadow-blue-600/30 transition-all flex items-center justify-center gap-2 mx-auto w-full sm:w-auto';
+            }
         }
-    } catch (err) {}
+    } catch (err) {
+        // Jika internet error, buka paksa menjadi normal agar pengunjung tidak terjebak
+        if (splashBtn) {
+            splashBtn.disabled = false;
+            splashBtn.innerHTML = 'Mulai Isi Buku Tamu <i class="fas fa-arrow-right"></i>';
+            splashBtn.className = 'mt-6 bg-blue-600 hover:bg-blue-700 text-white px-8 py-3.5 rounded-full font-bold shadow-xl shadow-blue-600/30 transition-all flex items-center justify-center gap-2 mx-auto w-full sm:w-auto';
+        }
+    }
 }, { once: true });
 
 /* ================================================================
