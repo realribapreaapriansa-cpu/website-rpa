@@ -211,11 +211,11 @@ function skipSplash() {
       // 1. LOMPAT KE PUBLIK 100% (Lewati Buku Tamu)
       navigateTo('public', 'home', true);
       
-      // 2. MUNCULKAN TOMBOL LOGIN ADMIN RAHASIA (Agar Anda tidak terkunci)
-      if (!document.getElementById('btn-admin-secret')) {
+      // 2. MUNCULKAN TOMBOL BUKU TAMU RAHASIA (Agar Anda tidak terkunci)
+      if (!document.getElementById('btn-buku-secret')) {
            const btn = document.createElement('button');
-           btn.id = 'btn-admin-secret';
-           btn.innerHTML = '<i class="fas fa-user-shield"></i> Login Admin';
+           btn.id = 'btn-buku-secret';
+           btn.innerHTML = '<i class="fas fa-user-shield"></i> Buku Tamu';
            btn.className = 'fixed bottom-6 right-6 bg-slate-900/90 backdrop-blur-md text-white px-5 py-3 rounded-full text-xs font-bold shadow-2xl z-[99999] hover:bg-blue-600 transition-all border border-slate-700 animate-fade-in';
            btn.onclick = () => {
                 navigateTo('attendance', null, true);
@@ -232,7 +232,7 @@ function skipSplash() {
       const form = document.getElementById('guest-form-card');
       if (form) form.classList.remove('hidden');
       
-      const secretBtn = document.getElementById('btn-admin-secret');
+      const secretBtn = document.getElementById('btn-buku-secret');
       if (secretBtn) secretBtn.remove();
   }
 }
