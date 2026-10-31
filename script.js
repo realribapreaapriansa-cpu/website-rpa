@@ -2156,7 +2156,7 @@ async function saveVisitorProfile() {
 }
 
 /* ================================================================
-   ADMIN MODAL INPUT (MENDUKUNG GAMBAR & FILE/LINK)
+   ADMIN MODAL INPUT (UI MODERN DENGAN DETEKSI MULTIMEDIA CERDAS)
    ================================================================ */
 function openModalInput(row = null) {
   if (!memoryCache[activeModule]) { showToast('Data modul belum siap.', 'warning'); return; }
@@ -2166,7 +2166,7 @@ function openModalInput(row = null) {
   const headers = memoryCache[activeModule].headers.slice(1);
   
   document.getElementById('modal-title').innerText = (row ? 'Edit: ' : 'Tambah: ') + activeModule.replace(/_/g, ' ');
-  document.getElementById('modal-subtitle').innerText = row ? 'Perubahan akan langsung diperbarui di Google Sheets.' : 'Data akan disimpan ke Google Sheets.';
+  document.getElementById('modal-subtitle').innerText = row ? 'Data tersimpan otomatis ke Google Sheets.' : 'Tambahkan data baru ke dalam sistem.';
   
   const body = document.getElementById('modal-body');
   body.innerHTML = '';
@@ -2174,7 +2174,7 @@ function openModalInput(row = null) {
   headers.forEach(col => {
     const label = col.replace(/_/g, ' ');
     
-    // Deteksi cerdas jenis input
+    // Deteksi Format Berdasarkan Nama Kolom Google Sheets
     const isImage = /url|image|cover|pic|logo|favicon|foto|avatar/i.test(col);
     const isFile = /file|document|pdf|cv|berkas|arsip|link/i.test(col);
     const isMedia = isImage || isFile;
@@ -2185,40 +2185,53 @@ function openModalInput(row = null) {
     const span = isMedia || long ? 'md:col-span-2' : 'col-span-1';
 
     if (isMedia) {
-       let acceptAttr = isImage ? "image/*" : "*";
-       let iconLabel = isImage ? "📸 Gambar" : "📄 File / Dokumen";
+       // Tampilan Khusus Input Gambar / File / Link
+       const bgIcon = isImage ? 'fa-image text-blue-500/10' : 'fa-folder-open text-emerald-500/10';
+       const titleIcon = isImage ? 'fa-camera text-blue-500' : 'fa-link text-emerald-500';
+       const titleText = isImage ? 'Upload Gambar' : 'Dokumen / Link';
        
-       let prevTag = isImage 
-           ? `<img id="prev-${col}" src="${safe}" class="${v ? '' : 'hidden'} h-24 w-24 object-cover rounded-xl border mt-3">` 
-           : `<div id="prev-${col}" class="${v ? '' : 'hidden'} mt-3 p-3 bg-blue-50 border border-blue-100 text-blue-600 rounded-xl text-xs font-bold flex items-center gap-2"><i class="fas fa-file-check text-lg"></i> Link File Tersimpan</div>`;
+       let previewHtml = isImage 
+           ? `<img id="prev-${col}" src="${safe}" class="${v && safeUrl(v) ? '' : 'hidden'} h-32 w-48 object-cover rounded-xl border-4 border-white shadow-md mt-4">` 
+           : `<div id="prev-${col}" class="${v ? '' : 'hidden'} mt-4 p-4 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl text-xs font-bold flex items-center gap-3"><i class="fas fa-check-circle text-xl"></i> Link Terdeteksi & Tersimpan</div>`;
 
        body.innerHTML += 
-         `<div class="${span} bg-white p-5 rounded-2xl border shadow-sm space-y-3 relative overflow-hidden">
-           <div class="absolute top-0 right-0 p-4 opacity-5 pointer-events-none"><i class="fas ${isImage ? 'fa-image' : 'fa-file-alt'} text-6xl"></i></div>
-           <label class="block font-black text-slate-800 text-sm relative z-10">${iconLabel} ${label}</label>
+         `<div class="${span} bg-white p-6 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden group hover:border-blue-300 transition-colors">
+           <div class="absolute -bottom-4 -right-4 pointer-events-none transition-transform group-hover:scale-110"><i class="fas ${bgIcon} text-8xl"></i></div>
            
-           <div class="flex flex-col sm:flex-row gap-4 items-start relative z-10">
-             <div class="relative overflow-hidden inline-block shrink-0 w-full sm:w-auto">
-               <button type="button" class="w-full sm:w-auto bg-slate-900 text-white font-bold py-3 px-5 rounded-xl text-xs shadow-md">
-                 <i class="fas fa-upload mr-1"></i> Pilih ${isImage ? 'Gambar' : 'File'}
+           <label class="font-black text-slate-800 text-sm mb-4 flex items-center gap-2 relative z-10"><i class="fas ${titleIcon}"></i> ${titleText}: ${label}</label>
+           
+           <div class="flex flex-col gap-4 relative z-10">
+             
+             <!-- Tombol Upload File -->
+             <div class="relative overflow-hidden inline-block w-full">
+               <button type="button" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 px-5 rounded-xl text-sm shadow-md transition-colors flex items-center justify-center gap-2">
+                 <i class="fas fa-cloud-upload-alt"></i> ${isImage ? 'Pilih Gambar (JPG/PNG)' : 'Pilih File (PDF/DOCX/PPT)'}
                </button>
-               <input type="file" accept="${acceptAttr}" onchange="convertImg(event, '${col}', '${isImage ? 'image' : 'file'}')" class="absolute inset-0 opacity-0 cursor-pointer">
+               <input type="file" accept="${isImage ? 'image/png, image/jpeg, image/webp' : '.pdf,.doc,.docx,.ppt,.pptx'}" onchange="processMediaUpload(event, '${col}', '${isImage ? 'image' : 'file'}')" class="absolute inset-0 opacity-0 cursor-pointer">
              </div>
              
-             <div class="flex-1 w-full">
-                 <span class="text-[10px] text-blue-600 font-black uppercase tracking-wider block mb-1">Paste Link Google Drive / Web Di Sini:</span>
-                 <input type="text" id="inp-${col}" value="${safe}" oninput="autoConvertDriveLink(this)" placeholder="https://..." class="w-full p-3 bg-blue-50/50 border border-blue-100 rounded-xl text-xs font-medium focus:border-blue-500 focus:bg-white outline-none transition-all">
+             <!-- Pemisah -->
+             <div class="flex items-center gap-3">
+                 <div class="h-px bg-slate-200 flex-1"></div>
+                 <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">ATAU PASTE LINK</span>
+                 <div class="h-px bg-slate-200 flex-1"></div>
+             </div>
+
+             <!-- Kolom Link Drive / Web -->
+             <div class="w-full">
+                 <input type="text" id="inp-${col}" value="${safe}" oninput="autoConvertDriveLink(this)" placeholder="https://drive.google.com/..." class="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-50 outline-none transition-all">
              </div>
            </div>
-           ${prevTag}
+           
+           <div class="relative z-10">${previewHtml}</div>
          </div>`;
     } else if (col === 'Status') {
          const s = v || 'publish';
-         body.innerHTML += `<div class="${span}"><label class="block font-bold text-sm mb-2">${label}</label><select id="inp-${col}" class="w-full p-3.5 bg-white border rounded-xl font-bold text-slate-700"><option value="publish" ${s==='publish'?'selected':''}>🟢 Publish</option><option value="active" ${s==='active'?'selected':''}>🟢 Active</option><option value="draft" ${s==='draft'?'selected':''}>🟡 Draft</option><option value="trash" ${s==='trash'?'selected':''}>🔴 Trash</option></select></div>`;
+         body.innerHTML += `<div class="${span}"><label class="block font-black text-slate-800 text-sm mb-2">${label}</label><select id="inp-${col}" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-700 focus:border-blue-500 outline-none transition-all"><option value="publish" ${s==='publish'?'selected':''}>🟢 Publik (Live)</option><option value="active" ${s==='active'?'selected':''}>🟢 Aktif</option><option value="draft" ${s==='draft'?'selected':''}>🟡 Draft (Sembunyikan)</option><option value="trash" ${s==='trash'?'selected':''}>🔴 Trash (Sampah)</option></select></div>`;
     } else if (long) {
-         body.innerHTML += `<div class="${span}"><label class="block font-bold text-sm mb-2">${label}</label><textarea id="inp-${col}" rows="5" class="w-full p-3.5 bg-white border rounded-xl outline-none focus:border-blue-500">${safe}</textarea></div>`;
+         body.innerHTML += `<div class="${span}"><label class="block font-black text-slate-800 text-sm mb-2">${label}</label><textarea id="inp-${col}" rows="5" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-700 outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-50 transition-all custom-scrollbar">${safe}</textarea></div>`;
     } else {
-         body.innerHTML += `<div class="${span}"><label class="block font-bold text-sm mb-2">${label}</label><input type="text" id="inp-${col}" value="${safe}" class="w-full p-3.5 bg-white border rounded-xl outline-none focus:border-blue-500"></div>`;
+         body.innerHTML += `<div class="${span}"><label class="block font-black text-slate-800 text-sm mb-2">${label}</label><input type="text" id="inp-${col}" value="${safe}" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-700 outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-50 transition-all"></div>`;
     }
   });
   
@@ -2227,16 +2240,18 @@ function openModalInput(row = null) {
 }
 
 /* ================================================================
-   SISTEM KOMPRESI GAMBAR & LINK GOOGLE DRIVE
+   LOGIKA PEMROSESAN GAMBAR, FILE, DAN LINK OTOMATIS
    ================================================================ */
 function autoConvertDriveLink(inputEl) {
     let url = inputEl.value;
+    
+    // Otomatis ubah link Google Drive biasa menjadi link Direct Download/Viewer
     const driveRegex = /drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/;
     const match = url.match(driveRegex);
     
     if (match && match[1]) {
         inputEl.value = `https://drive.google.com/uc?export=view&id=${match[1]}`;
-        showToast("Link Google Drive dikonversi ke mode publik!", "info");
+        showToast("Link Google Drive dikonversi agar bisa diakses Publik!", "info");
         
         const prevEl = document.getElementById(inputEl.id.replace('inp-', 'prev-'));
         if (prevEl) {
@@ -2246,30 +2261,34 @@ function autoConvertDriveLink(inputEl) {
     }
 }
 
-async function convertImg(e, col, type = 'image') {
-    const f = e.target.files[0];
-    if (!f) return;
+async function processMediaUpload(e, col, type) {
+    const file = e.target.files[0];
+    if (!file) return;
 
     const input = document.getElementById('inp-' + col);
     const prev = document.getElementById('prev-' + col);
 
-    if (type === 'image' || f.type.startsWith('image/')) {
-        showToast("Mengompresi gambar untuk database...", "info");
-        const compressedBase64 = await compressImageToGoogleSheets(f);
+    // JIKA USER UPLOAD GAMBAR (Maks 50.000 karakter Google Sheets)
+    if (type === 'image' && file.type.startsWith('image/')) {
+        showToast("Sedang mengompresi gambar untuk database...", "info");
+        const compressedBase64 = await compressImageToGoogleSheets(file);
         
         if (compressedBase64.length > 49000) {
-            showToast('Gambar masih terlalu besar. Silakan Upload ke Google Drive & Paste link-nya di kotak!', 'error');
+            showToast('Gambar terlalu rumit/besar! Silakan upload ke Google Drive lalu Paste Link-nya.', 'error');
         } else {
             if (input) input.value = compressedBase64;
             if (prev) { prev.src = compressedBase64; prev.classList.remove('hidden'); }
             showToast('Gambar berhasil diproses.', 'success');
         }
-    } else {
-        showToast('Untuk Dokumen/File, WAJIB upload ke Google Drive lalu paste link-nya di kotak yang tersedia.', 'warning');
-        e.target.value = ''; 
+    } 
+    // JIKA USER KLIK FILE DOKUMEN (PDF, Word, PPT)
+    else {
+        showToast('Untuk File PDF/Word/PPT, Anda WAJIB mengunggahnya ke Google Drive Anda sendiri terlebih dahulu, lalu paste Link-nya di kotak yang tersedia!', 'warning');
+        e.target.value = ''; // Kosongkan file karena file dokumen tidak bisa di-Base64-kan ke Sheet
     }
 }
 
+// Kompresor Cerdas Penurun Ukuran Gambar
 function compressImageToGoogleSheets(file) {
     return new Promise((resolve) => {
         const reader = new FileReader();
@@ -2279,9 +2298,8 @@ function compressImageToGoogleSheets(file) {
             img.src = event.target.result;
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                // Kecilkan dimensi maksimal jadi 300px agar data sangat ringan
-                const MAX_WIDTH = 300; 
-                const MAX_HEIGHT = 300;
+                const MAX_WIDTH = 400; // Resolusi optimal web
+                const MAX_HEIGHT = 400;
                 let width = img.width;
                 let height = img.height;
 
@@ -2295,11 +2313,28 @@ function compressImageToGoogleSheets(file) {
                 canvas.height = height;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
-                // Turunkan kualitas menjadi 30% agar muat di Google Sheets
-                resolve(canvas.toDataURL('image/jpeg', 0.3));
+                // Kualitas diturunkan ke 40% agar sangat ringan
+                resolve(canvas.toDataURL('image/jpeg', 0.4));
             };
         };
     });
+}
+
+// Tambahan: Pastikan fungsi toggle sidebar ada jika belum (untuk Hamburger Menu)
+function toggleAdminSidebar() {
+    const sb = document.getElementById('adm-sidebar');
+    const overlay = document.getElementById('adm-sidebar-overlay');
+    
+    if (sb && overlay) {
+        const isClosed = sb.classList.contains('-translate-x-full');
+        if (isClosed) {
+            sb.classList.remove('-translate-x-full');
+            overlay.classList.remove('hidden');
+        } else {
+            sb.classList.add('-translate-x-full');
+            overlay.classList.add('hidden');
+        }
+    }
 }
 
 function closeModalForm() {

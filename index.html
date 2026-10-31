@@ -464,80 +464,123 @@
      <main class="flex-1 p-6 md:p-10 overflow-y-auto"><div id="visitor-content-container" class="space-y-6 animate-fade-in pb-10"></div></main>
   </div>
 
-  <!-- ================================================================= -->
-  <!-- 4. SUPER ADMIN DASHBOARD                                          -->
-  <!-- ================================================================= -->
-  <div id="view-admin" class="hidden h-full flex flex-col md:flex-row bg-[#f0f2f5] w-full relative">
-     <!-- BAGIAN TOMBOL REFRESH & LOGOUT -->
-            <div class="flex items-center gap-2 sm:gap-3">
-               <button onclick="refreshManual(this)"> 
-                  <i class="fas fa-sync-alt"></i> Refresh
-               </button>
-               
-               <button onclick="handleLogout()" class="bg-rose-50 hover:bg-rose-100 text-rose-600 px-4 py-2 rounded-xl font-bold text-sm transition-colors">
-                  <i class="fas fa-sign-out-alt sm:mr-2"></i> <span class="hidden sm:inline">Logout</span>
-               </button>
+<!-- =======================================================
+     DASHBOARD ADMIN (SUPER MODERN & RESPONSIF)
+     ======================================================= -->
+<div id="view-admin" class="hidden h-screen flex bg-slate-50 w-full overflow-hidden text-slate-800 font-sans">
+    
+    <!-- OVERLAY SIDEBAR MOBILE -->
+    <div id="adm-sidebar-overlay" onclick="toggleAdminSidebar()" class="hidden fixed inset-0 bg-slate-900/60 z-40 md:hidden backdrop-blur-sm transition-opacity"></div>
+
+    <!-- SIDEBAR KIRI -->
+    <aside id="adm-sidebar" class="w-64 bg-slate-900 text-slate-300 flex flex-col transition-transform duration-300 transform -translate-x-full md:translate-x-0 absolute md:relative z-50 h-full shadow-2xl md:shadow-none">
+        <!-- Logo / Header Sidebar -->
+        <div class="h-16 flex items-center justify-center px-6 border-b border-slate-800/80 shrink-0 bg-slate-950/50">
+            <span class="text-white font-black text-xl tracking-[0.2em] bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-400">ZEXRAPS</span>
+        </div>
+        
+        <!-- Menu Modul -->
+        <div id="sidebar-menus" class="flex-1 overflow-y-auto py-6 px-4 space-y-1 custom-scrollbar">
+            <!-- JavaScript akan menyuntikkan menu ke sini -->
+        </div>
+        
+        <!-- Tombol Logout (Satu-satunya) -->
+        <div class="p-5 border-t border-slate-800/80 bg-slate-950/30">
+            <button onclick="handleLogout()" class="w-full flex items-center justify-center gap-3 bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-500 py-3.5 rounded-xl font-black text-sm transition-all duration-300">
+                <i class="fas fa-sign-out-alt text-lg"></i> Keluar Sistem
+            </button>
+        </div>
+    </aside>
+
+    <!-- KONTEN UTAMA KANAN -->
+    <main class="flex-1 flex flex-col h-full relative w-full overflow-hidden">
+        
+        <!-- HEADER ATAS -->
+        <header class="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-4 sm:px-8 shrink-0 z-30 sticky top-0">
+            
+            <!-- Kiri: Tombol Menu (Mobile), Judul, & Tombol Refresh -->
+            <div class="flex items-center gap-3 sm:gap-5">
+                <button onclick="toggleAdminSidebar()" class="md:hidden w-10 h-10 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center justify-center transition-colors">
+                    <i class="fas fa-bars text-lg"></i>
+                </button>
+                
+                <h1 class="font-black text-slate-800 text-lg hidden sm:block whitespace-nowrap">Admin Panel</h1>
+                
+                <button onclick="refreshManual(this)" class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white flex items-center justify-center transition-all duration-300 shadow-sm" title="Refresh & Sinkronisasi">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
             </div>
-     <div class="md:hidden bg-[#1e293b] text-white p-4 flex justify-between items-center shadow-md z-50 shrink-0">
-        <h2 class="font-black tracking-widest text-sm">ADMIN PANEL</h2>
-        <button onclick="toggleAdminSidebar()" class="bg-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold">Menu</button>
-     </div>
-     
-     <!-- REVISI BUG SCROLL ADMIN MOBILE: height diset 100dvh agar menu di bawah tidak tertutup oleh navigasi HP -->
-     <aside id="adm-sidebar" class="hidden md:flex flex-col w-72 md:w-64 lg:w-72 bg-[#1e293b] text-slate-300 fixed md:relative top-0 bottom-0 left-0 z-[60] shadow-2xl md:shadow-none h-[100dvh] md:h-full overflow-hidden">
-        <div class="p-6 border-b border-slate-700/50 flex justify-between items-center bg-[#0f172a] shrink-0">
-           <h2 class="font-black text-white tracking-widest text-sm">R.P.A.<span class="text-blue-500">.</span></h2>
-           <button onclick="toggleAdminSidebar()" class="md:hidden text-2xl font-bold text-slate-400">&times;</button>
-        </div>
-        <!-- Padding bottom dibesarkan agar menu paling bawah mudah diklik di HP -->
-        <div class="flex-1 overflow-y-auto p-4 pb-20" id="sidebar-menus"></div>
-        <div class="p-4 bg-[#0f172a] border-t border-slate-700/50 shrink-0">
-           <button onclick="handleLogout()" class="w-full bg-rose-500/10 text-rose-400 p-2.5 rounded-xl font-bold text-xs">Keluar Sistem</button>
-        </div>
-     </aside>
 
-     <main class="flex-1 flex flex-col h-full w-full bg-[#f0f2f5] min-w-0 overflow-hidden">
-        <header class="bg-white px-4 md:px-6 py-4 border-b border-slate-200 flex flex-col md:flex-row gap-3 md:gap-4 justify-between items-stretch md:items-center shadow-sm shrink-0">
-           <div class="flex items-center gap-3 min-w-0"><button onclick="toggleAdminSidebar()" class="md:hidden p-2 rounded-xl bg-slate-100 text-slate-600" aria-label="Menu">☰</button><div class="min-w-0"><h1 id="admin-module-title" class="font-extrabold text-lg text-slate-800 tracking-tight truncate">Pusat Database</h1><p class="hidden sm:block text-[11px] text-slate-400 font-semibold">Kelola website langsung dari Dashboard Admin</p></div></div>
-           <div class="flex items-center gap-2 md:gap-3">
-             <input id="admin-search-mobile" type="search" oninput="filterAdminTable(this.value)" placeholder="Cari data..." class="admin-search px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500">
-             <button onclick="refreshAdminModule()" id="btn-refresh" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2.5 rounded-xl font-bold text-xs shadow-sm" title="Muat ulang">↻</button>
-             <div class="flex items-center gap-2"><input id="admin-search" oninput="filterAdminTable(this.value)" type="search" placeholder="Cari data..." class="hidden sm:block w-40 lg:w-56 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold outline-none focus:border-blue-500"><button onclick="refreshAdminModule()" class="hidden sm:flex bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2.5 rounded-xl font-bold text-xs" title="Refresh"><i class="fas fa-rotate"></i></button><button onclick="openModalInput()" id="btn-add" class="hidden bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-md shrink-0 items-center gap-2">
-              <span class="text-lg leading-none">+</span> Tambah Data
-           </button>
+            <!-- Kanan: Kolom Pencarian (Satu-satunya) -->
+            <div class="flex items-center relative w-full max-w-[200px] sm:max-w-xs ml-4">
+                <i class="fas fa-search absolute left-4 text-slate-400"></i>
+                <input type="text" id="admin-search" oninput="filterAdminTable(this.value)" placeholder="Cari data..." class="w-full bg-slate-100/80 border border-transparent rounded-xl py-2 pl-11 pr-4 text-sm font-bold text-slate-700 focus:bg-white focus:border-blue-400 focus:ring-4 focus:ring-blue-100 outline-none transition-all">
+            </div>
         </header>
-        <div class="admin-content-scroll flex-1 p-4 md:p-6 overflow-y-auto w-full pb-16 min-h-0">
-           <div id="welcome-panel" class="bg-white p-12 rounded-3xl border border-slate-200 text-center max-w-lg mx-auto mt-10 shadow-sm animate-fade-in">
-              <div class="text-5xl mb-4">🗄️</div>
-              <h2 class="text-2xl font-extrabold text-slate-800 mb-2">Workspace Admin</h2>
-              <p class="text-sm text-slate-500">Pilih modul di samping untuk mengelola database secara instan.</p>
-           </div>
-           <div id="table-panel" class="hidden bg-white rounded-[1.5rem] border border-slate-200 shadow-sm w-full flex flex-col h-full max-h-[80vh] animate-fade-in">
-              <div class="overflow-x-auto overflow-y-auto flex-1 w-full rounded-[1.5rem]">
-                 <table class="w-full text-left min-w-max border-collapse">
-                    <thead id="admin-thead" class="bg-slate-50 border-b border-slate-200 sticky top-0 z-10"></thead>
-                    <tbody id="admin-tbody" class="divide-y divide-slate-100"></tbody>
-                 </table>
-              </div>
-           </div>
-        </div>
-     </main>
-  </div>
 
-  <!-- FORM INPUT MODAL ADMIN -->
-  <div id="modal-form" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-    <div class="bg-white rounded-[2rem] w-full max-w-3xl max-h-[95vh] flex flex-col shadow-2xl border border-slate-200 animate-slide-up">
-       <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-white rounded-t-[2rem] shrink-0">
-          <div><h3 id="modal-title" class="font-extrabold text-lg text-slate-900">Form Input Data</h3><p id="modal-subtitle" class="text-xs text-slate-500 mt-1">Data akan disimpan ke Google Sheets.</p></div>
-          <button onclick="closeModalForm()" class="text-2xl font-bold text-slate-400">&times;</button>
-       </div>
-       <div id="modal-body" class="p-6 overflow-y-auto bg-slate-50 grid grid-cols-1 md:grid-cols-2 gap-5 text-sm flex-1"></div>
-       <div class="p-6 border-t border-slate-100 bg-white rounded-b-[2rem] flex justify-end gap-3 shrink-0">
-          <button onclick="closeModalForm()" class="px-6 py-3 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl text-sm">Batal</button>
-          <button onclick="submitData()" class="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg text-sm">Simpan Data</button>
-       </div>
+        <!-- AREA SCROLL KONTEN -->
+        <div class="flex-1 overflow-y-auto p-4 sm:p-8 relative custom-scrollbar bg-slate-50/50">
+            <!-- Dashboard Statistik -->
+            <div id="welcome-panel" class="w-full max-w-7xl mx-auto transition-all duration-500"></div>
+
+            <!-- Tabel Data -->
+            <div id="table-panel" class="hidden w-full max-w-7xl mx-auto animate-fade-in">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                    <h2 id="admin-module-title" class="text-2xl sm:text-3xl font-black text-slate-800 capitalize tracking-tight">Module</h2>
+                    
+                    <button id="btn-add" onclick="openModalInput()" class="bg-blue-600 hover:bg-blue-700 hover:scale-105 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2 text-sm w-full sm:w-auto shrink-0">
+                        <i class="fas fa-plus"></i> Tambah Data Baru
+                    </button>
+                </div>
+                
+                <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto w-full custom-scrollbar">
+                        <table class="w-full text-left border-collapse whitespace-nowrap min-w-full">
+                            <thead id="admin-thead" class="bg-slate-50/80 border-b border-slate-200 text-slate-500"></thead>
+                            <tbody id="admin-tbody" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- =======================================================
+     MODAL FORM INPUT (DESAIN MODERN & KEKINIAN)
+     ======================================================= -->
+<div id="modal-form" class="hidden fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 transition-opacity">
+    <!-- Background Blur -->
+    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onclick="closeModalForm()"></div>
+    
+    <!-- Kotak Modal -->
+    <div class="bg-white w-full max-w-4xl rounded-[2rem] shadow-2xl relative flex flex-col max-h-[95vh] sm:max-h-[90vh] overflow-hidden animate-fade-in transform scale-100">
+        
+        <!-- Header Modal -->
+        <div class="p-6 sm:p-8 border-b border-slate-100 flex justify-between items-center bg-white z-10 shrink-0">
+            <div>
+                <h3 id="modal-title" class="text-xl sm:text-3xl font-black text-slate-900 tracking-tight">Form Data</h3>
+                <p id="modal-subtitle" class="text-xs sm:text-sm text-blue-600 mt-1 font-bold">Pastikan data terisi dengan benar.</p>
+            </div>
+            <button onclick="closeModalForm()" class="w-12 h-12 bg-slate-50 border border-slate-200 rounded-2xl text-slate-500 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition-all shadow-sm">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <!-- Isi Form (Bisa di-scroll) -->
+        <div class="p-6 sm:p-8 overflow-y-auto flex-1 custom-scrollbar bg-slate-50/50">
+            <div id="modal-body" class="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8"></div>
+        </div>
+        
+        <!-- Footer Modal (Tombol Simpan) -->
+        <div class="p-6 sm:p-8 border-t border-slate-100 bg-white flex flex-col sm:flex-row justify-end gap-3 sm:gap-4 shrink-0 z-10">
+            <button onclick="closeModalForm()" class="px-8 py-3.5 rounded-xl font-bold text-slate-600 bg-white border-2 border-slate-200 hover:bg-slate-100 transition-all text-sm w-full sm:w-auto">Batal</button>
+            <button onclick="submitData()" class="px-8 py-3.5 rounded-xl font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-xl shadow-blue-600/30 hover:shadow-blue-600/50 hover:-translate-y-1 transition-all text-sm flex items-center justify-center gap-2 w-full sm:w-auto">
+                <i class="fas fa-paper-plane"></i> Simpan ke Database
+            </button>
+        </div>
     </div>
-  </div>
+</div>
 
   <!-- Link ke file JS yang baru dibuat -->
   <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
