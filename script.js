@@ -1879,56 +1879,19 @@ async function switchVisitorTab(tab, isSilent = false) {
 
         </div>`;
 
-    } else if (tab === 'message') {
-
-      const res =
-        await getCachedData(
-          'Notifications'
-        );
-
-      const rows =
-        (res.data || [])
-        .filter(
-          x =>
-            String(
-              x.Type || ''
-            ).toLowerCase() ===
-            'contact'
-        );
-
+} else if (tab === 'message') {
       container.innerHTML =
-        `<div class="bg-white p-8 rounded-3xl border shadow-sm animate-fade-in">
-
-          <h2 class="font-extrabold text-xl text-slate-900 mb-5">
-            Pesan Inbox
-          </h2>
-
-          ${
-            rows.length
-              ? rows.map(
-                  x =>
-                    `<div class="p-4 bg-slate-50 rounded-2xl mb-3">
-
-                      <div class="font-bold">
-                        ${escapeHtml(
-                          x.Title ||
-                          'Pesan'
-                        )}
-                      </div>
-
-                      <div class="text-xs text-slate-500 mt-1 whitespace-pre-line">
-                        ${escapeHtml(
-                          x.Message ||
-                          ''
-                        )}
-                      </div>
-
-                    </div>`
-                ).join('')
-              : '<div class="empty-state">Belum ada pesan.</div>'
-          }
-
+        `<div class="bg-white p-4 md:p-8 rounded-3xl border shadow-sm animate-fade-in w-full">
+          <h2 class="font-extrabold text-xl text-slate-900 mb-5">Pesan Inbox (Live Chat)</h2>
+          <div class="relative w-full max-w-5xl mx-auto">
+             ${buildChatUI('visitor')}
+          </div>
         </div>`;
+      
+      activeChatRoom = 'Admin';
+      switchChatRoom('Admin');
+      if (typeof chatSyncTimer !== 'undefined' && chatSyncTimer) clearInterval(chatSyncTimer);
+      chatSyncTimer = setInterval(syncChatMessages, 5000);
 
     } else if (tab === 'notif') {
 
@@ -3797,43 +3760,22 @@ function renderPublicDocuments(r) {
 }
 
 /* ================================================================
-   PUBLIC CONTACT (SEKARANG MENGISI FOOTER BAWAH)
+   MENU CONTACT PUBLIK (MENJADI APLIKASI LIVE CHAT)
    ================================================================ */
 function renderPublicContact(r) {
-    const x = r.find(a => a.Status === 'publish' || a.Status === 'active') || r[0];
-    const footer = document.getElementById('main-footer');
-    if (!footer) return;
-
-    if (x) {
-        footer.classList.remove('hidden'); // Munculkan footer jika data siap
-        
-        // Isi Kontak Info
-        const info = document.getElementById('footer-contact-info');
-        if (info) {
-            info.innerHTML = `
-                <p class="flex items-center gap-3 hover:text-white transition-colors"><i class="fas fa-envelope w-5 text-slate-500"></i> ${escapeHtml(safeText(x.Email, '-'))}</p>
-                <p class="flex items-center gap-3 hover:text-white transition-colors mt-2"><i class="fas fa-phone w-5 text-slate-500"></i> ${escapeHtml(safeText(x.WhatsApp, '-'))}</p>
-                <p class="flex items-start gap-3 hover:text-white transition-colors mt-2"><i class="fas fa-map-marker-alt w-5 text-slate-500 mt-1"></i> <span>${escapeHtml(safeText(x.Address, '-'))}</span></p>
-            `;
-        }
-
-        // Isi Sosial Media
-        const social = document.getElementById('footer-social-links');
-        if (social) {
-            const links = [
-                { key: 'Instagram_URL', icon: 'fa-instagram', color: 'hover:bg-pink-600' },
-                { key: 'Facebook_URL', icon: 'fa-facebook-f', color: 'hover:bg-blue-600' },
-                { key: 'LinkedIn_URL', icon: 'fa-linkedin-in', color: 'hover:bg-blue-700' },
-                { key: 'YouTube_URL', icon: 'fa-youtube', color: 'hover:bg-rose-600' },
-                { key: 'GitHub_URL', icon: 'fa-github', color: 'hover:bg-slate-700' }
-            ];
-            
-            social.innerHTML = links.map(l => {
-                const u = safeUrl(x[l.key]);
-                return u ? `<a href="${u}" target="_blank" class="w-10 h-10 rounded-full bg-slate-800 text-white flex items-center justify-center transition-all ${l.color}"><i class="fab ${l.icon}"></i></a>` : '';
-            }).join('');
-        }
+    const e = document.getElementById('public-contact-content');
+    if (!e) return;
+    
+    if (!currentUser) {
+        e.innerHTML = `<div class="bg-white p-10 md:p-16 rounded-3xl border text-center shadow-sm max-w-3xl mx-auto animate-fade-in my-8"><i class="fab fa-whatsapp text-6xl text-emerald-500 mb-5"></i><h2 class="text-2xl md:text-3xl font-black mb-3 text-slate-800">Live Chat Tersedia</h2><p class="text-slate-500 mb-8 max-w-md mx-auto">Silakan masuk (Login) sebagai Visitor untuk mulai mengirim pesan ke Global atau Admin.</p><button onclick="navigateTo('attendance')" class="bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-3.5 rounded-full font-bold shadow-xl shadow-emerald-500/30 transition-transform hover:-translate-y-1">Login / Isi Buku Tamu</button></div>`;
+        return;
     }
+    
+    e.innerHTML = `<div class="w-full max-w-5xl mx-auto my-4">${buildChatUI('public')}</div>`;
+    activeChatRoom = 'Global';
+    switchChatRoom('Global');
+    if (typeof chatSyncTimer !== 'undefined' && chatSyncTimer) clearInterval(chatSyncTimer);
+    chatSyncTimer = setInterval(syncChatMessages, 5000);
 }
 
 /* ================================================================
@@ -4456,10 +4398,9 @@ async function loadAdminModule(sheetName, force = false) {
   if (sheetName === 'Live_Chat') {
       tablePanel.classList.add('hidden'); // Sembunyikan tabel standar
       
-      // Buat panel chat
       const chatPanel = document.createElement('div');
       chatPanel.id = 'admin-live-chat-panel';
-      chatPanel.className = 'w-full max-w-7xl mx-auto animate-fade-in mb-8';
+      chatPanel.className = 'w-full max-w-7xl mx-auto animate-fade-in mb-8 mt-4';
       chatPanel.innerHTML = buildChatUI('admin');
       tablePanel.parentNode.appendChild(chatPanel);
       
@@ -4472,18 +4413,19 @@ async function loadAdminModule(sheetName, force = false) {
           b.classList.toggle('text-slate-300', !a);
       });
       
-      if (innerWidth < 768) toggleAdminSidebar();
+      if (innerWidth < 768 && typeof toggleAdminSidebar === 'function') toggleAdminSidebar();
       
       activeChatRoom = 'Global';
-      await renderAdminChatRooms();
+      if (typeof renderAdminChatRooms === 'function') await renderAdminChatRooms();
       switchChatRoom('Global');
-      if (typeof chatSyncTimer !== 'undefined') clearInterval(chatSyncTimer);
+      if (typeof chatSyncTimer !== 'undefined' && chatSyncTimer) clearInterval(chatSyncTimer);
       chatSyncTimer = setInterval(syncChatMessages, 5000);
       return;
   }
   
   // Jika bukan Live Chat, kembalikan tampilan tabel standar
   tablePanel.classList.remove('hidden');
+} // <-- PENUTUP FUNGSI YANG SEBELUMNYA HILANG
 
 /* ================================================================
    ADMIN TABLE
