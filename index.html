@@ -16,6 +16,8 @@
   
   <!-- Link ke file CSS yang baru dibuat -->
   <link rel="stylesheet" href="style.css">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
 </head>
 
 <!-- address bar HP agar tidak terpotong ke bawah -->
@@ -585,5 +587,43 @@
   <!-- Link ke file JS yang baru dibuat -->
   <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
   <script src="script.js"></script>
+
+  <!-- =======================================================
+     MODAL CROPPER (ALAT PEMOTONG GAMBAR)
+     ======================================================= -->
+<div id="cropper-modal" class="hidden fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-sm">
+    <div class="bg-white w-full max-w-4xl rounded-[2rem] shadow-2xl flex flex-col overflow-hidden max-h-[90vh] animate-fade-in">
+        
+        <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-white">
+            <h3 class="font-black text-xl text-slate-800">Sesuaikan Gambar</h3>
+            <button onclick="closeCropper()" class="text-slate-400 hover:text-rose-500 transition-colors"><i class="fas fa-times text-2xl"></i></button>
+        </div>
+        
+        <div class="flex-1 bg-slate-900 relative p-4 flex justify-center items-center min-h-[40vh] md:min-h-[60vh]">
+            <img id="cropper-image" src="" class="max-w-full max-h-full block">
+        </div>
+        
+        <!-- Pilihan Rasio Lengkap -->
+        <div class="p-4 bg-slate-50 border-t border-slate-200 flex flex-wrap justify-center gap-2 overflow-x-auto">
+            <button onclick="setCropRatio(NaN)" class="px-4 py-2 bg-white border border-slate-200 shadow-sm rounded-lg text-xs font-bold hover:border-blue-500 hover:text-blue-600">Bebas</button>
+            <button onclick="setCropRatio(1)" class="px-4 py-2 bg-white border border-slate-200 shadow-sm rounded-lg text-xs font-bold hover:border-blue-500 hover:text-blue-600">1:1 (Persegi)</button>
+            <button onclick="setCropRatio(3/1)" class="px-4 py-2 bg-white border border-slate-200 shadow-sm rounded-lg text-xs font-bold hover:border-blue-500 hover:text-blue-600">3:1</button>
+            <button onclick="setCropRatio(3/4)" class="px-4 py-2 bg-white border border-slate-200 shadow-sm rounded-lg text-xs font-bold hover:border-blue-500 hover:text-blue-600">3:4 (Potret)</button>
+            <button onclick="setCropRatio(4/1)" class="px-4 py-2 bg-white border border-slate-200 shadow-sm rounded-lg text-xs font-bold hover:border-blue-500 hover:text-blue-600">4:1</button>
+            <button onclick="setCropRatio(4/5)" class="px-4 py-2 bg-white border border-slate-200 shadow-sm rounded-lg text-xs font-bold hover:border-blue-500 hover:text-blue-600">4:5 (IG)</button>
+            <button onclick="setCropRatio(16/9)" class="px-4 py-2 bg-white border border-slate-200 shadow-sm rounded-lg text-xs font-bold hover:border-blue-500 hover:text-blue-600">16:9 (Layar Lebar)</button>
+            <button onclick="setCropRatio(9/16)" class="px-4 py-2 bg-white border border-slate-200 shadow-sm rounded-lg text-xs font-bold hover:border-blue-500 hover:text-blue-600">9:16 (Story)</button>
+            <button onclick="setCropRatio(1.91)" class="px-4 py-2 bg-white border border-slate-200 shadow-sm rounded-lg text-xs font-bold hover:border-blue-500 hover:text-blue-600">1.91:1</button>
+            <button onclick="setCropRatio(2.7)" class="px-4 py-2 bg-white border border-slate-200 shadow-sm rounded-lg text-xs font-bold hover:border-blue-500 hover:text-blue-600">2.7:1 (Sampul)</button>
+        </div>
+        
+        <div class="p-5 bg-white border-t border-slate-100 flex justify-end gap-3">
+            <button onclick="closeCropper()" class="px-6 py-2.5 rounded-xl font-bold text-slate-500 border border-slate-200 hover:bg-slate-50">Batal</button>
+            <button onclick="applyCrop()" class="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-md shadow-blue-500/30 flex items-center gap-2">
+                <i class="fas fa-crop-alt"></i> Potong & Gunakan
+            </button>
+        </div>
+    </div>
+</div>
 </body>
 </html>

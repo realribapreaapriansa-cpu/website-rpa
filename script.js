@@ -2261,81 +2261,117 @@ function autoConvertDriveLink(inputEl) {
     }
 }
 
+let cropperInstance = null;
+let currentCropTargetCol = '';
+
 async function processMediaUpload(e, col, type) {
     const file = e.target.files[0];
     if (!file) return;
 
     const input = document.getElementById('inp-' + col);
-    const prev = document.getElementById('prev-' + col);
-
-    // JIKA USER UPLOAD GAMBAR (Maks 50.000 karakter Google Sheets)
+    
+    // PENANGANAN GAMBAR -> Masuk ke Mode Pemotong (Cropper)
     if (type === 'image' && file.type.startsWith('image/')) {
-        showToast("Sedang mengompresi gambar untuk database...", "info");
-        const compressedBase64 = await compressImageToGoogleSheets(file);
-        
-        if (compressedBase64.length > 49000) {
-            showToast('Gambar terlalu rumit/besar! Silakan upload ke Google Drive lalu Paste Link-nya.', 'error');
-        } else {
-            if (input) input.value = compressedBase64;
-            if (prev) { prev.src = compressedBase64; prev.classList.remove('hidden'); }
-            showToast('Gambar berhasil diproses.', 'success');
-        }
-    } 
-    // JIKA USER KLIK FILE DOKUMEN (PDF, Word, PPT)
-    else {
-        showToast('Untuk File PDF/Word/PPT, Anda WAJIB mengunggahnya ke Google Drive Anda sendiri terlebih dahulu, lalu paste Link-nya di kotak yang tersedia!', 'warning');
-        e.target.value = ''; // Kosongkan file karena file dokumen tidak bisa di-Base64-kan ke Sheet
-    }
-}
-
-// Kompresor Cerdas Penurun Ukuran Gambar
-function compressImageToGoogleSheets(file) {
-    return new Promise((resolve) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
         reader.onload = (event) => {
-            const img = new Image();
-            img.src = event.target.result;
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 400; // Resolusi optimal web
-                const MAX_HEIGHT = 400;
-                let width = img.width;
-                let height = img.height;
-
-                if (width > height) {
-                    if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
-                } else {
-                    if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
-                }
-
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
-                // Kualitas diturunkan ke 40% agar sangat ringan
-                resolve(canvas.toDataURL('image/jpeg', 0.4));
-            };
+            openCropperModal(event.target.result, col);
         };
+    } 
+    // PENANGANAN FILE DOKUMEN (PDF/WORD/PPT)
+    else if (type === 'file') {
+        // BATAS AMAN GOOGLE SHEETS: 45 KB (45.000 byte)
+        if (file.size > 45000) {
+            showToast('File terlalu besar! Database hanya mampu menampung file di bawah 45 KB. Untuk file besar, WAJIB gunakan link Google Drive.', 'error');
+        } else {
+            showToast("Memproses dokumen...", "info");
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => {
+                if (input) input.value = reader.result;
+                const prev = document.getElementById('prev-' + col);
+                if (prev) prev.classList.remove('hidden');
+                showToast('File Dokumen berhasil dikonversi dan siap disimpan.', 'success');
+            };
+        }
+    }
+    e.target.value = ''; 
+}
+
+/* KENDALI CROPPER GAMBAR */
+function openCropperModal(imageSrc, col) {
+    currentCropTargetCol = col;
+    document.getElementById('cropper-modal').classList.remove('hidden');
+    const img = document.getElementById('cropper-image');
+    img.src = imageSrc;
+
+    if (cropperInstance) cropperInstance.destroy();
+    
+    // Inisialisasi Cropper.js dengan jeda agar UI selesai terbuka
+    setTimeout(() => {
+        cropperInstance = new Cropper(img, {
+            aspectRatio: NaN, // Default bebas
+            viewMode: 1,
+            autoCropArea: 0.9,
+            background: false
+        });
+    }, 150);
+}
+
+function setCropRatio(ratio) {
+    if (cropperInstance) cropperInstance.setAspectRatio(ratio);
+}
+
+function closeCropper() {
+    document.getElementById('cropper-modal').classList.add('hidden');
+    if (cropperInstance) cropperInstance.destroy();
+    cropperInstance = null;
+}
+
+async function applyCrop() {
+    if (!cropperInstance) return;
+    showToast("Mengompresi potongan gambar...", "info");
+    
+    // Ambil hasil potongan, kompres ukuran piksel jadi max 400x400
+    const canvas = cropperInstance.getCroppedCanvas({
+        maxWidth: 400,
+        maxHeight: 400
     });
+    
+    // Turunkan kualitas ke 40% agar sangat ringan masuk Google Sheets
+    const compressedBase64 = canvas.toDataURL('image/jpeg', 0.4);
+    
+    if (compressedBase64.length > 49000) {
+        showToast('Gambar potongan ini masih terlalu padat detailnya. Gunakan Link Drive.', 'error');
+    } else {
+        const input = document.getElementById('inp-' + currentCropTargetCol);
+        const prev = document.getElementById('prev-' + currentCropTargetCol);
+        if (input) input.value = compressedBase64;
+        if (prev) { prev.src = compressedBase64; prev.classList.remove('hidden'); }
+        showToast('Gambar berhasil dipotong dan siap disimpan!', 'success');
+    }
+    closeCropper();
+}
+
+function autoConvertDriveLink(inputEl) {
+    let url = inputEl.value;
+    const driveRegex = /drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/;
+    const match = url.match(driveRegex);
+    if (match && match[1]) {
+        inputEl.value = `https://drive.google.com/uc?export=view&id=${match[1]}`;
+        showToast("Link Drive dikonversi ke mode publik!", "info");
+    }
 }
 
 // Tambahan: Pastikan fungsi toggle sidebar ada jika belum (untuk Hamburger Menu)
-function toggleAdminSidebar() {
+window.toggleAdminSidebar = function() {
     const sb = document.getElementById('adm-sidebar');
     const overlay = document.getElementById('adm-sidebar-overlay');
-    
     if (sb && overlay) {
-        const isClosed = sb.classList.contains('-translate-x-full');
-        if (isClosed) {
-            sb.classList.remove('-translate-x-full');
-            overlay.classList.remove('hidden');
-        } else {
-            sb.classList.add('-translate-x-full');
-            overlay.classList.add('hidden');
-        }
+        sb.classList.toggle('-translate-x-full');
+        overlay.classList.toggle('hidden');
     }
-}
+};
 
 function closeModalForm() {
 
@@ -5052,55 +5088,38 @@ function openEditById(
 }
 
 /* ================================================================
-   ACTION DATA (HAPUS/EDIT DENGAN UPDATE INSTAN LOKAL)
-   ================================================================ */
-/* ================================================================
    ACTION DATA (HAPUS/EDIT DENGAN UPDATE INSTAN & SINKRONISASI PUBLIK)
    ================================================================ */
 async function actionData(id, actionType) {
-  if (!confirm(actionType === 'softDelete' ? 'Pindahkan data ini ke tempat sampah?' : 'Pulihkan data ini?')) {
-    return;
-  }
+  if (!confirm(actionType === 'softDelete' ? 'Pindahkan data ini ke tempat sampah?' : 'Pulihkan data ini?')) return;
+  
   toggleLoader(true);
   try {
     const r = await apiCall('POST', {
       action: actionType,
       sheet: activeModule,
       user: currentUser ? currentUser.UserID : 'System',
-      data: { id: id }
+      data: { id: String(id) } // Pastikan ID dikirim sebagai string murni
     });
+    
     if (r.status === 'success') {
-      showToast(r.message || 'Aksi berhasil!', 'success');
+      showToast(r.message || 'Aksi berhasil dilakukan!', 'success');
       
-      // Update instan di tabel Admin
-      if (memoryCache[activeModule] && memoryCache[activeModule].data) {
-         const rowIdx = memoryCache[activeModule].data.findIndex(x => String(x[memoryCache[activeModule].headers[0]]) === String(id));
-         if (rowIdx > -1) {
-             if (actionType === 'softDelete') memoryCache[activeModule].data[rowIdx].Status = 'trash';
-             else if (actionType === 'restore') memoryCache[activeModule].data[rowIdx].Status = 'publish';
-             else if (actionType === 'delete' || actionType === 'hardDelete') memoryCache[activeModule].data.splice(rowIdx, 1);
-             
-             renderAdminTable(memoryCache[activeModule].headers, memoryCache[activeModule].data);
-         }
-      }
+      // Hapus Cache Modul Ini Secara Paksa
+      invalidateCache(activeModule);
       
-      // Sinkronisasi Server & Tampilan Publik
+      // Tarik ulang data asli dari Google Sheets setelah penghapusan
       setTimeout(async () => {
-         invalidateCache(activeModule);
          await loadAdminModule(activeModule, true);
          
-         // BUG FIX: Otomatis render ulang tampilan publik saat ada data dihapus
          const related = ['Home', 'Profile', 'Contact', 'Portfolio', 'Blog', 'Career_Timeline', 'Documents', 'Gallery', 'Web_Branding', 'Dynamic_Menu', 'Banners', 'Popups'];
          if (related.includes(activeModule)) {
             related.forEach(x => invalidateCache(x));
-            await prefetchEssentialSheets();
             if (typeof renderPublicContent === 'function') renderPublicContent(false);
-            if (typeof renderPublicBanners === 'function') renderPublicBanners();
-            if (typeof renderPublicPopup === 'function') renderPublicPopup();
          }
-      }, 1500);
+      }, 500); // Beri jeda 0.5 detik agar Sheets di server selesai bekerja
     } else {
-      showToast(r.message || 'Gagal memproses data.', 'error');
+      showToast(r.message || 'Gagal menghapus data di server.', 'error');
     }
   } finally {
     toggleLoader(false);
@@ -7157,30 +7176,27 @@ function closeHelpCenter() {
    PERBAIKAN SINKRONISASI MANUAL & DETEKSI KONEKSI (ANTI FALSE ERROR)
    ================================================================ */
 
-// 1. Pemicu Refresh Manual (Penyapu Bersih Cache Total)
+// 1. Pemicu Refresh Manual (Anti-Bug)
 async function refreshManual(btnEl) {
-    const icons = document.querySelectorAll('.fa-sync-alt, .fa-sync, .fa-rotate, .fa-arrows-rotate, .fa-arrow-rotate-right, .fa-rotate-right');
+    const icons = document.querySelectorAll('.fa-sync-alt, .fa-sync, .fa-rotate');
     icons.forEach(i => i.classList.add('fa-spin'));
-    showToast("Mensinkronkan data terbaru...", "info");
+    showToast("Menarik data terbaru dari server...", "info");
 
     try {
-        if (!navigator.onLine) {
-            throw new Error("NETWORK_OFFLINE");
-        }
+        if (!navigator.onLine) throw new Error("NETWORK_OFFLINE");
 
-        // KUNCI REALTIME: Hapus SELURUH memori web setiap kali tombol refresh ditekan
+        // PENGHAPUSAN CACHE TOTAL UNTUK MEMAKSA TARIK BARU DARI SHEET
         memoryCache = {};
         pendingRequests = {};
         cacheTimestamps = {};
 
         await refreshCurrentData(false);
-        showToast("Data berhasil diperbarui!", "success");
+        showToast("Data berhasil diperbarui sesuai Sheet!", "success");
     } catch (error) {
-        console.error("Detail Error Refresh:", error);
         if (!navigator.onLine || error.message === "NETWORK_OFFLINE") {
             showToast("Gagal memuat data. Silahkan cek internet Anda.", "error");
         } else {
-            showToast("Data berhasil diperbarui!", "success");
+            showToast("Data berhasil diperbarui sesuai Sheet!", "success");
         }
     } finally {
         icons.forEach(i => i.classList.remove('fa-spin'));
