@@ -193,30 +193,95 @@ function showToast(
 }
 
 /* ================================================================
-   CONTROLLER SPLASH SCREEN (LANGSUNG KE PUBLIK JIKA BUKU TAMU TUTUP)
+   CONTROLLER SPLASH & TOMBOL ADMIN RAHASIA
    ================================================================ */
 function skipSplash() {
   if (splashAutoTimer) clearInterval(splashAutoTimer);
-  
   const splash = document.getElementById('splash-screen');
   if (splash) splash.classList.add('hidden');
 
-  let isMaintenance = false;
+  let isClosed = false;
   if (memoryCache['Web_Branding'] && memoryCache['Web_Branding'].data) {
       const settings = memoryCache['Web_Branding'].data.find(s => s.Status === 'publish' || s.Status === 'active') || memoryCache['Web_Branding'].data[0];
       const stat = String(settings.Guestbook_Status || 'Open').toLowerCase();
-      if (stat === 'close' || stat === 'tutup' || stat === 'maintenance') {
-          isMaintenance = true;
-      }
+      if (stat === 'close' || stat === 'tutup' || stat === 'maintenance') isClosed = true;
   }
 
-  if (isMaintenance) {
-      // BUKU TAMU DITUTUP: Langsung lempar ke Dashboard Publik secara instan
+  if (isClosed) {
+      // 1. LOMPAT KE PUBLIK 100%
       navigateTo('public', 'home', true);
+      
+      // 2. MUNCULKAN TOMBOL LOGIN ADMIN RAHASIA (Agar Anda tidak terkunci)
+      if (!document.getElementById('btn-admin-secret')) {
+           const btn = document.createElement('button');
+           btn.id = 'btn-admin-secret';
+           btn.innerHTML = '<i class="fas fa-user-shield"></i> Login Admin';
+           btn.className = 'fixed bottom-6 right-6 bg-slate-900/90 backdrop-blur-md text-white px-5 py-3 rounded-full text-xs font-bold shadow-2xl z-[99999] hover:bg-blue-600 transition-all border border-slate-700 animate-fade-in';
+           btn.onclick = () => {
+                navigateTo('attendance', null, true);
+                setTimeout(() => {
+                    const form = document.getElementById('guest-form-card');
+                    if (form) form.classList.remove('hidden');
+                    if (typeof showAuthPanel === 'function') showAuthPanel('login');
+                }, 100);
+           };
+           document.body.appendChild(btn);
+      }
   } else {
-      // BUKU TAMU BUKA: Munculkan form pengisian seperti biasa
+      // BUKU TAMU BUKA NORMAL
       const form = document.getElementById('guest-form-card');
       if (form) form.classList.remove('hidden');
+      
+      const secretBtn = document.getElementById('btn-admin-secret');
+      if (secretBtn) secretBtn.remove();
+  }
+}
+
+/* ================================================================
+   WEB BRANDING (UPDATE STATUS LIVE)
+   ================================================================ */
+function applyWebBranding(data) {
+  if (!data || data.length === 0) return;
+  const activeSettings = data.find(s => s.Status === 'publish' || s.Status === 'active') || data[0];
+
+  if (activeSettings.Site_Name) document.title = activeSettings.Site_Name;
+  if (activeSettings.Favicon_URL) {
+     let favicon = document.getElementById('dynamic-favicon');
+     if (favicon) { favicon.href = activeSettings.Favicon_URL; }
+     else {
+        favicon = document.createElement('link');
+        favicon.id = 'dynamic-favicon';
+        favicon.rel = 'icon';
+        favicon.href = activeSettings.Favicon_URL;
+        document.head.appendChild(favicon);
+     }
+  }
+  if (activeSettings.Logo_URL) {
+     document.querySelectorAll('.dynamic-logo-img').forEach(img => {
+        img.src = activeSettings.Logo_URL;
+        img.classList.remove('hidden');
+     });
+     document.querySelectorAll('.dynamic-logo-placeholder').forEach(el => el.classList.add('hidden'));
+  }
+
+  const gbStatus = String(activeSettings.Guestbook_Status || 'Open').toLowerCase();
+  const attendanceView = document.getElementById('view-attendance');
+  const splash = document.getElementById('splash-screen');
+  const isSplashVisible = splash && !splash.classList.contains('hidden');
+
+  if (gbStatus === 'close' || gbStatus === 'tutup' || gbStatus === 'maintenance') {
+      const formCard = document.getElementById('guest-form-card');
+      if (formCard) formCard.classList.add('hidden');
+      
+      if (attendanceView && !attendanceView.classList.contains('hidden') && !isSplashVisible) {
+          skipSplash(); // Panggil pelompat agar tombol rahasia ikut muncul
+      }
+  } else {
+      const formCard = document.getElementById('guest-form-card');
+      if (formCard && !isSplashVisible) formCard.classList.remove('hidden');
+      
+      const secretBtn = document.getElementById('btn-admin-secret');
+      if (secretBtn) secretBtn.remove();
   }
 }
 
@@ -2515,128 +2580,35 @@ function navigateTo(
   );
 }
 
-function renderView( view,  section)
-  {
-  function renderView(view, section) {
+/* ================================================================
+   RENDER VIEW (BERSIH DARI BLOKIR)
+   ================================================================ */
+function renderView(view, section) {
+  ['attendance', 'public', 'login', 'visitor', 'admin'].forEach(v => {
+      const el = document.getElementById(`view-${v}`);
+      if (el) el.classList.add('hidden');
+  });
 
-  // === KODE PENJAGA GERBANG TAMBAHAN ===
-  if (view === 'attendance') {
-      const settings = memoryCache['Web_Branding']?.data?.find(s => s.Status === 'publish' || s.Status === 'active') || memoryCache['Web_Branding']?.data?.[0];
-      const stat = String(settings?.Guestbook_Status || 'Open').toLowerCase();
-      if (stat === 'close' || stat === 'tutup' || stat === 'maintenance') {
-          // Ganti rute paksa ke Publik jika Buku Tamu sedang tutup
-          view = 'public';
-          section = 'home';
-      }
-  }
-  [
-    'attendance',
-    'public',
-    'login',
-    'visitor',
-    'admin'
-  ].forEach(
-    v => {
+  const activeView = document.getElementById(`view-${view}`);
+  if (activeView) activeView.classList.remove('hidden');
 
-      const el =
-        document.getElementById(
-          `view-${v}`
-        );
+  if (view === 'public') {
+      let sec = section || 'home';
+      document.querySelectorAll('.pub-sec').forEach(el => el.classList.add('hidden'));
+      const target = document.getElementById(`pub-sec-${sec}`);
+      if (target) target.classList.remove('hidden');
 
-      if (el) {
-        el.classList.add(
-          'hidden'
-        );
-      }
-    }
-  );
-
-  const activeView =
-    document.getElementById(
-      `view-${view}`
-    );
-
-  if (activeView) {
-    activeView.classList.remove(
-      'hidden'
-    );
-  }
-
-  if (
-    view === 'public'
-  ) {
-
-    let sec =
-      section || 'home';
-
-    document
-      .querySelectorAll(
-        '.pub-sec'
-      )
-      .forEach(
-        el =>
-          el.classList.add(
-            'hidden'
-          )
-      );
-
-    const target =
-      document.getElementById(
-        `pub-sec-${sec}`
-      );
-
-    if (target) {
-      target.classList.remove(
-        'hidden'
-      );
-    }
-
-    document
-      .querySelectorAll(
-        '.nav-btn'
-      )
-      .forEach(
-        btn => {
-
-          btn.classList.remove(
-            'active',
-            'text-blue-600'
-          );
-
-          btn.classList.add(
-            'text-slate-600'
-          );
-
-          if (
-            btn.getAttribute(
-              'data-sec'
-            ) === sec
-          ) {
-
-            btn.classList.add(
-              'active',
-              'text-blue-600'
-            );
-
-            btn.classList.remove(
-              'text-slate-600'
-            );
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+          btn.classList.remove('active', 'text-blue-600');
+          btn.classList.add('text-slate-600');
+          if (btn.getAttribute('data-sec') === sec) {
+              btn.classList.add('active', 'text-blue-600');
+              btn.classList.remove('text-slate-600');
           }
-        }
-      );
-
-    renderPublicContent(
-      false,
-      sec
-    );
-
-  } else if (
-    view === 'visitor'
-  ) {
-
-    switchVisitorTab(
-      'dash'
-    );
+      });
+      renderPublicContent(false, sec);
+  } else if (view === 'visitor') {
+      switchVisitorTab('dash');
   }
 }
 
@@ -5077,43 +5049,12 @@ async function actionData(id, actionType) {
 }
 
 /* ================================================================
-   WINDOW LOAD (PENJAGA GERBANG UTAMA BUKU TAMU)
+   WINDOW LOAD (CEPAT & AMAN TANPA BLOKIR)
    ================================================================ */
-window.addEventListener('load', async () => {
-    // 1. Cek Google Sheets SEBELUM merender halaman apapun!
-    try {
-        const res = await getCachedData('Web_Branding', true);
-        let isClosed = false;
-        
-        if (res && res.data && res.data.length > 0) {
-            const settings = res.data.find(s => s.Status === 'publish' || s.Status === 'active') || res.data[0];
-            const stat = String(settings.Guestbook_Status || 'Open').toLowerCase();
-            if (stat === 'close' || stat === 'tutup' || stat === 'maintenance') {
-                isClosed = true;
-            }
-            if (typeof applyWebBranding === 'function') applyWebBranding(res.data);
-        }
-
-        // 2. Tentukan Rute Otomatis
-        if (isClosed) {
-            // JIKA TUTUP: Hapus splash screen, bypass 100% ke Publik
-            const splash = document.getElementById('splash-screen');
-            if (splash) splash.classList.add('hidden');
-            
-            history.replaceState({ view: 'public', section: 'home' }, '', '');
-            renderView('public', 'home');
-        } else {
-            // JIKA BUKA: Masuk ke Buku Tamu seperti biasa
-            history.replaceState({ view: 'attendance', section: null }, '', '');
-            renderView('attendance', null);
-            if (typeof startSplashTimer === 'function') startSplashTimer();
-        }
-    } catch (err) {
-        // Jika internet error/lemot, fallback ke Buku Tamu
-        history.replaceState({ view: 'attendance', section: null }, '', '');
-        renderView('attendance', null);
-        if (typeof startSplashTimer === 'function') startSplashTimer();
-    }
+window.addEventListener('load', () => {
+    history.replaceState({ view: 'attendance', section: null }, '', '');
+    renderView('attendance', null);
+    if (typeof startSplashTimer === 'function') startSplashTimer();
 }, { once: true });
 
 /* ================================================================
