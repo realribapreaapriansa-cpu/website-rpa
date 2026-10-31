@@ -5025,29 +5025,16 @@ function filterAdminTable(
 }
 
 async function refreshAdminModule() {
+  if (!activeModule) return;
+  invalidateCache(activeModule);
 
-  if (!activeModule) {
-    return;
-  }
+  // Bersihkan teks pencarian di kedua kotak input
+  const searchDesktop = document.getElementById('admin-search-desktop');
+  const searchMobile = document.getElementById('admin-search-mobile');
+  if (searchDesktop) searchDesktop.value = '';
+  if (searchMobile) searchMobile.value = '';
 
-  invalidateCache(
-    activeModule
-  );
-
-  const input =
-    document.getElementById(
-      'admin-search'
-    );
-
-  if (input) {
-    input.value =
-      '';
-  }
-
-  await loadAdminModule(
-    activeModule,
-    true
-  );
+  await loadAdminModule(activeModule, true);
 }
 
 function openEditById(
